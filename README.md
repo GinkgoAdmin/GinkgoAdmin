@@ -59,7 +59,7 @@ GinkgoAdmin 是一套基于 `.NET 8` + `Vue 3` 的**模块化业务底座**：�
 ### 2) 克隆代码
 
 ```bash
-git clone https://github.com/GinkgoAdmin/GinkgoAdmin.git
+git clone https://gitee.com/ginkgoadmin/Ginkgoadmin.git
 cd GinkgoAdmin
 ```
 
