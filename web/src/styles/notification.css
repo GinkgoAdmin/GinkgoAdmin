@@ -1,0 +1,105 @@
+/**
+ * 通知弹框增强样式
+ * 右下角弹出，更醒目的视觉效果
+ */
+
+/* 增强版通知弹框 */
+.notification-popup-enhanced {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(64, 158, 255, 0.2) !important;
+  border-left: 4px solid #409eff !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%) !important;
+  animation: notification-slide-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+  min-width: 320px !important;
+  max-width: 400px !important;
+}
+
+/* 暗色主题适配 */
+.admin-dark .notification-popup-enhanced {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(64, 158, 255, 0.3) !important;
+}
+
+.admin-dark .notification-popup-enhanced .el-notification__title {
+  color: #f3f4f6 !important;
+}
+
+.admin-dark .notification-popup-enhanced .el-notification__content {
+  color: #d1d5db !important;
+}
+
+/* 入场动画 - 从右下角滑入 */
+@keyframes notification-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(100%) translateY(20px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateX(-10px) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+/* 通知图标脉冲动画 */
+.notification-popup-enhanced .el-notification__icon {
+  animation: notification-pulse 2s ease-in-out infinite;
+}
+
+@keyframes notification-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* 关闭按钮样式 */
+.notification-popup-enhanced .el-notification__closeBtn {
+  color: #909399 !important;
+  transition: all 0.2s ease;
+}
+
+.notification-popup-enhanced .el-notification__closeBtn:hover {
+  color: #409eff !important;
+  transform: rotate(90deg);
+}
+
+/* 通知内容区域 */
+.notification-popup-enhanced .el-notification__group {
+  margin-left: 0 !important;
+}
+
+/* 悬停效果 */
+.notification-popup-enhanced:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 6px 16px rgba(64, 158, 255, 0.25) !important;
+  cursor: pointer;
+}
+
+/* 重要通知样式（可选） */
+.notification-popup-important {
+  border-left-color: #e6a23c !important;
+  background: linear-gradient(135deg, #fffbf0 0%, #fff7e6 100%) !important;
+}
+
+.notification-popup-important .el-notification__icon {
+  color: #e6a23c !important;
+}
+
+/* 紧急通知样式（可选） */
+.notification-popup-urgent {
+  border-left-color: #f56c6c !important;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffebeb 100%) !important;
+  animation: notification-slide-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), notification-shake 0.5s ease-in-out 0.4s !important;
+}
+
+@keyframes notification-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}

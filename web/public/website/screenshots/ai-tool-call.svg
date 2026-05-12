@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GinkgoAdmin 首页 - AI Tool Calling 业务调用样张（重做版 · 宽松布局）
+  布局：左侧「步骤追踪 + 工具调用结果」+ 右侧「内联审批面板」
+  全画布 1600×1000，加大行距，避免文字重叠。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="GinkgoAdmin AI Tool Calling 业务调用">
+  <defs>
+    <linearGradient id="lg-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef2ff"/><stop offset="100%" stop-color="#f5f3ff"/>
+    </linearGradient>
+    <linearGradient id="lg-header" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="lg-step-active" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a855f7"/><stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="lg-approve" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="lg-reject" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+    <filter id="fx-card" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#1e1b4b" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <style>.font{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',Arial,sans-serif}.mono{font-family:Consolas,'Courier New',monospace}</style>
+
+  <rect width="1600" height="1000" fill="url(#lg-bg)"/>
+
+  <!-- ============ 顶栏 ============ -->
+  <rect width="1600" height="72" fill="url(#lg-header)"/>
+  <g transform="translate(28 24)">
+    <circle cx="14" cy="14" r="14" fill="#ffffff" opacity="0.2"/>
+    <text x="14" y="20" text-anchor="middle" class="font" font-size="14" font-weight="700" fill="#ffffff">AI</text>
+  </g>
+  <text x="68" y="42" class="font" font-size="18" font-weight="700" fill="#ffffff">Tool Calling 实时执行追踪</text>
+  <text x="312" y="42" class="font" font-size="13" fill="#e9d5ff">· 任务 #20260502-T7421 · 当前会话「订单异常分析」</text>
+
+  <g transform="translate(1380 18)">
+    <rect width="92" height="36" rx="18" fill="rgba(255,255,255,0.16)"/>
+    <circle cx="20" cy="18" r="5" fill="#fbbf24"/>
+    <text x="36" y="23" class="font" font-size="12" font-weight="600" fill="#ffffff">执行中</text>
+  </g>
+  <g transform="translate(1486 18)">
+    <rect width="80" height="36" rx="18" fill="rgba(255,255,255,0.16)"/>
+    <text x="40" y="23" text-anchor="middle" class="font" font-size="12" fill="#ffffff">⏸ 暂停</text>
+  </g>
+
+  <!-- ============ 左侧步骤面板（x: 24 ~ 1004，width 980） ============ -->
+  <g transform="translate(24 96)">
+    <rect width="980" height="864" rx="14" fill="#ffffff" filter="url(#fx-card)"/>
+    <text x="32" y="42" class="font" font-size="16" font-weight="700" fill="#111827">📋 执行步骤</text>
+    <text x="170" y="42" class="font" font-size="13" fill="#6b7280">共 4 步 · 已完成 3 / 4</text>
+
+    <!-- 进度条 -->
+    <g transform="translate(32 60)">
+      <rect width="916" height="6" rx="3" fill="#f3f4f6"/>
+      <rect width="687" height="6" rx="3" fill="url(#lg-step-active)"/>
+    </g>
+
+    <!-- 时间线竖线 -->
+    <line x1="60" y1="100" x2="60" y2="820" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="4 4"/>
+
+    <!-- 步骤 1: 已完成 -->
+    <g transform="translate(40 100)">
+      <circle cx="20" cy="20" r="18" fill="#10b981"/>
+      <g transform="translate(13 14)" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M0 6 L5 11 L14 0"/>
+      </g>
+      <text x="56" y="20" class="font" font-size="15" font-weight="600" fill="#111827">解析用户意图</text>
+      <text x="900" y="20" text-anchor="end" class="font" font-size="12" fill="#9ca3af">用时 0.3s</text>
+      <text x="56" y="44" class="font" font-size="13" fill="#6b7280">提取关键实体：订单号、客户、金额、风险等级</text>
+    </g>
+
+    <!-- 步骤 2: 已完成 -->
+    <g transform="translate(40 196)">
+      <circle cx="20" cy="20" r="18" fill="#10b981"/>
+      <g transform="translate(13 14)" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M0 6 L5 11 L14 0"/>
+      </g>
+      <text x="56" y="20" class="font" font-size="15" font-weight="600" fill="#111827">调用 queryOrder</text>
+      <g transform="translate(212 6)">
+        <rect width="76" height="22" rx="11" fill="#dcfce7"/>
+        <text x="38" y="15" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#166534">✓ 200 OK</text>
+      </g>
+      <text x="900" y="20" text-anchor="end" class="font" font-size="12" fill="#9ca3af">用时 0.18s</text>
+
+      <!-- 工具调用结果卡片 -->
+      <g transform="translate(56 40)">
+        <rect width="868" height="80" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+        <text x="20" y="26" class="mono" font-size="12" fill="#7c3aed">params:</text>
+        <text x="78" y="26" class="mono" font-size="12" fill="#374151">{ "orderNo": "ORD-20260430-8821" }</text>
+        <text x="20" y="50" class="mono" font-size="12" fill="#7c3aed">return:</text>
+        <text x="78" y="50" class="mono" font-size="12" fill="#374151">{ "id": "1842…", "amount": 2890, "status": "paid", "channel": "wechat" }</text>
+        <text x="20" y="70" class="font" font-size="11" fill="#9ca3af">SQL: SELECT * FROM order_main WHERE order_no = ? · 已通过审计</text>
+      </g>
+    </g>
+
+    <!-- 步骤 3: 已完成 -->
+    <g transform="translate(40 348)">
+      <circle cx="20" cy="20" r="18" fill="#10b981"/>
+      <g transform="translate(13 14)" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M0 6 L5 11 L14 0"/>
+      </g>
+      <text x="56" y="20" class="font" font-size="15" font-weight="600" fill="#111827">调用 listPaymentRecords</text>
+      <g transform="translate(280 6)">
+        <rect width="76" height="22" rx="11" fill="#dcfce7"/>
+        <text x="38" y="15" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#166534">✓ 200 OK</text>
+      </g>
+      <text x="900" y="20" text-anchor="end" class="font" font-size="12" fill="#9ca3af">用时 0.12s</text>
+
+      <g transform="translate(56 40)">
+        <rect width="868" height="80" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
+        <text x="20" y="26" class="mono" font-size="12" fill="#7c3aed">params:</text>
+        <text x="78" y="26" class="mono" font-size="12" fill="#374151">{ "orderId": "1842…", "limit": 10 }</text>
+        <text x="20" y="50" class="mono" font-size="12" fill="#7c3aed">return:</text>
+        <text x="78" y="50" class="mono" font-size="12" fill="#374151">[ 2 records ] · 全部 status=success · 总金额 ¥2,890</text>
+        <text x="20" y="70" class="font" font-size="11" fill="#9ca3af">租户隔离已生效（tenant_id=t001）· 已通过审计</text>
+      </g>
+    </g>
+
+    <!-- 步骤 4: 当前等待审批 -->
+    <g transform="translate(40 500)">
+      <circle cx="20" cy="20" r="18" fill="url(#lg-step-active)"/>
+      <text x="20" y="26" text-anchor="middle" class="font" font-size="13" font-weight="700" fill="#ffffff">4</text>
+      <circle cx="20" cy="20" r="22" fill="none" stroke="#a855f7" stroke-width="2" opacity="0.4"/>
+
+      <text x="56" y="20" class="font" font-size="15" font-weight="600" fill="#111827">调用 updateCustomerRiskLevel</text>
+      <g transform="translate(338 6)">
+        <rect width="100" height="22" rx="11" fill="#fef3c7"/>
+        <text x="50" y="15" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#92400e">⏳ 待人工审批</text>
+      </g>
+      <g transform="translate(450 6)">
+        <rect width="68" height="22" rx="11" fill="#fee2e2"/>
+        <text x="34" y="15" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#991b1b">高危</text>
+      </g>
+
+      <!-- 待执行参数预览 -->
+      <g transform="translate(56 40)">
+        <rect width="868" height="120" rx="10" fill="#fffbeb" stroke="#fbbf24"/>
+        <text x="20" y="26" class="font" font-size="13" font-weight="600" fill="#92400e">⚠ 该工具会修改业务数据，已自动转入审批队列</text>
+        <text x="20" y="56" class="mono" font-size="13" fill="#374151">customer_id : c-2189</text>
+        <text x="20" y="80" class="mono" font-size="13" fill="#374151">risk_level  : 1（普通）→ 2（关注）</text>
+        <text x="20" y="104" class="mono" font-size="13" fill="#374151">reason      : 物流签收延迟、风险评分 72/100</text>
+      </g>
+    </g>
+
+    <!-- 底部摘要 -->
+    <g transform="translate(32 720)">
+      <rect width="916" height="100" rx="10" fill="#f5f3ff" stroke="#e9d5ff"/>
+      <text x="20" y="30" class="font" font-size="14" font-weight="600" fill="#5b21b6">本轮 Tool Calling 摘要</text>
+      <g transform="translate(20 50)" class="font" font-size="13" fill="#374151">
+        <text>• 工具调用 3 次（已审计 3 次）</text>
+        <text x="0" y="22">• 涉及表：order_main、payment_record、customer · 全部命中租户白名单</text>
+        <text x="0" y="44">• Token 使用：输入 824 · 输出 1,156 · 估算成本 ¥0.012</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ============ 右侧内联审批面板（x: 1028 ~ 1576，width 548） ============ -->
+  <g transform="translate(1028 96)">
+    <rect width="548" height="864" rx="14" fill="#ffffff" filter="url(#fx-card)"/>
+
+    <!-- 头部 -->
+    <rect width="548" height="68" rx="14" fill="#fef3c7"/>
+    <rect y="56" width="548" height="12" fill="#fef3c7"/>
+    <g transform="translate(24 24)">
+      <rect width="20" height="20" rx="10" fill="#f59e0b"/>
+      <text x="10" y="15" text-anchor="middle" class="font" font-size="13" font-weight="700" fill="#ffffff">!</text>
+    </g>
+    <text x="56" y="40" class="font" font-size="15" font-weight="700" fill="#92400e">人工审批 · 高危操作拦截</text>
+
+    <!-- 操作概要 -->
+    <g transform="translate(24 96)">
+      <text class="font" font-size="13" fill="#6b7280">即将执行的操作</text>
+      <text y="28" class="font" font-size="17" font-weight="700" fill="#111827">提升客户风控等级</text>
+      <g transform="translate(0 48)">
+        <rect width="500" height="32" rx="8" fill="#f9fafb" stroke="#e5e7eb"/>
+        <text x="14" y="21" class="mono" font-size="12" fill="#7c3aed">updateCustomerRiskLevel(...)</text>
+      </g>
+    </g>
+
+    <!-- 关键字段对比 -->
+    <g transform="translate(24 200)">
+      <text class="font" font-size="13" font-weight="600" fill="#374151">影响数据预览</text>
+      <g transform="translate(0 16)">
+        <rect width="500" height="40" fill="#f9fafb"/>
+        <text x="14" y="25" class="font" font-size="12" fill="#6b7280">客户</text>
+        <text x="120" y="25" class="font" font-size="13" fill="#111827">深圳赛博科技 · c-2189</text>
+      </g>
+      <g transform="translate(0 56)">
+        <rect width="500" height="40" fill="#ffffff"/>
+        <text x="14" y="25" class="font" font-size="12" fill="#6b7280">风险等级</text>
+        <g transform="translate(120 16)">
+          <rect width="60" height="20" rx="10" fill="#dcfce7"/>
+          <text x="30" y="14" text-anchor="middle" class="font" font-size="11" fill="#166534">普通 1</text>
+        </g>
+        <g transform="translate(190 18)" stroke="#9ca3af" stroke-width="1.6" fill="none" stroke-linecap="round">
+          <path d="M0 0 L14 0 M10 -4 L14 0 L10 4"/>
+        </g>
+        <g transform="translate(220 16)">
+          <rect width="60" height="20" rx="10" fill="#fef3c7"/>
+          <text x="30" y="14" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#92400e">关注 2</text>
+        </g>
+      </g>
+      <g transform="translate(0 96)">
+        <rect width="500" height="40" fill="#f9fafb"/>
+        <text x="14" y="25" class="font" font-size="12" fill="#6b7280">影响订单</text>
+        <text x="120" y="25" class="font" font-size="13" fill="#111827">后续 12 笔订单将进入复核流程</text>
+      </g>
+      <g transform="translate(0 136)">
+        <rect width="500" height="40" fill="#ffffff"/>
+        <text x="14" y="25" class="font" font-size="12" fill="#6b7280">回滚</text>
+        <text x="120" y="25" class="font" font-size="13" fill="#10b981">支持，保留 30 天可逆操作日志</text>
+      </g>
+    </g>
+
+    <!-- 审批意见 -->
+    <g transform="translate(24 408)">
+      <text class="font" font-size="13" font-weight="600" fill="#374151">审批意见 <tspan fill="#ef4444">*</tspan></text>
+      <rect y="16" width="500" height="92" rx="8" fill="#f9fafb" stroke="#e5e7eb"/>
+      <text x="14" y="40" class="font" font-size="13" fill="#374151">同意提升风控等级。物流延迟 12h 已构成异常，需复核未来订单的发</text>
+      <text x="14" y="62" class="font" font-size="13" fill="#374151">货时效，并联系客户经理进行情况说明。</text>
+      <text x="486" y="100" text-anchor="end" class="font" font-size="11" fill="#9ca3af">61 / 200</text>
+    </g>
+
+    <!-- AI 风险说明 -->
+    <g transform="translate(24 538)">
+      <rect width="500" height="84" rx="8" fill="#fef3c7"/>
+      <text x="14" y="24" class="font" font-size="12" font-weight="600" fill="#92400e">🤖 AI 风险评估</text>
+      <text x="14" y="46" class="font" font-size="12" fill="#7c2d12">• 该客户近 30 天累计订单 8 笔，金额 ¥34,200</text>
+      <text x="14" y="64" class="font" font-size="12" fill="#7c2d12">• 历史无投诉记录，但本次延迟超出 SLA 阈值</text>
+    </g>
+
+    <!-- 审批人列表 -->
+    <g transform="translate(24 644)">
+      <text class="font" font-size="13" font-weight="600" fill="#374151">需依次同意的审批人</text>
+      <g transform="translate(0 20)">
+        <circle cx="16" cy="16" r="14" fill="#a855f7"/>
+        <text x="16" y="22" text-anchor="middle" class="font" font-size="12" font-weight="700" fill="#ffffff">王</text>
+        <text x="42" y="20" class="font" font-size="13" fill="#111827">王亮（销售主管）</text>
+        <g transform="translate(372 6)"><rect width="68" height="20" rx="10" fill="#fef3c7"/><text x="34" y="14" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#92400e">待审批</text></g>
+      </g>
+      <g transform="translate(0 60)">
+        <circle cx="16" cy="16" r="14" fill="#94a3b8"/>
+        <text x="16" y="22" text-anchor="middle" class="font" font-size="12" font-weight="700" fill="#ffffff">李</text>
+        <text x="42" y="20" class="font" font-size="13" fill="#9ca3af">李华（运营总监）</text>
+        <g transform="translate(372 6)"><rect width="68" height="20" rx="10" fill="#f1f5f9"/><text x="34" y="14" text-anchor="middle" class="font" font-size="11" fill="#475569">未触达</text></g>
+      </g>
+    </g>
+
+    <!-- 操作按钮 -->
+    <g transform="translate(24 776)">
+      <rect width="500" height="1" fill="#e5e7eb"/>
+      <g transform="translate(0 16)">
+        <rect width="120" height="42" rx="21" fill="#ffffff" stroke="#d1d5db"/>
+        <text x="60" y="26" text-anchor="middle" class="font" font-size="13" fill="#475569">驳回</text>
+      </g>
+      <g transform="translate(132 16)">
+        <rect width="120" height="42" rx="21" fill="#ffffff" stroke="#d1d5db"/>
+        <text x="60" y="26" text-anchor="middle" class="font" font-size="13" fill="#475569">退回修改</text>
+      </g>
+      <g transform="translate(330 16)">
+        <rect width="170" height="42" rx="21" fill="url(#lg-approve)"/>
+        <g transform="translate(28 24)" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round">
+          <path d="M0 4 L4 8 L12 0"/>
+        </g>
+        <text x="100" y="26" text-anchor="middle" class="font" font-size="13" font-weight="600" fill="#ffffff">同意并执行</text>
+      </g>
+    </g>
+  </g>
+</svg>

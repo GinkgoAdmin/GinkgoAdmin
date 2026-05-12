@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GinkgoAdmin 首页 - UniApp 移动端首页样张
+  复刻 uniapp/pgzx/pages/home/home.vue：头部问候 + 数据卡 + 业务模块 + 快捷功能 + 公告 + TabBar
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="GinkgoAdmin UniApp 移动端首页">
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#eef2ff"/><stop offset="100%" stop-color="#f0f9ff"/></linearGradient>
+    <radialGradient id="bg-glow1" cx="0.2" cy="0.3" r="0.4"><stop offset="0%" stop-color="rgba(99,102,241,0.22)"/><stop offset="100%" stop-color="rgba(99,102,241,0)"/></radialGradient>
+    <radialGradient id="bg-glow2" cx="0.85" cy="0.75" r="0.4"><stop offset="0%" stop-color="rgba(236,72,153,0.15)"/><stop offset="100%" stop-color="rgba(236,72,153,0)"/></radialGradient>
+    <linearGradient id="hero-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient>
+    <linearGradient id="lg-green" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <linearGradient id="lg-orange" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#ea580c"/></linearGradient>
+    <linearGradient id="lg-blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
+    <linearGradient id="lg-pink" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ec4899"/><stop offset="100%" stop-color="#db2777"/></linearGradient>
+    <linearGradient id="lg-cyan" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#0891b2"/></linearGradient>
+    <linearGradient id="lg-purple" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+    <filter id="fx-phone"><feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#1e1b4b" flood-opacity="0.28"/></filter>
+    <filter id="fx-card"><feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#1e1b4b" flood-opacity="0.14"/></filter>
+  </defs>
+  <style>.font{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',Arial,sans-serif}</style>
+
+  <rect width="1600" height="1000" fill="url(#bg-grad)"/>
+  <rect width="1600" height="1000" fill="url(#bg-glow1)"/>
+  <rect width="1600" height="1000" fill="url(#bg-glow2)"/>
+
+  <!-- 左侧主文案 -->
+  <g transform="translate(80 220)">
+    <rect width="88" height="28" rx="14" fill="rgba(99,102,241,0.1)" stroke="rgba(99,102,241,0.25)"/>
+    <text x="44" y="19" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#4338ca">📱 UniApp</text>
+    <text y="70" class="font" font-size="38" font-weight="800" fill="#0f172a">一套代码</text>
+    <text y="118" class="font" font-size="38" font-weight="800" fill="#0f172a">多端复用</text>
+    <text y="164" class="font" font-size="16" fill="#475569">同一套后端能力与鉴权链路</text>
+    <text y="188" class="font" font-size="16" fill="#475569">Web / iOS / Android / 小程序</text>
+    <text y="212" class="font" font-size="16" fill="#475569">共享业务模块与权限体系</text>
+
+    <!-- 指标卡 -->
+    <g transform="translate(0 252)">
+      <rect width="150" height="76" rx="12" fill="#ffffff" filter="url(#fx-card)"/>
+      <text x="20" y="28" class="font" font-size="12" fill="#64748b">已支持平台</text>
+      <text x="20" y="58" class="font" font-size="24" font-weight="800" fill="#6366f1">5 端</text>
+    </g>
+    <g transform="translate(166 252)">
+      <rect width="178" height="76" rx="12" fill="#ffffff" filter="url(#fx-card)"/>
+      <text x="20" y="28" class="font" font-size="12" fill="#64748b">代码复用率</text>
+      <text x="20" y="58" class="font" font-size="24" font-weight="800" fill="#10b981">92%</text>
+      <text x="108" y="58" class="font" font-size="11" fill="#94a3b8">同业务逻辑</text>
+    </g>
+  </g>
+
+  <!-- ============ 手机 mockup（居中偏右） ============ -->
+  <g transform="translate(780 60)" filter="url(#fx-phone)">
+    <!-- 外框 -->
+    <rect width="420" height="880" rx="52" fill="#0f172a"/>
+    <rect x="6" y="6" width="408" height="868" rx="46" fill="#1e293b"/>
+    <rect x="14" y="14" width="392" height="852" rx="40" fill="#f5f7fb"/>
+
+    <!-- 状态栏 -->
+    <g transform="translate(14 14)">
+      <rect width="392" height="44" rx="40" fill="#f5f7fb"/>
+      <text x="32" y="28" class="font" font-size="14" font-weight="700" fill="#0f172a">9:41</text>
+      <rect x="156" y="14" width="80" height="20" rx="10" fill="#0f172a"/>
+      <g transform="translate(328 22)" fill="#0f172a"><rect x="0" y="2" width="3" height="4" rx="0.5"/><rect x="5" y="0" width="3" height="6" rx="0.5"/><rect x="10" y="-2" width="3" height="8" rx="0.5"/></g>
+      <g transform="translate(346 22)" fill="none" stroke="#0f172a" stroke-width="1.4"><path d="M0 3 Q 4 -1 8 3 M2 5 Q 4 3 6 5"/></g>
+      <g transform="translate(362 20)"><rect width="22" height="10" rx="2" fill="none" stroke="#0f172a" stroke-width="1.4"/><rect x="2" y="2" width="16" height="6" rx="1" fill="#10b981"/><rect x="22" y="3" width="2" height="4" fill="#0f172a"/></g>
+    </g>
+
+    <!-- 顶部 hero 区 -->
+    <g transform="translate(14 58)">
+      <rect width="392" height="180" fill="url(#hero-grad)"/>
+      <circle cx="340" cy="20" r="60" fill="rgba(255,255,255,0.08)"/>
+      <circle cx="40" cy="170" r="80" fill="rgba(255,255,255,0.06)"/>
+
+      <!-- 头像 + 名字 -->
+      <g transform="translate(20 30)">
+        <circle cx="28" cy="28" r="28" fill="rgba(255,255,255,0.95)"/>
+        <circle cx="28" cy="28" r="25" fill="url(#lg-orange)"/>
+        <text x="28" y="35" text-anchor="middle" class="font" font-size="22" font-weight="700" fill="#ffffff">张</text>
+        <circle cx="48" cy="46" r="6" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
+      </g>
+      <text x="86" y="50" class="font" font-size="13" fill="rgba(255,255,255,0.85)">上午好，</text>
+      <text x="86" y="76" class="font" font-size="20" font-weight="700" fill="#ffffff">张立</text>
+
+      <!-- 通知 -->
+      <g transform="translate(340 50)">
+        <circle r="22" fill="rgba(255,255,255,0.18)"/>
+        <text y="6" text-anchor="middle" class="font" font-size="18">🔔</text>
+        <circle cx="10" cy="-10" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
+        <text x="10" y="-7" text-anchor="middle" class="font" font-size="10" font-weight="700" fill="#ffffff">3</text>
+      </g>
+
+      <!-- hero 数据卡 -->
+      <g transform="translate(20 120)">
+        <rect width="352" height="68" rx="16" fill="rgba(255,255,255,0.18)"/>
+        <g transform="translate(20 34)">
+          <text class="font" font-size="11" fill="rgba(255,255,255,0.85)">本月业绩</text>
+          <text y="22" class="font" font-size="20" font-weight="800" fill="#ffffff">¥386,420</text>
+        </g>
+        <line x1="180" y1="14" x2="180" y2="54" stroke="rgba(255,255,255,0.2)"/>
+        <g transform="translate(200 34)">
+          <text class="font" font-size="11" fill="rgba(255,255,255,0.85)">跟进中</text>
+          <text y="22" class="font" font-size="20" font-weight="800" fill="#ffffff">128 位</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- 业务模块 section -->
+    <g transform="translate(14 262)">
+      <text x="20" y="16" class="font" font-size="14" font-weight="700" fill="#0f172a">业务模块</text>
+      <text x="356" y="16" text-anchor="end" class="font" font-size="11" fill="#94a3b8">查看全部 ›</text>
+
+      <g transform="translate(20 28)">
+        <rect width="352" height="62" rx="14" fill="#ffffff"/>
+        <g transform="translate(22 31)"><rect x="-20" y="-20" width="40" height="40" rx="10" fill="url(#lg-green)"/><text y="6" text-anchor="middle" class="font" font-size="18">💼</text></g>
+        <text x="60" y="30" class="font" font-size="14" font-weight="600" fill="#0f172a">CRM 客户管理</text>
+        <text x="60" y="48" class="font" font-size="11" fill="#64748b">客户 · 商机 · 合同跟进</text>
+        <g transform="translate(308 18)"><rect width="24" height="16" rx="8" fill="#ef4444"/><text x="12" y="12" text-anchor="middle" class="font" font-size="10" font-weight="700" fill="#ffffff">12</text></g>
+        <text x="336" y="35" class="font" font-size="14" fill="#cbd5e1">›</text>
+      </g>
+      <g transform="translate(20 98)">
+        <rect width="352" height="62" rx="14" fill="#ffffff"/>
+        <g transform="translate(22 31)"><rect x="-20" y="-20" width="40" height="40" rx="10" fill="url(#lg-orange)"/><text y="6" text-anchor="middle" class="font" font-size="18">📋</text></g>
+        <text x="60" y="30" class="font" font-size="14" font-weight="600" fill="#0f172a">待办审批</text>
+        <text x="60" y="48" class="font" font-size="11" fill="#64748b">8 条待处理审批</text>
+        <g transform="translate(308 18)"><rect width="24" height="16" rx="8" fill="#f59e0b"/><text x="12" y="12" text-anchor="middle" class="font" font-size="10" font-weight="700" fill="#ffffff">8</text></g>
+        <text x="336" y="35" class="font" font-size="14" fill="#cbd5e1">›</text>
+      </g>
+      <g transform="translate(20 168)">
+        <rect width="352" height="62" rx="14" fill="#ffffff"/>
+        <g transform="translate(22 31)"><rect x="-20" y="-20" width="40" height="40" rx="10" fill="url(#lg-blue)"/><text y="6" text-anchor="middle" class="font" font-size="18">📊</text></g>
+        <text x="60" y="30" class="font" font-size="14" font-weight="600" fill="#0f172a">销售报表</text>
+        <text x="60" y="48" class="font" font-size="11" fill="#64748b">本周新增 26 单</text>
+        <text x="336" y="35" class="font" font-size="14" fill="#cbd5e1">›</text>
+      </g>
+    </g>
+
+    <!-- 快捷功能 4 列 -->
+    <g transform="translate(14 500)">
+      <text x="20" y="16" class="font" font-size="14" font-weight="700" fill="#0f172a">常用功能</text>
+      <g transform="translate(20 30)">
+        <g><rect width="80" height="80" rx="14" fill="#ffffff"/><g transform="translate(40 32)"><circle r="18" fill="rgba(236,72,153,0.12)"/><text y="6" text-anchor="middle" class="font" font-size="18">💬</text></g><text x="40" y="66" text-anchor="middle" class="font" font-size="11" fill="#475569">消息</text></g>
+        <g transform="translate(91 0)"><rect width="80" height="80" rx="14" fill="#ffffff"/><g transform="translate(40 32)"><circle r="18" fill="rgba(6,182,212,0.12)"/><text y="6" text-anchor="middle" class="font" font-size="18">📅</text></g><text x="40" y="66" text-anchor="middle" class="font" font-size="11" fill="#475569">日程</text></g>
+        <g transform="translate(182 0)"><rect width="80" height="80" rx="14" fill="#ffffff"/><g transform="translate(40 32)"><circle r="18" fill="rgba(139,92,246,0.12)"/><text y="6" text-anchor="middle" class="font" font-size="18">✨</text></g><text x="40" y="66" text-anchor="middle" class="font" font-size="11" fill="#475569">AI 助手</text></g>
+        <g transform="translate(273 0)"><rect width="80" height="80" rx="14" fill="#ffffff"/><g transform="translate(40 32)"><circle r="18" fill="rgba(245,158,11,0.14)"/><text y="6" text-anchor="middle" class="font" font-size="18">⚙️</text></g><text x="40" y="66" text-anchor="middle" class="font" font-size="11" fill="#475569">设置</text></g>
+      </g>
+    </g>
+
+    <!-- 系统公告 -->
+    <g transform="translate(14 632)">
+      <text x="20" y="16" class="font" font-size="14" font-weight="700" fill="#0f172a">系统公告</text>
+      <g transform="translate(20 28)">
+        <rect width="352" height="64" rx="14" fill="#ffffff"/>
+        <g transform="translate(20 32)"><rect x="-10" y="-10" width="20" height="20" rx="4" fill="#ef4444"/><text y="5" text-anchor="middle" class="font" font-size="11" font-weight="700" fill="#ffffff">!</text></g>
+        <text x="42" y="30" class="font" font-size="12" font-weight="600" fill="#0f172a">5 月新版本功能上线通知</text>
+        <text x="42" y="48" class="font" font-size="10" fill="#94a3b8">2 小时前 · 管理员</text>
+      </g>
+    </g>
+
+    <!-- TabBar -->
+    <g transform="translate(14 736)">
+      <rect width="392" height="130" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="392" y2="0" stroke="#f1f5f9"/>
+      <g transform="translate(0 18)">
+        <g><rect width="98" height="70" fill="transparent"/><g transform="translate(49 22)"><circle r="16" fill="rgba(99,102,241,0.12)"/><text y="6" text-anchor="middle" class="font" font-size="18">🏠</text></g><text x="49" y="58" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#6366f1">首页</text></g>
+        <g transform="translate(98 0)"><g transform="translate(49 22)"><text y="6" text-anchor="middle" class="font" font-size="20">📋</text></g><text x="49" y="58" text-anchor="middle" class="font" font-size="11" fill="#94a3b8">工作台</text></g>
+        <g transform="translate(196 0)"><g transform="translate(49 22)"><text y="6" text-anchor="middle" class="font" font-size="20">💬</text></g><text x="49" y="58" text-anchor="middle" class="font" font-size="11" fill="#94a3b8">消息</text></g>
+        <g transform="translate(294 0)"><g transform="translate(49 22)"><text y="6" text-anchor="middle" class="font" font-size="20">👤</text></g><text x="49" y="58" text-anchor="middle" class="font" font-size="11" fill="#94a3b8">我的</text></g>
+      </g>
+      <rect x="152" y="120" width="88" height="4" rx="2" fill="#0f172a"/>
+    </g>
+  </g>
+
+  <!-- ============ 右侧浮卡：特性说明 ============ -->
+  <g transform="translate(1240 130)">
+    <rect width="286" height="120" rx="14" fill="#ffffff" filter="url(#fx-card)"/>
+    <g transform="translate(16 40)"><circle r="18" fill="rgba(16,185,129,0.12)"/><text y="6" text-anchor="middle" class="font" font-size="18">🔒</text></g>
+    <text x="52" y="34" class="font" font-size="13" font-weight="700" fill="#0f172a">复用后端鉴权</text>
+    <text x="52" y="56" class="font" font-size="11" fill="#64748b">Web 端 auth-token 与</text>
+    <text x="52" y="74" class="font" font-size="11" fill="#64748b">UniApp access_token</text>
+    <text x="52" y="92" class="font" font-size="11" fill="#64748b">统一由框架下发管理</text>
+  </g>
+  <g transform="translate(1240 270)">
+    <rect width="286" height="120" rx="14" fill="#ffffff" filter="url(#fx-card)"/>
+    <g transform="translate(16 40)"><circle r="18" fill="rgba(99,102,241,0.12)"/><text y="6" text-anchor="middle" class="font" font-size="18">🧩</text></g>
+    <text x="52" y="34" class="font" font-size="13" font-weight="700" fill="#0f172a">插件页面即装即用</text>
+    <text x="52" y="56" class="font" font-size="11" fill="#64748b">installed/*/pages 目录</text>
+    <text x="52" y="74" class="font" font-size="11" fill="#64748b">下的页面通过系统统一</text>
+    <text x="52" y="92" class="font" font-size="11" fill="#64748b">路由自动注册生效</text>
+  </g>
+  <g transform="translate(1240 410)">
+    <rect width="286" height="120" rx="14" fill="#ffffff" filter="url(#fx-card)"/>
+    <g transform="translate(16 40)"><circle r="18" fill="rgba(236,72,153,0.12)"/><text y="6" text-anchor="middle" class="font" font-size="18">📡</text></g>
+    <text x="52" y="34" class="font" font-size="13" font-weight="700" fill="#0f172a">request.js 统一封装</text>
+    <text x="52" y="56" class="font" font-size="11" fill="#64748b">get/post/put/del</text>
+    <text x="52" y="74" class="font" font-size="11" fill="#64748b">自动注入 token、401</text>
+    <text x="52" y="92" class="font" font-size="11" fill="#64748b">跳登录、错误统一提示</text>
+  </g>
+  <g transform="translate(1240 550)">
+    <rect width="286" height="120" rx="14" fill="#ffffff" filter="url(#fx-card)"/>
+    <g transform="translate(16 40)"><circle r="18" fill="rgba(245,158,11,0.14)"/><text y="6" text-anchor="middle" class="font" font-size="18">🎨</text></g>
+    <text x="52" y="34" class="font" font-size="13" font-weight="700" fill="#0f172a">原生风格 TabBar</text>
+    <text x="52" y="56" class="font" font-size="11" fill="#64748b">GkTabBar 组件在各端</text>
+    <text x="52" y="74" class="font" font-size="11" fill="#64748b">自动适配 iOS / Android</text>
+    <text x="52" y="92" class="font" font-size="11" fill="#64748b">安全区与指示条</text>
+  </g>
+
+  <!-- 左下统计 -->
+  <g transform="translate(80 800)">
+    <text class="font" font-size="11" fill="#94a3b8">与 Web / WPF 共用</text>
+    <text y="26" class="font" font-size="16" font-weight="700" fill="#0f172a">同一套业务 API、同一套权限点</text>
+    <text y="50" class="font" font-size="13" fill="#475569">改一次，三端同步生效</text>
+  </g>
+</svg>

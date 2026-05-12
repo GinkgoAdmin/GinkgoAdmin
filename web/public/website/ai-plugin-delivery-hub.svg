@@ -1,0 +1,316 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">GinkgoAdmin 产品能力总览</title>
+  <desc id="desc">GinkgoAdmin 把 AI 能力、插件化模块与多端交付统一汇聚到分层底座之上，让每一次项目交付都沉淀为可复用的业务资产。</desc>
+
+  <defs>
+    <linearGradient id="hub" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#3FD8FF"/>
+      <stop offset="0.5" stop-color="#4D6BFF"/>
+      <stop offset="1" stop-color="#9163FF"/>
+    </linearGradient>
+    <linearGradient id="cardBlue" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#1B2A4D" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#0D1730" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="cardGreen" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#10342A" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#0B1F1A" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="cardPurple" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#241B40" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#15102A" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="cardOrange" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#2D2438" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#1A1326" stop-opacity="0.96"/>
+    </linearGradient>
+    <linearGradient id="hubBand" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#0F1D3A" stop-opacity="0.92"/>
+      <stop offset="0.5" stop-color="#162A50" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#0F1D3A" stop-opacity="0.92"/>
+    </linearGradient>
+    <linearGradient id="assetBar" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#FFC368"/>
+      <stop offset="1" stop-color="#FF8E5A"/>
+    </linearGradient>
+    <radialGradient id="hubGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(640 360) scale(420 320)">
+      <stop stop-color="#5A8CFF" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+
+    <marker id="arrCyan" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L11 6 L0 12 Z" fill="#7CE0FF"/>
+    </marker>
+    <marker id="arrOrange" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0 L11 6 L0 12 Z" fill="#FFC368"/>
+    </marker>
+
+    <style>
+      .cap-t   { font: 700 19px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #F2F8FF; }
+      .cap-d   { font: 500 13px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #9FB4D6; }
+      .cap-d-g { font: 500 13px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #9FE5C4; }
+      .cap-d-p { font: 500 13px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #C9B8FF; }
+      .cap-d-o { font: 500 13px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #FFD89A; }
+
+      .hub-t   { font: 700 22px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #F4FBFF; letter-spacing: 1.5px; }
+      .hub-s   { font: 500 13px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #B6CCEC; letter-spacing: 0.5px; }
+
+      .pillar-t{ font: 700 16px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #F2F8FF; }
+      .pillar-d{ font: 500 12px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #9FB4D6; }
+
+      .asset-t { font: 700 17px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #FFE7BE; letter-spacing: 0.5px; }
+      .asset-d { font: 500 12px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #FFD89A; }
+      .asset-tag{font: 600 12px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #FFE2B0; }
+
+      .lane    { font: 700 12px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #7FA0CC; letter-spacing: 1.5px; }
+      .reflow  { font: 700 13px "Microsoft YaHei","PingFang SC",Arial,sans-serif; fill: #FFE2B0; letter-spacing: 0.5px; }
+    </style>
+  </defs>
+
+  <!-- 背景柔光 -->
+  <rect width="1280" height="720" fill="url(#hubGlow)"/>
+
+  <!-- ==================================================== -->
+  <!-- 第一层：三大能力入口                                   -->
+  <!-- ==================================================== -->
+  <g transform="translate(40 40)">
+    <text class="lane" x="0" y="0">能力入口</text>
+    <line x1="76" y1="-5" x2="1200" y2="-5" stroke="#5DD8FF" stroke-opacity="0.18"/>
+  </g>
+
+  <!-- 卡片 1：AI 能力（绿色） -->
+  <g transform="translate(80 70)" filter="url(#shadow)">
+    <rect width="340" height="148" rx="22" fill="url(#cardGreen)" stroke="#6CF0B8" stroke-opacity="0.5"/>
+    <g transform="translate(28 28)">
+      <circle r="26" cx="26" cy="26" fill="#0E2820" stroke="#6CF0B8" stroke-opacity="0.7"/>
+      <path d="M28 12 L18 30 H26 L24 42 L36 22 H28 Z" fill="#6CF0B8"/>
+    </g>
+    <text class="cap-t"   x="92" y="48">AI 能力</text>
+    <text class="cap-d-g" x="92" y="70">让 AI 进入业务系统的设计与对话</text>
+    <g transform="translate(28 96)">
+      <circle cx="6" cy="6" r="3" fill="#6CF0B8"/>
+      <text class="cap-d-g" x="18" y="10">AI 引擎会话 · 元数据设计 · 代码生成</text>
+      <circle cx="6" cy="28" r="3" fill="#6CF0B8"/>
+      <text class="cap-d-g" x="18" y="32">AI Tool Calling · 调用业务接口</text>
+    </g>
+  </g>
+
+  <!-- 卡片 2：插件化模块（蓝色） -->
+  <g transform="translate(470 70)" filter="url(#shadow)">
+    <rect width="340" height="148" rx="22" fill="url(#cardBlue)" stroke="#7BE6FF" stroke-opacity="0.55"/>
+    <g transform="translate(28 28)">
+      <circle r="26" cx="26" cy="26" fill="#0F2440" stroke="#7BE6FF" stroke-opacity="0.7"/>
+      <rect x="14" y="14" width="11" height="11" rx="2" fill="none" stroke="#9FEAFF" stroke-width="2"/>
+      <rect x="27" y="14" width="11" height="11" rx="2" fill="none" stroke="#9FEAFF" stroke-width="2"/>
+      <rect x="20" y="27" width="11" height="11" rx="2" fill="#9FEAFF" fill-opacity="0.85" stroke="#9FEAFF" stroke-width="2"/>
+    </g>
+    <text class="cap-t" x="92" y="48">插件化模块</text>
+    <text class="cap-d" x="92" y="70">按规范叠插件，不动主框架</text>
+    <g transform="translate(28 96)">
+      <circle cx="6" cy="6" r="3" fill="#7BE6FF"/>
+      <text class="cap-d" x="18" y="10">ALC 隔离加载 · Contracts 契约边界</text>
+      <circle cx="6" cy="28" r="3" fill="#7BE6FF"/>
+      <text class="cap-d" x="18" y="32">独立启停 · 独立升级 · 插件商店</text>
+    </g>
+  </g>
+
+  <!-- 卡片 3：多端交付（紫色） -->
+  <g transform="translate(860 70)" filter="url(#shadow)">
+    <rect width="340" height="148" rx="22" fill="url(#cardPurple)" stroke="#A78BFF" stroke-opacity="0.55"/>
+    <g transform="translate(28 28)">
+      <circle r="26" cx="26" cy="26" fill="#1A1340" stroke="#A78BFF" stroke-opacity="0.7"/>
+      <rect x="11" y="16" width="20" height="14" rx="2" fill="none" stroke="#C4A5FF" stroke-width="2"/>
+      <rect x="33" y="13" width="9" height="20" rx="2" fill="none" stroke="#C4A5FF" stroke-width="2"/>
+      <path d="M14 34 h14" stroke="#C4A5FF" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <text class="cap-t"   x="92" y="48">多端交付</text>
+    <text class="cap-d-p" x="92" y="70">一套业务，覆盖管理端到桌面端</text>
+    <g transform="translate(28 96)">
+      <circle cx="6" cy="6" r="3" fill="#C4A5FF"/>
+      <text class="cap-d-p" x="18" y="10">Web 后台 · 前台门户 · UniApp · WPF</text>
+      <circle cx="6" cy="28" r="3" fill="#C4A5FF"/>
+      <text class="cap-d-p" x="18" y="32">统一鉴权 · 统一接口 · 多端复用</text>
+    </g>
+  </g>
+
+  <!-- 三条向下的汇聚连线 -->
+  <g fill="none" stroke-width="2">
+    <path id="convA" d="M250 220 C 250 270 400 290 540 318" stroke="#6CF0B8" stroke-opacity="0.55" marker-end="url(#arrCyan)"/>
+    <path id="convB" d="M640 220 C 640 270 640 290 640 318" stroke="#7BE6FF" stroke-opacity="0.6" marker-end="url(#arrCyan)"/>
+    <path id="convC" d="M1030 220 C 1030 270 880 290 740 318" stroke="#A78BFF" stroke-opacity="0.55" marker-end="url(#arrCyan)"/>
+  </g>
+
+  <!-- 流光小球：沿汇聚路径运动 -->
+  <g>
+    <circle r="5" fill="#6CF0B8" opacity="0.95">
+      <animateMotion dur="3.2s" repeatCount="indefinite" rotate="auto">
+        <mpath href="#convA"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="3.2s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="5" fill="#7BE6FF" opacity="0.95">
+      <animateMotion dur="3.2s" begin="0.6s" repeatCount="indefinite" rotate="auto">
+        <mpath href="#convB"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="3.2s" begin="0.6s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="5" fill="#C4A5FF" opacity="0.95">
+      <animateMotion dur="3.2s" begin="1.2s" repeatCount="indefinite" rotate="auto">
+        <mpath href="#convC"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="3.2s" begin="1.2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- ==================================================== -->
+  <!-- 第二层：分层底座（核心）                               -->
+  <!-- ==================================================== -->
+  <g transform="translate(40 270)">
+    <text class="lane" x="0" y="0">分层底座</text>
+    <line x1="76" y1="-5" x2="1200" y2="-5" stroke="#5DD8FF" stroke-opacity="0.18"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="80" y="320" width="1120" height="180" rx="28" fill="url(#hubBand)" stroke="url(#hub)" stroke-width="2">
+      <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="3.6s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="100" y="338" width="1080" height="144" rx="22" fill="#0E1A36" fill-opacity="0.55" stroke="#66C9FF" stroke-opacity="0.35"/>
+
+    <!-- 标题区 -->
+    <g transform="translate(140 360)">
+      <g transform="translate(0 22)">
+        <path d="M40 0 L78 14 V44 C78 66 60 80 40 88 C20 80 2 66 2 44 V14 Z"
+              fill="#13264A" stroke="url(#hub)" stroke-width="2"/>
+        <rect x="22" y="28" width="16" height="16" rx="3" fill="#16294A" stroke="#7BE6FF" stroke-opacity="0.8"/>
+        <rect x="42" y="28" width="16" height="16" rx="3" fill="#16294A" stroke="#7BE6FF" stroke-opacity="0.8"/>
+        <rect x="32" y="48" width="16" height="16" rx="3" fill="url(#hub)" fill-opacity="0.85" stroke="#CFF3FF" stroke-opacity="0.85"/>
+      </g>
+      <text class="hub-t" x="100" y="50">DDD 分层底座</text>
+      <text class="hub-s" x="100" y="74">Api · Application · Domain · Infrastructure</text>
+    </g>
+
+    <!-- 4 大支柱 -->
+    <g transform="translate(560 360)">
+      <!-- 1: 鉴权与组织 -->
+      <g>
+        <rect width="146" height="120" rx="14" fill="#0F1F3D" stroke="#7BE6FF" stroke-opacity="0.4"/>
+        <g transform="translate(16 16)">
+          <rect width="28" height="28" rx="8" fill="#142B52" stroke="#9FEAFF" stroke-opacity="0.7"/>
+          <path d="M14 4 L22 8 V14 C22 19 18 23 14 24 C10 23 6 19 6 14 V8 Z" fill="none" stroke="#9FEAFF" stroke-width="1.8"/>
+        </g>
+        <text class="pillar-t" x="56" y="32">鉴权与组织</text>
+        <text class="pillar-d" x="16" y="74">用户 · 角色 · 部门</text>
+        <text class="pillar-d" x="16" y="92">RBAC 权限</text>
+        <text class="pillar-d" x="16" y="110">多租户隔离</text>
+      </g>
+      <!-- 2: 数据与字典 -->
+      <g transform="translate(160 0)">
+        <rect width="146" height="120" rx="14" fill="#0F1F3D" stroke="#7BE6FF" stroke-opacity="0.4"/>
+        <g transform="translate(16 16)">
+          <rect width="28" height="28" rx="8" fill="#142B52" stroke="#9FEAFF" stroke-opacity="0.7"/>
+          <ellipse cx="14" cy="9" rx="8" ry="3" fill="none" stroke="#9FEAFF" stroke-width="1.8"/>
+          <path d="M6 9 V19 C6 21 10 22 14 22 C18 22 22 21 22 19 V9" fill="none" stroke="#9FEAFF" stroke-width="1.8"/>
+        </g>
+        <text class="pillar-t" x="56" y="32">数据与字典</text>
+        <text class="pillar-d" x="16" y="74">SqlSugar 多库</text>
+        <text class="pillar-d" x="16" y="92">数据字典</text>
+        <text class="pillar-d" x="16" y="110">配置中心</text>
+      </g>
+      <!-- 3: 审计与日志 -->
+      <g transform="translate(320 0)">
+        <rect width="146" height="120" rx="14" fill="#0F1F3D" stroke="#7BE6FF" stroke-opacity="0.4"/>
+        <g transform="translate(16 16)">
+          <rect width="28" height="28" rx="8" fill="#142B52" stroke="#9FEAFF" stroke-opacity="0.7"/>
+          <rect x="7" y="6" width="14" height="16" rx="2" fill="none" stroke="#9FEAFF" stroke-width="1.6"/>
+          <path d="M10 11 h8 M10 14 h8 M10 17 h5" stroke="#9FEAFF" stroke-width="1.4" stroke-linecap="round"/>
+        </g>
+        <text class="pillar-t" x="56" y="32">审计与日志</text>
+        <text class="pillar-d" x="16" y="74">操作日志</text>
+        <text class="pillar-d" x="16" y="92">登录日志</text>
+        <text class="pillar-d" x="16" y="110">接口日志</text>
+      </g>
+      <!-- 4: 实时与文件 -->
+      <g transform="translate(480 0)">
+        <rect width="146" height="120" rx="14" fill="#0F1F3D" stroke="#7BE6FF" stroke-opacity="0.4"/>
+        <g transform="translate(16 16)">
+          <rect width="28" height="28" rx="8" fill="#142B52" stroke="#9FEAFF" stroke-opacity="0.7"/>
+          <path d="M14 6 a8 8 0 0 1 8 8 M14 10 a4 4 0 0 1 4 4" stroke="#9FEAFF" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <circle cx="14" cy="20" r="2" fill="#9FEAFF"/>
+        </g>
+        <text class="pillar-t" x="56" y="32">实时与文件</text>
+        <text class="pillar-d" x="16" y="74">SignalR 推送</text>
+        <text class="pillar-d" x="16" y="92">在线状态</text>
+        <text class="pillar-d" x="16" y="110">附件 / OSS</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 底座向下输出箭头 -->
+  <g fill="none" stroke-width="2.4">
+    <path id="downFlow" d="M640 504 L640 560" stroke="#FFC368" stroke-opacity="0.85" marker-end="url(#arrOrange)"/>
+  </g>
+  <!-- 沉淀方向流光 -->
+  <circle r="4" fill="#FFD58A" opacity="0.95">
+    <animateMotion dur="2s" repeatCount="indefinite">
+      <mpath href="#downFlow"/>
+    </animateMotion>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <g transform="translate(670 532)">
+    <rect x="0" y="-12" width="124" height="24" rx="12" fill="#241734" stroke="#FFC368" stroke-opacity="0.7"/>
+    <text class="reflow" x="62" y="5" text-anchor="middle">沉淀为资产</text>
+  </g>
+
+  <!-- ==================================================== -->
+  <!-- 第三层：项目交付沉淀为资产                             -->
+  <!-- ==================================================== -->
+  <g transform="translate(40 562)">
+    <text class="lane" x="0" y="0">资产沉淀</text>
+    <line x1="76" y1="-5" x2="1200" y2="-5" stroke="#FFC368" stroke-opacity="0.22"/>
+  </g>
+
+  <g transform="translate(80 580)" filter="url(#shadow)">
+    <rect width="1120" height="120" rx="22" fill="url(#cardOrange)" stroke="#FFC368" stroke-opacity="0.55"/>
+
+    <text class="asset-t" x="32" y="34">每一次项目交付 → 都沉淀为可复用的业务资产</text>
+    <text class="asset-d" x="32" y="56">从一次性项目走向可累计的产品线</text>
+
+    <g transform="translate(32 76)">
+      <rect x="0"   y="0" width="300" height="30" rx="8" fill="#3A2A18" stroke="#FFC368" stroke-opacity="0.55"/>
+      <text class="asset-tag" x="14" y="20">项目 1 · 100%</text>
+      <rect x="316" y="0" width="220" height="30" rx="8" fill="#3A2A18" stroke="#FFC368" stroke-opacity="0.6"/>
+      <text class="asset-tag" x="330" y="20">项目 2 · 60%</text>
+      <rect x="552" y="0" width="160" height="30" rx="8" fill="#3A2A18" stroke="#FFC368" stroke-opacity="0.65"/>
+      <text class="asset-tag" x="566" y="20">项目 3 · 35%</text>
+      <rect x="728" y="0" width="120" height="30" rx="8" fill="url(#assetBar)" stroke="#FFD58A" stroke-opacity="0.85">
+        <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="2.4s" repeatCount="indefinite"/>
+      </rect>
+      <text class="asset-tag" x="742" y="20" fill="#231408">项目 N · 15%</text>
+      <g transform="translate(870 0)">
+        <path d="M0 15 H160" stroke="#FFC368" stroke-width="2.2" stroke-opacity="0.9" marker-end="url(#arrOrange)"/>
+        <text class="asset-tag" x="80" y="-2" text-anchor="middle" fill="#FFE7BE">越做越快</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- 反哺回流：右下资产 → 顶部入口 -->
+  <path id="reflowPath" d="M1200 580 C 1260 480 1260 80 1080 60 C 900 50 380 50 200 60 C 60 70 60 220 80 230"
+        stroke="#FFC368" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="5 7" fill="none" marker-end="url(#arrOrange)">
+    <animate attributeName="stroke-dashoffset" from="0" to="-120" dur="6s" repeatCount="indefinite"/>
+  </path>
+  <!-- 反哺方向流光 -->
+  <circle r="4" fill="#FFC368" opacity="0">
+    <animateMotion dur="6s" repeatCount="indefinite">
+      <mpath href="#reflowPath"/>
+    </animateMotion>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="6s" repeatCount="indefinite"/>
+  </circle>
+  <g transform="translate(640 30)">
+    <rect x="-110" y="-15" width="220" height="30" rx="15" fill="#1B1430" stroke="#FFC368" stroke-opacity="0.7"/>
+    <text class="reflow" x="0" y="5" text-anchor="middle">资产反哺：让下一个项目更快交付</text>
+  </g>
+</svg>

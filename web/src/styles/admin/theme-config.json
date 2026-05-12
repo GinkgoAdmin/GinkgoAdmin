@@ -1,0 +1,38 @@
+{
+  "$schema": "https://example.com/ginkgo-admin/theme-config.schema.json",
+  "themes": [
+    {
+      "name": "light",
+      "title": "Light",
+      "description": "Default light theme using admin CSS variables.",
+      "author": "Ginkgo Team",
+      "version": "1.0.0",
+      "preview": "/assets/themes/light-preview.png",
+      "entry": {
+        "variables": "./themes/light/variables.css",
+        "layout": "./themes/light/layout.css",
+        "components": "./themes/light/components.css",
+        "animations": "./themes/light/animations.css",
+        "overrides": "./themes/light/overrides.css",
+        "pages": "./themes/light/pages.css"
+      }
+    },
+    {
+      "name": "dark",
+      "title": "Dark",
+      "description": "Dark theme tuned for low-light environments.",
+      "author": "Ginkgo Team",
+      "version": "1.0.0",
+      "preview": "/assets/themes/dark-preview.png",
+      "entry": {
+        "variables": "./themes/dark/variables.css",
+        "layout": "./themes/dark/layout.css",
+        "components": "./themes/dark/components.css",
+        "animations": "./themes/dark/animations.css",
+        "overrides": "./themes/dark/overrides.css",
+        "pages": "./themes/dark/pages.css"
+      }
+    }
+  ]
+}
+

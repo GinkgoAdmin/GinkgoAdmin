@@ -1,0 +1,12 @@
+<Project>
+  <!--
+    模块项目使用默认输出路径（bin/Debug/net8.0/），
+    不继承根目录 Directory.Build.props 的 dist/ 重定向。
+    这样 DevModuleBootstrap 可以直接从 server/bin/Debug/net8.0/ 加载模块 DLL。
+  -->
+  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <!-- 确保类库输出目录包含 NuGet 依赖，便于 Dev 加载器独立解析类型 -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+</Project>

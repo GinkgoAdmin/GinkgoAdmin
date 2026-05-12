@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <!-- 获取当前正在编译的 SLN 的名称（不带扩展名），例如 GinkgoAdmin.Free -->
+    <CurrentSolutionName>$(SolutionName)</CurrentSolutionName>
+
+    <!-- 如果没有使用 SLN 编译（比如由于某个工具直接编译单个 csproj），提供一个降级方案 -->
+    <CurrentSolutionName Condition="'$(CurrentSolutionName)' == '' Or '$(CurrentSolutionName)' == '*Undefined*'">Standalone</CurrentSolutionName>
+
+    <!-- 设置统一的根输出路径，以 .sln 名字作为最后一个子目录名称 -->
+    <BaseOutputPath>$(MSBuildThisFileDirectory)dist\$(CurrentSolutionName)\obj\</BaseOutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)dist\$(CurrentSolutionName)\bin\$(Configuration)\</OutputPath>
+    
+    <!-- 追加目标框架的标志以便不被覆写 -->
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+</Project>

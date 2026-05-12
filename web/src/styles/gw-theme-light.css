@@ -1,0 +1,60 @@
+/* =============================================================
+   GinkgoAdmin 官网 - 浅色主题 (Light Theme)
+   作用选择器：.ginkgo-web（默认值，不加任何修饰类）
+   可扩展：新增主题只需新建 gw-theme-xxx.css，用 .ginkgo-web.xxx 作选择器
+   ============================================================= */
+
+.ginkgo-web {
+  /* ---------- 表面 / 背景 ---------- */
+  --gw-bg-body:        #ffffff;
+  --gw-bg-alt:         #f8fafc;
+  --gw-bg-hero:        #020617;
+  --gw-bg-card:        #ffffff;
+  --gw-bg-card-hover:  #f8fafc;
+  --gw-bg-footer:      #0a0f1e;
+
+  /* 导航栏滚动后背景（毛玻璃效果） */
+  --gw-bg-header:        rgba(255, 255, 255, 0.88);
+  --gw-bg-header-border: rgba(0, 0, 0, 0.05);
+  --gw-bg-header-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  /* 代码 / 高亮块 */
+  --gw-bg-code:        #f1f5f9;
+  --gw-bg-code-header: #e2e8f0;
+
+  /* ---------- 文字 ---------- */
+  --gw-text-heading:   #0f172a;
+  --gw-text-body:      #475569;
+  --gw-text-muted:     #94a3b8;
+  --gw-text-hero:      #ffffff;
+  --gw-text-hero-sub:  rgba(226, 232, 240, 0.88);
+  --gw-text-link:      #2563eb;
+  --gw-text-code:      #0f172a;
+
+  /* ---------- 边框 ---------- */
+  --gw-border:         #e2e8f0;
+  --gw-border-light:   #f1f5f9;
+  --gw-border-focus:   #2563eb;
+
+  /* ---------- 阴影 ---------- */
+  --gw-shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.04);
+  --gw-shadow-md:  0 4px 24px rgba(0, 0, 0, 0.05);
+  --gw-shadow-lg:  0 12px 40px rgba(0, 0, 0, 0.06);
+  --gw-shadow-xl:  0 24px 48px rgba(0, 0, 0, 0.08);
+
+  /* ---------- 输入控件 ---------- */
+  --gw-input-bg:      #ffffff;
+  --gw-input-border:  #d1d5db;
+  --gw-input-text:    #0f172a;
+  --gw-input-placeholder: #94a3b8;
+
+  /* ---------- 主色亮色背景（用于 badge/tag/label） ---------- */
+  --gw-primary-light:  #eff6ff;
+  --gw-primary-muted:  rgba(37, 99, 235, 0.08);
+
+  /* ---------- 滚动条 ---------- */
+  --gw-scrollbar-track: #f1f5f9;
+  --gw-scrollbar-thumb: #cbd5e1;
+
+  color-scheme: light;
+}

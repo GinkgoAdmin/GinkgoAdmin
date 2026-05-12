@@ -1,0 +1,283 @@
+{
+  "hero": {
+    "badge": "项目交付 · 插件复用 · 多端协同",
+    "title": "一套面向项目交付<br/>与生态复用的平台",
+    "subtitle": "GinkgoAdmin 基于 .NET 8、Vue 3、UniApp 与 WPF 构建，提供权限、租户、审计、插件隔离和 AI Tool Calling 等通用能力，帮助开发团队把一次性项目沉淀为可复用、可扩展、可持续维护的交付资产。",
+    "primary": { "label": "免费获取", "to": "/web/download" },
+    "secondary": { "label": "查看文档", "to": "/web/docs" },
+    "productShot": {
+      "src": "/website/ai-plugin-delivery-hub.svg",
+      "alt": "GinkgoAdmin 产品能力总览：AI 能力、插件化模块、多端交付与 DDD 分层底座"
+    }
+  },
+
+  "audience": {
+    "head": {
+      "label": "为你的角色量身定制",
+      "title": "无论你是谁，GinkgoAdmin 都有适合的入口"
+    },
+    "items": [
+      {
+        "title": "外包团队",
+        "desc": "把权限、租户、菜单、审计等通用能力标准化，减少每个项目重复搭建底座的时间，让做过的模块在同类客户中继续复用。",
+        "icon": "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75",
+        "bg": "linear-gradient(135deg,#3b82f6,#2563eb)",
+        "to": "/web/pricing",
+        "cta": "查看版本方案"
+      },
+      {
+        "title": "独立开发者",
+        "desc": "用一套工程体系覆盖 Web、移动端和桌面端，把有限精力放在业务差异化上；沉淀出的共性模块也能继续复用到后续项目。",
+        "icon": "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
+        "bg": "linear-gradient(135deg,#8b5cf6,#7c3aed)",
+        "to": "/web/download",
+        "cta": "免费下载"
+      },
+      {
+        "title": "垂直行业方案商",
+        "desc": "把行业经验沉淀成可配置、可扩展的系统能力。统一底座可以支撑多个客户版本，降低私有化交付和后续维护的复杂度。",
+        "icon": "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+        "bg": "linear-gradient(135deg,#10b981,#059669)",
+        "to": "/web/docs",
+        "cta": "阅读技术文档"
+      }
+    ]
+  },
+
+  "arch": {
+    "head": {
+      "label": "产品概览",
+      "title": "一图读懂 GinkgoAdmin"
+    },
+    "image": {
+      "src": "/website/ginkgo-system-architecture.svg",
+      "alt": "GinkgoAdmin 系统完整架构图：客户端 / 接入层 / 鉴权 / 业务模块 / AI Core / DDD 框架核心 / 数据存储"
+    }
+  },
+
+  "features": {
+    "head": {
+      "label": "核心能力",
+      "title": "为什么选择 GinkgoAdmin",
+      "subtitle": "把重复的底座能力标准化，把差异化业务沉淀为可复用插件，让系统更稳地交付、扩展与升级。"
+    },
+    "items": [
+      {
+        "icon": "puzzle",
+        "title": "插件化项目沉淀",
+        "desc": "业务能力以插件方式组织，配合 ALC 隔离和 Contracts 契约降低依赖冲突，让同类项目可以复用已有模块。",
+        "tags": ["ALC 隔离", "Contracts"],
+        "color": "blue"
+      },
+      {
+        "icon": "devices",
+        "title": "多端协同交付",
+        "desc": "同一套后端能力可服务 Vue 3 后台、UniApp 移动端和 WPF 桌面端，适合需要多端入口的业务系统。",
+        "tags": ["Vue 3", "UniApp", "WPF"],
+        "color": "violet"
+      },
+      {
+        "icon": "shield",
+        "title": "一致的交付边界",
+        "desc": "RBAC 权限、多租户、数据字典、操作审计等能力统一内置，减少项目后期因基础能力不一致带来的维护成本。",
+        "tags": ["权限", "租户", "审计"],
+        "color": "green"
+      },
+      {
+        "icon": "brain",
+        "title": "业务可接入 AI",
+        "desc": "无需从零搭建 AI 工程，给已有业务方法打一个标注，它就能被 AI 理解和调用。删除、支付等高危操作会自动弹出人工审批，让 AI 能力安全落地到实际业务中。",
+        "tags": ["AI 对话", "Tool Calling", "人工审批"],
+        "color": "cyan"
+      },
+      {
+        "icon": "globe",
+        "title": "SaaS 到私有化无缝切换",
+        "desc": "一套代码同时覆盖 SaaS 订阅与私有化部署两种商业模式，不同客户的数据天然隔离互不干扰。业务边界扩大，维护成本不翻倍。",
+        "tags": ["多租户", "SaaS", "私有化交付"],
+        "color": "orange"
+      },
+      {
+        "icon": "box",
+        "title": "面向业务的可视化设计器",
+        "desc": "在设计器里描述业务意图、定义模块边界，而不是填写表字段。设计完成后可手动生成，也可交由 AI 辅助——框架规范作为硬约束，小模型也能稳定产出结构清晰、权限完整、符合业务语义的系统代码。",
+        "tags": ["MetaDesigner", "CodeDesigner", "AI 协同"],
+        "color": "rose"
+      }
+    ]
+  },
+
+  "demo": {
+    "head": {
+      "label": "眼见为实",
+      "title": "体验核心功能",
+      "subtitle": "点击左侧能力切换右侧主视觉，点击图片查看大图；多图场景可用下方指示切换。"
+    },
+    "access": {
+      "url": "https://demo.ginkgoadmin.com/ginkgo-admin",
+      "label": "demo.ginkgoadmin.com",
+      "account": "demo",
+      "password": "demo@2026",
+      "note": "演示站数据每日凌晨自动重置；如需企业版完整功能请联系我们。",
+      "ctaLabel": "立即体验 →"
+    },
+    "tabs": [
+      {
+        "label": "权限管理",
+        "desc": "RBAC · 数据范围",
+        "icon": "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
+        "highlights": ["角色 × 权限点 × 数据范围", "按钮级权限", "租户隔离", "操作审计"],
+        "images": [
+          { "src": "/website/screenshots/角色权限管理.png", "caption": "角色与权限配置" },
+          { "src": "/website/screenshots/菜单管理.png", "caption": "菜单权限分配" },
+          { "src": "/website/screenshots/日志审计功能.png", "caption": "数据范围控制" }
+        ]
+      },
+      {
+        "label": "模块安装",
+        "desc": "插件商店 · 热加载",
+        "icon": "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4",
+        "images": [
+          { "src": "/website/screenshots/远程插件商店.png", "caption": "插件商店浏览" },
+          { "src": "/website/screenshots/install.png", "caption": "一键安装与热加载" }
+        ]
+      },
+      {
+        "label": "AI 对话",
+        "desc": "Tool Calling · 审批",
+        "icon": "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
+        "images": [
+          { "src": "/website/screenshots/ai-chat.svg", "caption": "AI 对话界面" },
+          { "src": "/website/screenshots/ai-tool-call.svg", "caption": "Tool Calling 业务调用" },
+          { "src": "/website/screenshots/ai-approval.svg", "caption": "高危操作人工审批" }
+        ]
+      },
+      {
+        "label": "移动端",
+        "desc": "UniApp 多端复用",
+        "icon": "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z",
+        "highlights": ["Web / iOS / Android / 小程序 同一套能力", "统一 request 封装自动注入 token", "后台字段变更移动端自动跟随", "原生 TabBar 与安全区适配"],
+        "images": [
+          { "src": "/website/screenshots/mobile-home.svg", "caption": "UniApp 移动端首页" },
+          { "src": "/website/screenshots/mobile-list.svg", "caption": "移动端列表与操作" }
+        ]
+      },
+      {
+        "label": "桌面客户端",
+        "desc": "WPF · 原生体验",
+        "icon": "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2z",
+        "highlights": ["与后端同一套 API 与权限", "自定义标题栏 + 深色菜单", "动态配置热加载无需重启", "ALC 隔离的本地模块仓库"],
+        "images": [
+          { "src": "/website/screenshots/wpf-shell.svg", "caption": "WPF 客户端主界面" },
+          { "src": "/website/screenshots/wpf-modules.svg", "caption": "模块管理与动态配置" }
+        ]
+      }
+    ]
+  },
+
+  "compare": {
+    "head": {
+      "label": "交付提效",
+      "title": "三种开发方式，投入差多少",
+      "subtitle": "以权限、菜单、租户、审计、CRUD 页面、接口联调和文档这些「可模板化工作」为对比范围，不把数据扩大成全项目工期承诺。"
+    },
+    "items": [
+      {
+        "name": "传统手写",
+        "tag": "基准",
+        "metric": "100%",
+        "metricLabel": "样板工作量",
+        "bar": "100%",
+        "tone": "old",
+        "points": [
+          "权限、租户、审计、菜单都要自己搭",
+          "接口、页面、联调、文档全部从零做"
+        ],
+        "note": "适合高度定制，但重复建设最多。"
+      },
+      {
+        "name": "AI 辅助开发",
+        "tag": "局部提速",
+        "metric": "约 55%-75%",
+        "metricLabel": "样板工作量",
+        "bar": "65%",
+        "tone": "ai",
+        "points": [
+          "2026 研究：70%+ 开发者在样板代码和文档上省时 50%+",
+          "Sonar 2026：AI 已参与 42% 提交代码，但审查压力会上升"
+        ],
+        "note": "写得更快，但底座、规范和验收仍要团队兜底。"
+      },
+      {
+        "name": "GinkgoAdmin + AI",
+        "tag": "推荐",
+        "metric": "约 20%-35%",
+        "metricLabel": "样板工作量",
+        "bar": "28%",
+        "tone": "best",
+        "points": [
+          "框架复用权限、租户、审计、插件隔离和多端底座",
+          "AI 处理剩余表单、查询、接口和文档草稿"
+        ],
+        "note": "更适合「标准底座 + 业务插件」的项目交付。"
+      }
+    ],
+    "source": {
+      "title": "数据口径",
+      "description": "AI 数据来自 2026 年公开研究：样板代码和文档任务有明确提速，但 AI 代码仍需要验证。GinkgoAdmin + AI 的区间为「官网比较范围」的拆分估算：框架先复用底座，AI 再加速剩余样板工作。",
+      "links": [
+        { "label": "GenAI SDLC 2026", "href": "https://arxiv.org/abs/2603.16975" },
+        { "label": "Sonar 2026", "href": "https://www.sonarsource.com/company/press-releases/sonar-data-reveals-critical-verification-gap-in-ai-coding/" },
+        { "label": "AI Agents 2026", "href": "https://arxiv.org/abs/2601.13597" },
+        { "label": "Productivity 2026", "href": "https://arxiv.org/abs/2602.03593" }
+      ]
+    }
+  },
+
+  "useCases": {
+    "head": {
+      "label": "典型场景",
+      "title": "这些是 GinkgoAdmin 正在解决的问题",
+      "subtitle": "以下场景描述自 GinkgoAdmin 面向的典型客户画像，帮你判断哪一条最接近你今天的起始点"
+    },
+    "items": [
+      {
+        "quote": "多客户并行交付，每家需求不同：权限、租户、菜单、审计这些底座每次都要重做一遍，交付越多越手忙脚乱。真正的底座应该把共性沉淀下来、把差异点做成可插拔的插件，让每一单都产出可复用的资产。",
+        "name": "多客户并行交付",
+        "role": "软件外包 / 政企实施团队"
+      },
+      {
+        "quote": "一个人撑起 Web 后台、移动端、桌面端的全链路交付，不想为同一个功能在三处各写一遍。需要一份底座能用一套接口、一套鉴权覆盖三端，把精力留给真正能谈单的业务。",
+        "name": "一人全栈接单",
+        "role": "独立开发者 / 自由职业"
+      },
+      {
+        "quote": "深耕某个垂直行业（如 CRM、进销存、MES、实验室管理），希望把多年积累的行业经验沉淀成可独立计费、可跨客户复用的插件，把「每次定制」转成「配置 + 插件组合」。",
+        "name": "垂直行业多版本",
+        "role": "行业方案商 / ISV"
+      },
+      {
+        "quote": "想把 AI 大规模用在业务代码生成上，但已经领教过「纯 AI 生成」在权限、租户、数据隔离和审计上的失控。需要一个坚固的底座接住 AI 的产出，让 AI 在确定性的栏杆内加速业务，而不是替代底层。",
+        "name": "AI 加速但拒绝失控",
+        "role": "希望大规模使用 AI 编码的团队"
+      },
+      {
+        "quote": "新业务要短时间内交付一个可演示、可运营的后台系统，不希望把宝贵的工程时间花在权限、字典、配置、多租户这些基础设施上，而是留给真正决定增长的业务实验和客户打磨。",
+        "name": "初创快速上线",
+        "role": "创业团队 / 新业务孵化"
+      },
+      {
+        "quote": "最担心的不是「第一次上线」，而是 2-3 年后团队换人、AI 工具换代、业务大规模增长时系统是否依然可演进、可接管。希望今天用的底座能成为明天的长期资产，而不是另一个技术债。",
+        "name": "长期可维护",
+        "role": "中大型企业 IT / 架构师"
+      }
+    ]
+  },
+
+  "finalCta": {
+    "title": "从第一个项目开始<br/>沉淀可复用交付能力",
+    "subtitle": "用统一底座降低重复建设成本，把权限、租户、多端、插件与 AI 能力纳入同一套工程体系。",
+    "primary": { "label": "免费获取", "to": "/web/download" },
+    "secondary": { "label": "查看版本方案", "to": "/web/pricing" }
+  }
+}

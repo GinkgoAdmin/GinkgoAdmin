@@ -1,0 +1,363 @@
+/* 设计令牌：统一明暗风格（以侧边菜单风格为准） */
+:root {
+	/* 品牌色（Tailwind blue 系） */
+	--brand-50: #eff6ff;
+	--brand-100: #dbeafe;
+	--brand-200: #bfdbfe;
+	--brand-300: #93c5fd;
+	--brand-400: #60a5fa;
+	--brand-500: #3b82f6;
+	--brand-600: #2563eb;
+	/* 主色 */
+	--brand-700: #1d4ed8;
+	--brand-800: #1e40af;
+	--brand-900: #1e3a8a;
+
+	/* 基础色（亮色模式） */
+	--bg-body: #f3f4f6;
+	/* gray-100 */
+	--bg-surface: #ffffff;
+	--text-primary: #1f2937;
+	/* gray-800 */
+	--text-secondary: #6b7280;
+	/* gray-500 */
+	--text-muted: #9ca3af;
+	/* gray-400 */
+	--border-color: #e5e7eb;
+	/* gray-200 */
+
+	/* 卡片变量（亮色） */
+	--card-bg: var(--bg-surface);
+	--card-border: var(--border-color);
+	--card-text: var(--text-primary);
+
+	/* 标题规范（亮色） */
+	--title-color: var(--text-primary);
+	--title-weight: 700;
+	--page-title-size: 28px;
+	--section-title-size: 20px;
+	--card-title-size: 16px;
+
+	/* Element Plus 映射（亮色） */
+	--el-color-primary: var(--brand-600);
+	--el-color-primary-light-3: var(--brand-400);
+	--el-color-primary-light-5: var(--brand-300);
+	--el-color-primary-light-7: var(--brand-200);
+	--el-color-primary-dark-2: var(--brand-700);
+	--el-text-color-primary: var(--text-primary);
+	--el-text-color-regular: var(--text-secondary);
+	--el-text-color-secondary: var(--text-muted);
+	--el-text-color-placeholder: var(--text-muted);
+	--el-bg-color: var(--bg-body);
+	--el-bg-color-overlay: var(--bg-surface);
+	--el-border-color: var(--border-color);
+
+	/* 语义色（亮色） */
+	--success-500: #10b981;
+	--success-600: #059669;
+	--success-700: #047857;
+	--warning-500: #f59e0b;
+	--warning-600: #d97706;
+	--warning-700: #b45309;
+	--danger-500: #ef4444;
+	--danger-600: #dc2626;
+	--danger-700: #b91c1c;
+	--info-500: #3b82f6;
+	--info-600: #2563eb;
+	--info-700: #1d4ed8;
+
+	--el-color-success: var(--success-500);
+	--el-color-warning: var(--warning-500);
+	--el-color-danger: var(--danger-500);
+	--el-color-info: var(--info-500);
+}
+
+.dark {
+	/* 基础色（暗色模式） */
+	--bg-body: #0f172a;
+	/* slate-900(更深) */
+	--bg-surface: #111827;
+	/* gray-900 */
+	--text-primary: #e5e7eb;
+	/* gray-200 */
+	--text-secondary: #cbd5e1;
+	/* slate-300 */
+	--text-muted: #9ca3af;
+	/* gray-400 */
+	--border-color: #374151;
+	/* gray-700 */
+
+	/* 卡片变量（暗色） */
+	--card-bg: var(--bg-surface);
+	--card-border: var(--border-color);
+	--card-text: var(--text-primary);
+
+	/* 标题规范（暗色与亮色一致使用变量） */
+	--title-color: var(--text-primary);
+
+	/* Element Plus 映射（暗色） */
+	--el-color-primary: var(--brand-400);
+	--el-color-primary-light-3: var(--brand-300);
+	--el-color-primary-light-5: var(--brand-200);
+	--el-color-primary-light-7: var(--brand-100);
+	--el-color-primary-dark-2: var(--brand-500);
+	--el-text-color-primary: var(--text-primary);
+	--el-text-color-regular: var(--text-secondary);
+	--el-text-color-secondary: var(--text-muted);
+	--el-text-color-placeholder: var(--text-muted);
+	--el-bg-color: var(--bg-body);
+	--el-bg-color-overlay: var(--bg-surface);
+	--el-border-color: var(--border-color);
+
+	/* 语义色（暗色映射到相同主阶） */
+	--el-color-success: var(--success-500);
+	--el-color-warning: var(--warning-500);
+	--el-color-danger: var(--danger-500);
+	--el-color-info: var(--info-500);
+}
+
+/* 统一卡片与容器的暗色样式（全局覆盖 Element Plus 与自定义卡片） */
+.dark .el-card,
+.dark .el-main,
+.dark .el-aside,
+.dark .el-header,
+.dark .el-footer,
+.dark .content-card,
+.dark .system-status-card,
+.dark .activity-card,
+.dark .chart-card,
+.dark .quick-actions-card,
+.dark .stats-section,
+.dark .welcome-card {
+	background-color: var(--card-bg) !important;
+	color: var(--card-text) !important;
+	border-color: var(--card-border) !important;
+}
+
+/* Element Plus 卡片与表单容器 */
+.dark .el-card {
+	background-color: var(--card-bg) !important;
+	border-color: var(--card-border) !important;
+}
+
+.dark .el-card__header {
+	background-color: transparent !important;
+	border-bottom-color: var(--card-border) !important;
+}
+
+.dark .el-form-item__label,
+.dark .el-form-item__content,
+.dark .el-table,
+.dark .el-table__header,
+.dark .el-table__body {
+	color: var(--card-text) !important;
+}
+
+/* 输入框、选择器等基础控件的暗色适配 */
+.dark .el-input__wrapper,
+.dark .el-select__wrapper,
+.dark .el-textarea__inner {
+	background-color: #1f2937 !important;
+	/* gray-800 */
+	border-color: #374151 !important;
+	color: #e5e7eb !important;
+}
+
+.dark .el-input__wrapper.is-focus,
+.dark .el-select__wrapper.is-focused {
+	border-color: #3b82f6 !important;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* 按钮 */
+.dark .el-button:not(.is-link):not(.el-button--primary):not(.el-button--text) {
+	background-color: #111827 !important;
+	border-color: #374151 !important;
+	color: #e5e7eb !important;
+}
+
+/* 统一主按钮配色与悬浮效果（明/暗一致的品牌色阶）— 排除 link 按钮 */
+.el-button--primary:not(.is-link) {
+	background-color: var(--brand-600) !important;
+	border-color: var(--brand-600) !important;
+	color: #fff !important;
+	transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.el-button--primary:not(.is-link):hover {
+	background-color: var(--brand-700) !important;
+	border-color: var(--brand-700) !important;
+}
+
+.el-button--primary:not(.is-link):active {
+	background-color: var(--brand-800) !important;
+	border-color: var(--brand-800) !important;
+}
+
+/* 语义按钮统一 — 排除 link 按钮 */
+.el-button--success:not(.is-link) {
+	background-color: var(--success-600) !important;
+	border-color: var(--success-600) !important;
+	color: #fff !important;
+}
+
+.el-button--success:not(.is-link):hover {
+	background-color: var(--success-700) !important;
+	border-color: var(--success-700) !important;
+}
+
+.el-button--warning:not(.is-link) {
+	background-color: var(--warning-600) !important;
+	border-color: var(--warning-600) !important;
+	color: #fff !important;
+}
+
+.el-button--warning:not(.is-link):hover {
+	background-color: var(--warning-700) !important;
+	border-color: var(--warning-700) !important;
+}
+
+.el-button--danger:not(.is-link) {
+	background-color: var(--danger-600) !important;
+	border-color: var(--danger-600) !important;
+	color: #fff !important;
+}
+
+.el-button--danger:not(.is-link):hover {
+	background-color: var(--danger-700) !important;
+	border-color: var(--danger-700) !important;
+}
+
+.el-button--info:not(.is-link) {
+	background-color: var(--info-600) !important;
+	border-color: var(--info-600) !important;
+	color: #fff !important;
+}
+
+.el-button--info:not(.is-link):hover {
+	background-color: var(--info-700) !important;
+	border-color: var(--info-700) !important;
+}
+
+/* 表格边框与分割线 */
+.dark .el-table__inner-wrapper::before,
+.dark .el-table__border-left-patch {
+	background-color: #283344 !important;
+}
+
+/* 表格：表头与行悬浮统一 */
+.el-table th.el-table__cell {
+	background: transparent !important;
+	color: var(--text-secondary) !important;
+}
+
+.dark .el-table th.el-table__cell {
+	background: #1e2736 !important;
+	color: #8b9bb5 !important;
+}
+
+.el-table__body tr:hover>td {
+	background: #f9fafb !important;
+}
+
+.dark .el-table__body tr:hover>td {
+	background: #253245 !important;
+}
+
+/* 标题/正文/提示文字：全站统一 */
+body,
+.el-main,
+.content-wrapper {
+	color: var(--text-primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: var(--text-primary);
+}
+
+p,
+.el-text,
+.el-form-item__label,
+.el-breadcrumb,
+small,
+.text-secondary {
+	color: var(--text-secondary) !important;
+}
+
+.muted,
+.text-muted {
+	color: var(--text-muted) !important;
+}
+
+/* 面包屑与链接的悬浮颜色统一为品牌色阶 */
+.el-breadcrumb__inner,
+a,
+.el-link {
+	color: var(--text-secondary);
+	transition: color .15s ease;
+}
+
+.el-breadcrumb__inner:hover,
+a:hover,
+.el-link:hover {
+	color: var(--brand-400);
+}
+
+/* 卡片/对话框/消息类组件标题统一 */
+.el-card__header,
+.el-dialog__header,
+.el-message-box__title,
+.el-notification__title {
+	color: var(--text-primary) !important;
+}
+
+.el-dialog,
+.el-message-box,
+.el-notification {
+	transition: background-color .2s ease, border-color .2s ease;
+}
+
+.dark .el-dialog,
+.dark .el-message-box,
+.dark .el-notification {
+	background-color: var(--card-bg) !important;
+	color: var(--card-text) !important;
+	border-color: var(--card-border) !important;
+}
+
+.dark .el-message-box__content,
+.dark .el-notification__content,
+.dark .el-message__content {
+	color: var(--card-text) !important;
+}
+
+/* 页面大标题统一（h1/h2） */
+h1.page-title,
+h2.page-title,
+h1,
+h2 {
+	color: var(--text-primary) !important;
+}
+
+/* 统一链接与可点击元素的悬浮动画色 */
+a,
+.link {
+	color: var(--el-color-primary);
+	transition: color 0.15s ease, opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+a:hover,
+.link:hover {
+	opacity: .9;
+}
+
+/* 统一占位符颜色 */
+input::placeholder,
+textarea::placeholder {
+	color: var(--el-text-color-placeholder);
+}

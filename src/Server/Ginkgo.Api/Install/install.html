@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GinkgoAdmin 首次安装向导</title>
+  <style>
+    :root {
+      --pri: #2563eb;
+      --pri2: #7c3aed;
+      --grad: linear-gradient(135deg,#2563eb 0%,#7c3aed 100%);
+      --grad-h: linear-gradient(135deg,#1d4ed8 0%,#6d28d9 100%);
+      --sh-btn: 0 8px 24px rgba(37,99,235,.28);
+      --sh-btn-h: 0 12px 30px rgba(37,99,235,.38);
+      --sh-card: 0 20px 50px rgba(15,23,42,.2);
+      --bdr: #e2e8f0;
+      --bg-card: #fff;
+      --bg-alt: #f8fafc;
+      --c-h: #0f172a;
+      --c-b: #334155;
+      --c-m: #64748b;
+      --r-m: 10px;
+      --r-l: 14px;
+      --r-x: 20px;
+      --ease: cubic-bezier(.2,.7,.2,1);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{width:100%;height:100%}
+    body{
+      width:100%;min-height:100vh;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;
+      color:var(--c-b);background:#0b1120;
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+      padding:40px 20px 60px;position:relative;overflow-x:hidden;
+    }
+
+    /* ===== 全屏动效背景 ===== */
+    .bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+      background:
+        radial-gradient(1200px 700px at 15% 10%,rgba(99,102,241,.35),transparent 60%),
+        radial-gradient(1000px 600px at 85% 20%,rgba(139,92,246,.32),transparent 60%),
+        radial-gradient(900px 600px at 50% 110%,rgba(59,130,246,.28),transparent 60%),
+        linear-gradient(180deg,#0b1120,#111936 55%,#0b1120);
+    }
+    .bg::before,.bg::after{content:'';position:absolute;inset:0;
+      mask-image:radial-gradient(ellipse 70% 55% at 50% 35%,#000,transparent 85%);
+      -webkit-mask-image:radial-gradient(ellipse 70% 55% at 50% 35%,#000,transparent 85%);
+    }
+    .bg::before{
+      background-image:
+        linear-gradient(rgba(148,163,184,.06) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(148,163,184,.06) 1px,transparent 1px);
+      background-size:40px 40px;
+    }
+    .bg::after{
+      background-image:
+        linear-gradient(rgba(148,163,184,.1) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(148,163,184,.1) 1px,transparent 1px);
+      background-size:120px 120px;
+    }
+    .orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.5;animation:fl 12s ease-in-out infinite}
+    .orb-1{width:420px;height:420px;top:-120px;left:-80px;background:radial-gradient(circle,rgba(99,102,241,.8),transparent 60%)}
+    .orb-2{width:520px;height:520px;top:30%;right:-160px;background:radial-gradient(circle,rgba(168,85,247,.7),transparent 60%);animation-duration:16s}
+    .orb-3{width:360px;height:360px;bottom:-140px;left:25%;background:radial-gradient(circle,rgba(59,130,246,.7),transparent 60%);animation-duration:14s}
+    @keyframes fl{0%,100%{transform:translate(0)}50%{transform:translate(16px,-24px)}}
+
+    /* ===== 页面容器 ===== */
+    .page{position:relative;z-index:1;width:100%;max-width:720px;display:flex;flex-direction:column;gap:24px}
+
+    /* ===== 品牌区 ===== */
+    .hd{text-align:center;padding:0 0 4px}
+    .hd .tag{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;border-radius:999px;
+      background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+      color:rgba(255,255,255,.9);font-size:12px;font-weight:500;letter-spacing:.03em;
+      backdrop-filter:blur(10px);margin-bottom:12px}
+    .hd .tag i{width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;display:inline-block}
+    .hd h1{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:800;letter-spacing:-.02em;line-height:1.15;
+      background:linear-gradient(140deg,#fff 20%,rgba(192,168,255,.95));
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+    .hd p{color:rgba(226,232,240,.68);font-size:13.5px;line-height:1.7;max-width:500px;margin:0 auto 14px}
+    .st{display:flex;align-items:center;justify-content:center;gap:8px}
+    .st span{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;
+      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+      color:rgba(226,232,240,.75);font-size:12px;font-weight:500}
+    .st b{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;
+      display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+    .st em{width:16px;height:1px;background:rgba(255,255,255,.2);display:block;font-style:normal}
+
+    /* ===== 主卡片 ===== */
+    .card{background:var(--bg-card);border-radius:var(--r-x);box-shadow:var(--sh-card);overflow:hidden;
+      border:1px solid rgba(255,255,255,.06)}
+    .card-b{padding:32px 36px}
+
+    /* 分区 */
+    .sec{border:1px solid var(--bdr);border-radius:var(--r-l);padding:20px 22px 8px;margin-bottom:16px;
+      background:var(--bg-alt);transition:border-color .3s var(--ease)}
+    .sec:hover{border-color:#cbd5e1}
+    .sec-t{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;color:var(--c-h);margin-bottom:14px}
+    .sec-i{width:26px;height:26px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;
+      background:var(--grad);color:#fff;box-shadow:0 5px 12px rgba(37,99,235,.25);flex-shrink:0}
+    .sec-i svg{width:14px;height:14px}
+    .sec-h{color:var(--c-m);font-size:11.5px;font-weight:500;margin-left:auto;white-space:nowrap}
+
+    .fg{margin-bottom:14px}
+    label{display:block;color:var(--c-h);font-weight:600;margin-bottom:5px;font-size:12.5px}
+    input,select{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:var(--r-m);font-size:13.5px;
+      color:var(--c-h);background:#fff;transition:border-color .2s,box-shadow .2s;font-family:inherit}
+    input::placeholder{color:#94a3b8}
+    input:focus,select:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    select{appearance:none;-webkit-appearance:none;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+      background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+    .row{display:flex;gap:12px}
+    .row>div{flex:1}
+
+    /* 按钮 */
+    button{color:#fff;border:none;cursor:pointer;font-size:13.5px;font-weight:600;border-radius:var(--r-m);
+      padding:10px 18px;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+      transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .2s;font-family:inherit}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .btn-t{background:#fff;color:var(--pri);border:1.5px solid var(--pri);margin-top:4px}
+    .btn-t:hover:not(:disabled){background:rgba(37,99,235,.05);transform:translateY(-1px)}
+    .btn-i{background:var(--grad);box-shadow:var(--sh-btn);width:100%;padding:14px 20px;font-size:15px;
+      margin-top:18px;letter-spacing:.02em}
+    .btn-i:hover:not(:disabled){transform:translateY(-2px);box-shadow:var(--sh-btn-h);background:var(--grad-h)}
+
+    /* 状态 */
+    .msg{margin-top:10px;padding:9px 13px;border-radius:var(--r-m);font-size:12.5px;font-weight:500}
+    .msg-ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+    .msg-err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+
+    /* 日志 */
+    .log{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:var(--r-l);
+      font-family:'JetBrains Mono','Fira Code','Courier New',monospace;font-size:12px;line-height:1.65;
+      max-height:260px;overflow-y:auto;white-space:pre-wrap;margin-top:18px;border:1px solid rgba(148,163,184,.15)}
+    .log::-webkit-scrollbar{width:7px}
+    .log::-webkit-scrollbar-thumb{background:rgba(148,163,184,.3);border-radius:4px}
+
+    .sp{width:14px;height:14px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* 底部 */
+    .ft{text-align:center;color:rgba(226,232,240,.5);font-size:11.5px;letter-spacing:.04em;padding:8px 0 0}
+
+    @media(max-width:640px){
+      body{padding:24px 14px 40px}
+      .card-b{padding:22px 20px}
+      .sec{padding:16px 16px 6px}
+      .row{flex-direction:column;gap:0}
+      .st em{display:none}
+      .ov-c{padding:28px 20px}
+      .url-r{flex-direction:column;align-items:flex-start}
+      .url-l{margin-bottom:3px}
+    }
+
+    /* ===== 安装成功浮层 ===== */
+    .ov{display:none;position:fixed;inset:0;background:rgba(8,11,22,.72);z-index:1000;
+      align-items:center;justify-content:center;backdrop-filter:blur(8px);padding:20px}
+    .ov.on{display:flex}
+    .ov-c{background:#fff;border-radius:20px;padding:36px 40px;max-width:540px;width:100%;
+      box-shadow:0 25px 60px rgba(0,0,0,.4);text-align:center;animation:su .5s var(--ease)}
+    @keyframes su{from{opacity:0;transform:translateY(40px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+    .ov-ok{width:68px;height:68px;background:linear-gradient(135deg,#10b981,#059669);border-radius:50%;
+      display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:34px;color:#fff;
+      box-shadow:0 12px 28px rgba(16,185,129,.35)}
+    .ov-c h2{color:var(--c-h);font-size:21px;margin-bottom:6px;font-weight:800}
+    .ov-c .sub{color:var(--c-m);font-size:13px;margin-bottom:22px}
+    .url-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--r-l);padding:16px 18px;margin-bottom:16px;text-align:left}
+    .url-r{display:flex;align-items:center;margin-bottom:8px;font-size:13px}
+    .url-r:last-child{margin-bottom:0}
+    .url-l{color:var(--c-h);font-weight:600;min-width:100px;flex-shrink:0}
+    .url-v{color:#059669;font-family:'JetBrains Mono','Courier New',monospace;word-break:break-all;font-weight:600}
+    .bg-g{display:flex;gap:10px;justify-content:center;margin:16px 0 4px;flex-wrap:wrap}
+    .b-cp{background:var(--grad);box-shadow:var(--sh-btn);padding:9px 18px}
+    .b-cp:hover:not(:disabled){transform:translateY(-1px);box-shadow:var(--sh-btn-h)}
+    .b-dl{background:#fff;color:var(--pri);border:1.5px solid var(--pri);padding:9px 18px}
+    .b-dl:hover:not(:disabled){background:rgba(37,99,235,.05)}
+    .warn{background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r-m);padding:9px 13px;color:#92400e;font-size:12.5px;font-weight:500;margin-bottom:16px}
+    /* 步骤卡片 */
+    .step-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:var(--r-l);padding:18px 20px;margin-bottom:14px;text-align:left}
+    .step-card .step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-size:11px;font-weight:700;margin-right:8px;flex-shrink:0}
+    .step-card .step-title{font-size:14px;font-weight:700;color:var(--c-h);display:flex;align-items:center;margin-bottom:10px}
+    .step-card .step-done{background:#10b981;box-shadow:0 2px 8px rgba(16,185,129,.3)}
+    .step-card .step-desc{font-size:12.5px;color:var(--c-m);line-height:1.6;margin-bottom:8px}
+    .cmd-box{background:#0f172a;border-radius:8px;padding:12px 14px;font-family:'JetBrains Mono','Fira Code','Courier New',monospace;font-size:12.5px;color:#e2e8f0;line-height:1.7;position:relative;margin-bottom:6px}
+    .cmd-box code{display:block;white-space:pre-wrap}
+    .cmd-box .cmd-copy{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#94a3b8;font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all .2s}
+    .cmd-box .cmd-copy:hover{background:rgba(255,255,255,.18);color:#fff}
+    .step-check{color:#10b981;font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px}
+
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
+  <div class="page">
+    <header class="hd">
+      <span class="tag"><i></i>GinkgoAdmin · 首次安装向导</span>
+      <h1>几分钟，启动你的交付平台</h1>
+      <p>按向导完成数据库初始化与管理员配置，默认以 MySQL 作为数据库引擎，安装完成后即可进入管理后台。</p>
+      <div class="st">
+        <span><b>1</b>数据库</span>
+        <em></em>
+        <span><b>2</b>管理员</span>
+        <em></em>
+        <span><b>3</b>站点</span>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="card-b">
+        <form id="form">
+          <div class="sec">
+            <div class="sec-t">
+              <span class="sec-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.657 4.03 3 9 3s9-1.343 9-3V5"/><path d="M3 11v6c0 1.657 4.03 3 9 3s9-1.343 9-3v-6"/></svg></span>
+              数据库配置
+              <span class="sec-h">推荐 MySQL 5.7+ / InnoDB</span>
+            </div>
+            <div class="fg">
+              <label>数据库类型</label>
+              <!--
+                provider 选项在页面加载后由 /api/install/providers 动态填充，
+                这里仅保留一个占位项。后续新增数据库不需要修改本页面。
+              -->
+              <select name="provider" id="provider">
+                <option value="" disabled selected>加载中...</option>
+              </select>
+            </div>
+            <div class="row">
+              <div class="fg" style="flex:2"><label>服务器地址</label><input name="server" id="server" placeholder="127.0.0.1" value="127.0.0.1"/></div>
+              <div class="fg" style="flex:1"><label>端口</label><input name="port" id="port" placeholder="3306" value="3306"/></div>
+              <div class="fg" style="flex:2"><label>数据库名称</label><input name="database" id="database" placeholder="GinkgoAdmin" value="GinkgoAdmin"/></div>
+            </div>
+            <div class="row">
+              <div class="fg"><label>用户名</label><input name="username" id="username" placeholder="root" value="root"/></div>
+              <div class="fg"><label>密码</label><input type="password" name="password" id="password" placeholder="数据库密码"/></div>
+            </div>
+            <button type="button" class="btn-t" id="btnTestConnection">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <span class="test-text">测试连接</span>
+              <div class="sp" style="display:none"></div>
+            </button>
+            <div id="connectionStatus" class="msg" style="display:none"></div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-t">
+              <span class="sec-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+              管理员账户
+              <span class="sec-h">密码至少 6 位</span>
+            </div>
+            <div class="row">
+              <div class="fg"><label>用户名</label><input name="adminUserName" id="adminUserName" value="admin"/></div>
+              <div class="fg"><label>密码</label><input type="password" name="adminPassword" id="adminPassword" placeholder="请设置管理员密码"/></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-t">
+              <span class="sec-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg></span>
+              站点设置
+              <span class="sec-h">可后续在后台修改</span>
+            </div>
+            <div class="fg"><label>站点名称</label><input name="siteName" id="siteName" value="GinkgoAdmin"/></div>
+          </div>
+
+          <button type="button" class="btn-i" id="btnInstall" disabled>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            <span class="install-text">开始安装</span>
+            <div class="sp" style="display:none"></div>
+          </button>
+        </form>
+
+        <div id="logs" class="log" style="display:none">等待安装...</div>
+      </div>
+    </section>
+
+    <div class="ft">GinkgoAdmin · 业务插件交付平台</div>
+  </div>
+
+  <div class="ov" id="successOverlay">
+    <div class="ov-c">
+      <div class="ov-ok">✓</div>
+      <h2>后端安装完成</h2>
+      <p class="sub">数据库初始化成功，请继续完成前端部署</p>
+
+      <!-- 第一步：后端（已完成） -->
+      <div class="step-card">
+        <div class="step-title"><span class="step-num step-done">✓</span>第一步 · 后端初始化</div>
+        <div class="step-check">✓ 数据库已创建并初始化完毕</div>
+        <!-- 自动重启状态条 -->
+        <div id="restartBox" style="margin-top:10px;padding:10px 12px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px">
+          <div class="sp" id="restartSpin" style="border-top-color:#1d4ed8;display:block"></div>
+          <span id="restartText">正在自动重启后端服务，让数据库初始化生效...</span>
+        </div>
+      </div>
+
+      <!-- 第二步：前端启动（手动执行） -->
+      <div class="step-card" id="stepFrontend">
+        <div class="step-title"><span class="step-num" id="step2Icon">2</span>第二步 · 启动前端开发服务</div>
+        <div class="step-desc" style="margin-bottom:8px">在项目根目录执行以下命令启动前端，需要已安装 <a href="https://nodejs.org/" target="_blank" style="color:var(--pri)">Node.js</a></div>
+        <div class="cmd-box">
+          <code>cd web
+npm i
+npm run dev</code>
+          <span class="cmd-copy" onclick="copyCmds()">复制</span>
+        </div>
+        <div class="step-desc" style="margin-top:8px;font-size:12px">启动后在浏览器访问 Vite 终端输出的地址，拼接路径 <span id="feSlugHint" style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono','Courier New',monospace;color:#0f172a;font-weight:600"></span> 即可进入管理后台。</div>
+      </div>
+
+      <!-- 路径信息 -->
+      <div class="url-box">
+        <div class="url-r" style="margin-top:6px"><span class="url-l">前端服务地址：</span><input id="frontendBaseUrl" type="text" value="http://localhost:5174" placeholder="例如 http://localhost:5174" style="flex:1;padding:6px 10px;border:1px solid #bbf7d0;border-radius:8px;font-size:12.5px"/><button type="button" id="btnCopyBase" class="cmd-copy" style="margin-left:8px;white-space:nowrap" onclick="copyFrontendBase(this)">复制</button></div>
+        <div class="url-r" style="margin-top:6px"><span class="url-l">前端完整地址：</span><span class="url-v" id="adminFullUrl"></span><button type="button" id="btnCopyFull" class="cmd-copy" style="margin-left:8px;white-space:nowrap" onclick="copyAdminFullUrl(this)">复制</button></div>
+      </div>
+      <div class="warn">安装完成，请保存前端完整地址以便后续访问。</div>
+      <div class="bg-g">
+        <button type="button" class="b-cp" id="btnCopy" onclick="copyUrls()">复制完整地址</button>
+        <button type="button" class="b-dl" id="btnDownload" onclick="downloadUrls()">下载保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var form = document.getElementById('form');
+    var logs = document.getElementById('logs');
+    var btnInstall = document.getElementById('btnInstall');
+    var btnTestConnection = document.getElementById('btnTestConnection');
+    var connectionStatus = document.getElementById('connectionStatus');
+    var connectionTested = false;
+
+    async function checkStatus(){
+      try{
+        var s = await fetch('/api/install/status',{cache:'no-store'}).then(function(r){return r.json()});
+        if(s && s.installed){showLogs('系统已安装。即将跳转...');setTimeout(function(){location.href='/swagger'},1500)}
+      }catch(e){}
+    }
+
+    function showLogs(m){logs.style.display='block';logs.textContent=m}
+    function appendLog(m){logs.style.display='block';logs.textContent+='\n'+m;logs.scrollTop=logs.scrollHeight}
+
+    function showConnectionStatus(ok,m){
+      connectionStatus.style.display='block';
+      connectionStatus.className='msg '+(ok?'msg-ok':'msg-err');
+      connectionStatus.textContent=m;
+      connectionTested=ok;
+      updateInstallButton();
+    }
+
+    function updateInstallButton(){
+      var pw=document.getElementById('adminPassword').value.trim();
+      var ok=connectionTested && pw.length>=6;
+      btnInstall.disabled=!ok;
+      btnInstall.title=!connectionTested?'请先测试数据库连接':pw.length<6?'管理员密码至少6位':'';
+    }
+
+    // 后端 /api/install/providers 返回的方言描述字典：{ code -> { code, displayName, defaultPort, connectionStringTemplate } }
+    var _providers = {};
+
+    document.getElementById('provider').addEventListener('change',function(){
+      var p=document.getElementById('port');
+      var meta=_providers[this.value];
+      if(meta){
+        if(meta.defaultPort){p.value=meta.defaultPort;p.placeholder=meta.defaultPort;}
+      }
+      connectionTested=false;connectionStatus.style.display='none';updateInstallButton();
+    });
+
+    // 根据后端提供的连接串模板拼接连接串。
+    // 模板中的 {Server}/{Port}/{Database}/{User}/{Password} 占位符会被同名表单字段替换；
+    // 需要定制额外字段时，dialect.ConnectionStringTemplate 可以额外携带。
+    function buildConnectionString(){
+      var pv=document.getElementById('provider').value;
+      var meta=_providers[pv];
+      if(!meta||!meta.connectionStringTemplate)return '';
+      var sv=document.getElementById('server').value.trim();
+      var pt=document.getElementById('port').value.trim();
+      var db=document.getElementById('database').value.trim();
+      var un=document.getElementById('username').value.trim();
+      var pw=document.getElementById('password').value;
+      return meta.connectionStringTemplate
+        .replace(/\{Server\}/g,sv)
+        .replace(/\{Port\}/g,pt||meta.defaultPort||'')
+        .replace(/\{Database\}/g,db)
+        .replace(/\{User\}/g,un)
+        .replace(/\{Password\}/g,pw);
+    }
+
+    // 从后端拉取方言清单并动态填充 <select>，项面启动时调用一次。
+    async function loadProviders(){
+      var sel=document.getElementById('provider');
+      try{
+        var r=await fetch('/api/install/providers',{cache:'no-store'});
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        var j=await r.json();
+        var list=(j&&j.providers)||[];
+        if(list.length===0)throw new Error('后端未返回任何方言');
+        sel.innerHTML='';
+        list.forEach(function(p,idx){
+          _providers[p.code]=p;
+          var opt=document.createElement('option');
+          opt.value=p.code;
+          opt.textContent=idx===0?(p.displayName+'（推荐）'):p.displayName;
+          if(idx===0)opt.selected=true;
+          sel.appendChild(opt);
+        });
+        // 首个方言作为默认，同步默认端口
+        var first=list[0];
+        if(first&&first.defaultPort){
+          var p=document.getElementById('port');
+          p.value=first.defaultPort;p.placeholder=first.defaultPort;
+        }
+      }catch(e){
+        sel.innerHTML='<option value="" disabled selected>加载方言列表失败</option>';
+        showLogs('加载数据库方言列表失败：'+e.message);
+      }
+    }
+
+    btnTestConnection.addEventListener('click',async function(){
+      var sv=document.getElementById('server').value.trim();
+      var pt=document.getElementById('port').value.trim();
+      var un=document.getElementById('username').value.trim();
+      var pw=document.getElementById('password').value;
+      var pv=document.getElementById('provider').value;
+      if(!sv||!un){showConnectionStatus(false,'请填写服务器地址和用户名');return}
+      btnTestConnection.disabled=true;
+      document.querySelector('.test-text').style.display='none';
+      btnTestConnection.querySelector('.sp').style.display='block';
+      connectionStatus.style.display='none';
+      try{
+        var r=await fetch('/api/install/test-connection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({server:sv,port:pt,username:un,password:pw,provider:pv})});
+        var j=await r.json();showConnectionStatus(j.success,j.message);
+      }catch(e){showConnectionStatus(false,'连接测试失败: '+e.message)}
+      finally{btnTestConnection.disabled=false;document.querySelector('.test-text').style.display='inline';btnTestConnection.querySelector('.sp').style.display='none'}
+    });
+
+    ['server','port','username','password','provider'].forEach(function(id){
+      document.getElementById(id).addEventListener('input',function(){connectionTested=false;connectionStatus.style.display='none';updateInstallButton()});
+    });
+    document.getElementById('adminPassword').addEventListener('input',updateInstallButton);
+
+    btnInstall.addEventListener('click',async function(){
+      var fd=new FormData(form);var d=Object.fromEntries(fd.entries());
+      var body={provider:d.provider,connectionString:buildConnectionString(),adminUserName:d.adminUserName,adminPassword:d.adminPassword,adminDisplayName:d.adminUserName,siteName:d.siteName};
+      btnInstall.disabled=true;
+      document.querySelector('.install-text').style.display='none';
+      btnInstall.querySelector('.sp').style.display='block';
+      showLogs('开始安装系统...');
+      try{
+        var r=await fetch('/api/install/oneclick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        var j=await r.json();
+        if(j&&j.logs&&Array.isArray(j.logs))j.logs.forEach(function(l){appendLog('['+l.level+'] '+l.message)});
+        if(j&&j.success){appendLog('\n安装完成！');showSuccessOverlay(j.adminSlug||'ginkgo-admin')}
+        else appendLog('[错误] '+(j&&(j.error||j.message)||'安装失败'));
+      }catch(e){appendLog('[异常] '+e.message)}
+      finally{btnInstall.disabled=false;document.querySelector('.install-text').style.display='inline';btnInstall.querySelector('.sp').style.display='none'}
+    });
+
+    var adminSlug='';
+    var feBaseUrl='';
+
+    function normalizeBaseUrl(url){
+      if(!url)return'';
+      var u=url.trim();
+      while(u.endsWith('/'))u=u.slice(0,-1);
+      return u;
+    }
+
+    function resolveFrontendBaseUrl(){
+      var input=document.getElementById('frontendBaseUrl');
+      if(!input)return'';
+      return normalizeBaseUrl(input.value);
+    }
+
+    function updateAdminFullUrl(){
+      var fullUrlEl=document.getElementById('adminFullUrl');
+      if(!fullUrlEl)return;
+      var base=resolveFrontendBaseUrl();
+      feBaseUrl=base;
+      if(base)localStorage.setItem('ginkgo_install_frontend_base_url',base);
+      if(!base){
+        fullUrlEl.textContent='请先填写前端服务地址';
+        return;
+      }
+      fullUrlEl.textContent=base+'/'+adminSlug+'/';
+    }
+
+    function showSuccessOverlay(slug){
+      adminSlug=slug;
+      var input=document.getElementById('frontendBaseUrl');
+      if(input){
+        var saved=localStorage.getItem('ginkgo_install_frontend_base_url')||'http://localhost:5174';
+        input.value=normalizeBaseUrl(saved);
+        input.oninput=updateAdminFullUrl;
+      }
+      var feSlugEl=document.getElementById('feSlugHint');
+      if(feSlugEl) feSlugEl.textContent='/'+slug+'/';
+      updateAdminFullUrl();
+      document.getElementById('successOverlay').classList.add('on');
+      // 浮层弹出后自动触发后端重启
+      setTimeout(triggerAutoRestart, 1200);
+    }
+
+    function setRestartBox(state, text){
+      var box=document.getElementById('restartBox');
+      var spin=document.getElementById('restartSpin');
+      var txt=document.getElementById('restartText');
+      if(!box||!txt) return;
+      txt.textContent=text;
+      if(state==='ok'){
+        box.style.background='#ecfdf5';box.style.borderColor='#a7f3d0';box.style.color='#065f46';
+        if(spin) spin.style.display='none';
+      } else if(state==='warn'){
+        box.style.background='#fffbeb';box.style.borderColor='#fde68a';box.style.color='#92400e';
+        if(spin) spin.style.display='none';
+      } else if(state==='err'){
+        box.style.background='#fef2f2';box.style.borderColor='#fecaca';box.style.color='#991b1b';
+        if(spin) spin.style.display='none';
+      } else {
+        // running
+        box.style.background='#eff6ff';box.style.borderColor='#bfdbfe';box.style.color='#1d4ed8';
+        if(spin){spin.style.display='block';spin.style.borderTopColor='#1d4ed8'}
+      }
+    }
+
+    async function triggerAutoRestart(){
+      setRestartBox('running','正在请求后端自动重启...');
+      var autoRelaunch=true;
+      try{
+        var r=await fetch('/api/install/restart',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+        if(r.ok){
+          var j=await r.json().catch(function(){return null});
+          if(j && j.autoRelaunch===false){
+            autoRelaunch=false;
+            setRestartBox('warn','后端已停止，但当前部署环境无法自动拉起，请手动重启 API 进程'+(j.message?('：'+j.message):''));
+            return;
+          }
+        }
+      }catch(e){
+        // 接口已经在 800ms 后停止应用，连接被切断属于正常现象，忽略错误
+      }
+      setRestartBox('running','后端正在重启，等待服务恢复...');
+      // 轮询 /api/install/status，最多等待 60 秒
+      var deadline=Date.now()+60000;
+      var ready=false;
+      // 先等 2 秒，让旧进程退出、新进程启动
+      await new Promise(function(res){setTimeout(res,2000)});
+      while(Date.now()<deadline){
+        try{
+          var s=await fetch('/api/install/status',{cache:'no-store'});
+          if(s.ok){
+            var sj=await s.json();
+            if(sj && sj.installed===true){ ready=true; break }
+          }
+        }catch(e){ /* 服务尚未就绪，继续轮询 */ }
+        await new Promise(function(res){setTimeout(res,1500)});
+      }
+      if(ready){
+        setRestartBox('ok','✓ 后端已重启并就绪，可以继续启动前端');
+      } else if(autoRelaunch){
+        setRestartBox('warn','后端重启等待超时，请手动确认 API 进程是否已启动');
+      }
+    }
+    function copyCmds(){
+      var t='cd web\nnpm i\nnpm run dev';
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){showBtnTip('.cmd-copy','已复制')}).catch(function(){fbCopy(t);showBtnTip('.cmd-copy','已复制')});
+      else{fbCopy(t);showBtnTip('.cmd-copy','已复制')}
+    }
+    function showBtnTip(sel,txt){var el=document.querySelector(sel);if(!el)return;var old=el.textContent;el.textContent=txt;setTimeout(function(){el.textContent=old},2000)}
+
+    function copyUrls(){
+      updateAdminFullUrl();
+      var full=feBaseUrl?feBaseUrl+'/'+adminSlug+'/':'';
+      var t=full||document.getElementById('frontendBaseUrl').value.trim();
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(showCopyOk).catch(function(){fbCopy(t)});
+      else fbCopy(t);
+    }
+    function copyFrontendBase(btn){
+      var v=document.getElementById('frontendBaseUrl').value.trim();
+      if(!v)return;
+      var ok=function(){btn.textContent='已复制';setTimeout(function(){btn.textContent='复制'},2000)};
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(v).then(ok).catch(function(){fbCopySimple(v);ok()});
+      else{fbCopySimple(v);ok();}
+    }
+    function copyAdminFullUrl(btn){
+      updateAdminFullUrl();
+      var v=document.getElementById('adminFullUrl').textContent;
+      if(!v||v==='请先填写前端服务地址')return;
+      var ok=function(){btn.textContent='已复制';setTimeout(function(){btn.textContent='复制'},2000)};
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(v).then(ok).catch(function(){fbCopySimple(v);ok()});
+      else{fbCopySimple(v);ok();}
+    }
+    function fbCopy(t){var a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;left:-9999px';document.body.appendChild(a);a.select();try{document.execCommand('copy');showCopyOk()}catch(e){}document.body.removeChild(a)}
+    function fbCopySimple(t){var a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;left:-9999px';document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}document.body.removeChild(a)}
+    function showCopyOk(){var b=document.getElementById('btnCopy');b.textContent='已复制';setTimeout(function(){b.textContent='复制完整地址'},2000)}
+
+    function downloadUrls(){
+      updateAdminFullUrl();
+      var now=new Date().toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'});
+      var lines=['=============================================','  GinkgoAdmin 系统安装信息','=============================================',''];
+      if(feBaseUrl) lines.push('前端完整地址: '+feBaseUrl+'/'+adminSlug+'/');
+      lines.push('前端服务地址: '+document.getElementById('frontendBaseUrl').value.trim());
+      lines.push('','--- 手动启动前端命令 ---','cd web','npm install','npm run dev','','启动后浏览器访问终端输出的地址即可进入管理后台。','','请妥善保存以上信息。','','安装时间: '+now,'=============================================');
+      var c=lines.join('\n');
+      var b=new Blob([c],{type:'text/plain;charset=utf-8'});var u=URL.createObjectURL(b);
+      var a=document.createElement('a');a.href=u;a.download='ginkgoadmin-install-info.txt';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+    }
+
+    loadProviders();checkStatus();updateInstallButton();
+  </script>
+</body>
+</html>
+

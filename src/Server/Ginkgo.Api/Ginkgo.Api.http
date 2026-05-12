@@ -1,0 +1,6 @@
+@Ginkgo.Api_HostAddress = http://localhost:5052
+
+GET {{Ginkgo.Api_HostAddress}}/swagger/
+Accept: application/json
+
+###

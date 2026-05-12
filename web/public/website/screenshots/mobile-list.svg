@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GinkgoAdmin 首页 - 移动端列表与操作样张
+  复刻 uniapp/pgzx/pages/plugins/crm/customer-list.vue：搜索栏 + 客户卡片列表
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="GinkgoAdmin 移动端列表与操作">
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f0f9ff"/><stop offset="100%" stop-color="#eef2ff"/></linearGradient>
+    <radialGradient id="bg-glow" cx="0.6" cy="0.4" r="0.5"><stop offset="0%" stop-color="rgba(14,165,233,0.2)"/><stop offset="100%" stop-color="rgba(14,165,233,0)"/></radialGradient>
+    <linearGradient id="lg-blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient>
+    <linearGradient id="lg-green" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <linearGradient id="lg-orange" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#ea580c"/></linearGradient>
+    <linearGradient id="lg-pink" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ec4899"/><stop offset="100%" stop-color="#db2777"/></linearGradient>
+    <linearGradient id="lg-purple" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient>
+    <filter id="fx-phone"><feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#0c4a6e" flood-opacity="0.22"/></filter>
+    <filter id="fx-card"><feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#0c4a6e" flood-opacity="0.14"/></filter>
+    <filter id="fx-float"><feDropShadow dx="-6" dy="12" stdDeviation="18" flood-color="#1e1b4b" flood-opacity="0.2"/></filter>
+  </defs>
+  <style>.font{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',Arial,sans-serif}.mono{font-family:Consolas,'Courier New',monospace}</style>
+
+  <rect width="1600" height="1000" fill="url(#bg-grad)"/>
+  <rect width="1600" height="1000" fill="url(#bg-glow)"/>
+
+  <!-- 左上标题 -->
+  <g transform="translate(80 140)">
+    <rect width="108" height="28" rx="14" fill="rgba(59,130,246,0.1)" stroke="rgba(59,130,246,0.25)"/>
+    <text x="54" y="19" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#1d4ed8">📋 列表 · 操作</text>
+    <text y="62" class="font" font-size="34" font-weight="800" fill="#0f172a">移动端业务闭环</text>
+    <text y="100" class="font" font-size="15" fill="#475569">从列表到详情、从搜索到批量操作</text>
+    <text y="122" class="font" font-size="15" fill="#475569">完整覆盖移动端业务场景</text>
+  </g>
+
+  <!-- ============ 手机 mockup（左） ============ -->
+  <g transform="translate(140 220)" filter="url(#fx-phone)">
+    <rect width="400" height="740" rx="50" fill="#0f172a"/>
+    <rect x="6" y="6" width="388" height="728" rx="44" fill="#1e293b"/>
+    <rect x="14" y="14" width="372" height="712" rx="38" fill="#f5f7fb"/>
+
+    <!-- 状态栏 -->
+    <g transform="translate(14 14)">
+      <rect width="372" height="40" rx="38" fill="#f5f7fb"/>
+      <text x="28" y="26" class="font" font-size="13" font-weight="700" fill="#0f172a">9:41</text>
+      <rect x="146" y="12" width="80" height="18" rx="9" fill="#0f172a"/>
+      <g transform="translate(340 18)"><rect width="22" height="10" rx="2" fill="none" stroke="#0f172a" stroke-width="1.4"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#10b981"/></g>
+    </g>
+
+    <!-- 导航栏 -->
+    <g transform="translate(14 54)">
+      <rect width="372" height="48" fill="#ffffff"/>
+      <line x1="0" y1="48" x2="372" y2="48" stroke="#f1f5f9"/>
+      <text x="18" y="30" class="font" font-size="18" fill="#0f172a">‹</text>
+      <text x="186" y="31" text-anchor="middle" class="font" font-size="15" font-weight="700" fill="#0f172a">客户列表</text>
+      <text x="340" y="30" class="font" font-size="16">⋯</text>
+    </g>
+
+    <!-- 搜索栏 -->
+    <g transform="translate(14 106)">
+      <rect x="12" width="280" height="40" rx="20" fill="#ffffff"/>
+      <text x="26" y="26" class="font" font-size="13" fill="#94a3b8">🔍 搜索客户名称/手机号</text>
+      <g transform="translate(304 0)">
+        <rect width="58" height="40" rx="20" fill="url(#lg-blue)"/>
+        <text x="29" y="26" text-anchor="middle" class="font" font-size="13" font-weight="600" fill="#ffffff">搜索</text>
+      </g>
+    </g>
+
+    <!-- 筛选标签 -->
+    <g transform="translate(14 162)">
+      <g><rect x="12" width="52" height="26" rx="13" fill="url(#lg-blue)"/><text x="38" y="18" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#ffffff">全部</text></g>
+      <g transform="translate(68 0)"><rect x="12" width="58" height="26" rx="13" fill="#ffffff"/><text x="41" y="18" text-anchor="middle" class="font" font-size="11" fill="#475569">跟进中</text></g>
+      <g transform="translate(140 0)"><rect x="12" width="52" height="26" rx="13" fill="#ffffff"/><text x="38" y="18" text-anchor="middle" class="font" font-size="11" fill="#475569">已签约</text></g>
+      <g transform="translate(206 0)"><rect x="12" width="52" height="26" rx="13" fill="#ffffff"/><text x="38" y="18" text-anchor="middle" class="font" font-size="11" fill="#475569">公海</text></g>
+      <g transform="translate(272 0)"><rect x="12" width="86" height="26" rx="13" fill="#ffffff"/><text x="55" y="18" text-anchor="middle" class="font" font-size="11" fill="#94a3b8">🎯 筛选</text></g>
+    </g>
+
+    <!-- 客户卡片列表 -->
+    <g transform="translate(14 206)">
+      <!-- Card 1（选中/待跟进） -->
+      <g transform="translate(12 0)">
+        <rect width="348" height="96" rx="16" fill="#ffffff"/>
+        <rect width="3" height="96" rx="1.5" fill="#ef4444"/>
+        <g transform="translate(24 28)"><circle r="18" fill="url(#lg-orange)"/><text y="6" text-anchor="middle" class="font" font-size="14" font-weight="700" fill="#ffffff">深</text></g>
+        <text x="52" y="24" class="font" font-size="14" font-weight="700" fill="#0f172a">深圳科捷物流</text>
+        <g transform="translate(164 12)"><rect width="40" height="18" rx="9" fill="#dbeafe"/><text x="20" y="13" text-anchor="middle" class="font" font-size="10" fill="#1d4ed8">企业</text></g>
+        <g transform="translate(208 12)"><rect width="52" height="18" rx="9" fill="#fee2e2"/><text x="26" y="13" text-anchor="middle" class="font" font-size="10" fill="#dc2626">待跟进</text></g>
+        <text x="52" y="46" class="font" font-size="11" fill="#64748b">📞 138****1234</text>
+        <text x="52" y="64" class="font" font-size="11" fill="#94a3b8">物流配送 / 意向度 A</text>
+        <text x="52" y="82" class="font" font-size="10" fill="#ef4444">⏰ 今日需跟进 · 负责人：王亮</text>
+        <text x="328" y="52" class="font" font-size="14" fill="#cbd5e1">›</text>
+      </g>
+      <!-- Card 2 -->
+      <g transform="translate(12 110)">
+        <rect width="348" height="96" rx="16" fill="#ffffff"/>
+        <g transform="translate(24 28)"><circle r="18" fill="url(#lg-green)"/><text y="6" text-anchor="middle" class="font" font-size="14" font-weight="700" fill="#ffffff">苏</text></g>
+        <text x="52" y="24" class="font" font-size="14" font-weight="700" fill="#0f172a">苏州远景科技</text>
+        <g transform="translate(164 12)"><rect width="40" height="18" rx="9" fill="#dbeafe"/><text x="20" y="13" text-anchor="middle" class="font" font-size="10" fill="#1d4ed8">企业</text></g>
+        <g transform="translate(208 12)"><rect width="52" height="18" rx="9" fill="#d1fae5"/><text x="26" y="13" text-anchor="middle" class="font" font-size="10" fill="#059669">已签约</text></g>
+        <text x="52" y="46" class="font" font-size="11" fill="#64748b">📞 156****7788</text>
+        <text x="52" y="64" class="font" font-size="11" fill="#94a3b8">软件开发 / 意向度 S</text>
+        <text x="52" y="82" class="font" font-size="10" fill="#059669">✓ 合同金额 ¥128,000</text>
+        <text x="328" y="52" class="font" font-size="14" fill="#cbd5e1">›</text>
+      </g>
+      <!-- Card 3 -->
+      <g transform="translate(12 220)">
+        <rect width="348" height="96" rx="16" fill="#ffffff"/>
+        <g transform="translate(24 28)"><circle r="18" fill="url(#lg-purple)"/><text y="6" text-anchor="middle" class="font" font-size="14" font-weight="700" fill="#ffffff">李</text></g>
+        <text x="52" y="24" class="font" font-size="14" font-weight="700" fill="#0f172a">李女士（个人）</text>
+        <g transform="translate(164 12)"><rect width="40" height="18" rx="9" fill="#e0e7ff"/><text x="20" y="13" text-anchor="middle" class="font" font-size="10" fill="#4f46e5">个人</text></g>
+        <g transform="translate(208 12)"><rect width="52" height="18" rx="9" fill="#fef3c7"/><text x="26" y="13" text-anchor="middle" class="font" font-size="10" fill="#d97706">跟进中</text></g>
+        <text x="52" y="46" class="font" font-size="11" fill="#64748b">📞 139****5566</text>
+        <text x="52" y="64" class="font" font-size="11" fill="#94a3b8">教育培训 / 意向度 B</text>
+        <text x="52" y="82" class="font" font-size="10" fill="#d97706">📅 3 天前沟通过</text>
+        <text x="328" y="52" class="font" font-size="14" fill="#cbd5e1">›</text>
+      </g>
+      <!-- Card 4（部分可见） -->
+      <g transform="translate(12 330)">
+        <rect width="348" height="96" rx="16" fill="#ffffff"/>
+        <g transform="translate(24 28)"><circle r="18" fill="url(#lg-pink)"/><text y="6" text-anchor="middle" class="font" font-size="14" font-weight="700" fill="#ffffff">杭</text></g>
+        <text x="52" y="24" class="font" font-size="14" font-weight="700" fill="#0f172a">杭州博盛信息</text>
+        <g transform="translate(164 12)"><rect width="40" height="18" rx="9" fill="#dbeafe"/><text x="20" y="13" text-anchor="middle" class="font" font-size="10" fill="#1d4ed8">企业</text></g>
+        <text x="52" y="46" class="font" font-size="11" fill="#64748b">📞 187****3321</text>
+      </g>
+    </g>
+
+    <!-- 浮动新建按钮 -->
+    <g transform="translate(320 660)">
+      <circle r="28" fill="url(#lg-blue)"/>
+      <g stroke="#ffffff" stroke-width="3" stroke-linecap="round"><line x1="-10" y1="0" x2="10" y2="0"/><line x1="0" y1="-10" x2="0" y2="10"/></g>
+    </g>
+
+    <!-- Home indicator -->
+    <rect x="148" y="712" width="104" height="4" rx="2" fill="#0f172a"/>
+  </g>
+
+  <!-- ============ 右侧：客户详情浮卡（关联显示） ============ -->
+  <g transform="translate(600 170)" filter="url(#fx-float)">
+    <rect width="380" height="660" rx="22" fill="#ffffff"/>
+    <!-- 顶部 hero -->
+    <rect width="380" height="140" rx="22" fill="url(#lg-orange)"/>
+    <rect y="120" width="380" height="20" fill="url(#lg-orange)"/>
+    <circle cx="330" cy="-20" r="60" fill="rgba(255,255,255,0.1)"/>
+    <circle cx="50" cy="150" r="60" fill="rgba(255,255,255,0.1)"/>
+
+    <g transform="translate(20 20)">
+      <circle cx="36" cy="36" r="32" fill="rgba(255,255,255,0.95)"/>
+      <text x="36" y="46" text-anchor="middle" class="font" font-size="26" font-weight="800" fill="#f59e0b">深</text>
+    </g>
+    <text x="92" y="44" class="font" font-size="18" font-weight="700" fill="#ffffff">深圳科捷物流</text>
+    <text x="92" y="66" class="font" font-size="12" fill="rgba(255,255,255,0.85)">客户编号：CUST-8801</text>
+    <g transform="translate(92 80)">
+      <rect width="48" height="20" rx="10" fill="rgba(255,255,255,0.22)"/>
+      <text x="24" y="14" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#ffffff">企业</text>
+      <g transform="translate(54 0)"><rect width="58" height="20" rx="10" fill="rgba(255,255,255,0.22)"/>
+        <text x="29" y="14" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#ffffff">待跟进</text></g>
+      <g transform="translate(120 0)"><rect width="62" height="20" rx="10" fill="rgba(255,255,255,0.22)"/>
+        <text x="31" y="14" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#ffffff">意向度 A</text></g>
+    </g>
+
+    <!-- 基本信息 -->
+    <g transform="translate(20 160)">
+      <text class="font" font-size="13" font-weight="700" fill="#0f172a">基本信息</text>
+      <g transform="translate(0 16)">
+        <rect width="340" height="136" rx="12" fill="#f8fafc"/>
+        <g transform="translate(14 24)"><text class="font" font-size="11" fill="#94a3b8">联系方式</text><text y="18" class="font" font-size="13" fill="#0f172a">138****1234</text></g>
+        <g transform="translate(180 24)"><text class="font" font-size="11" fill="#94a3b8">行业</text><text y="18" class="font" font-size="13" fill="#0f172a">物流配送</text></g>
+        <g transform="translate(14 70)"><text class="font" font-size="11" fill="#94a3b8">所属部门</text><text y="18" class="font" font-size="13" fill="#0f172a">华南销售大区</text></g>
+        <g transform="translate(180 70)"><text class="font" font-size="11" fill="#94a3b8">负责人</text><text y="18" class="font" font-size="13" fill="#0f172a">王亮</text></g>
+        <g transform="translate(14 116)"><text class="font" font-size="11" fill="#94a3b8">创建时间</text><text y="18" class="font" font-size="12" fill="#475569">2026-04-18 14:22</text></g>
+      </g>
+    </g>
+
+    <!-- 最近跟进 -->
+    <g transform="translate(20 328)">
+      <text class="font" font-size="13" font-weight="700" fill="#0f172a">最近跟进</text>
+      <text x="340" text-anchor="end" class="font" font-size="11" fill="#6366f1">全部 ›</text>
+
+      <g transform="translate(0 16)">
+        <rect width="340" height="80" rx="12" fill="#f8fafc"/>
+        <g transform="translate(14 20)">
+          <rect width="52" height="18" rx="4" fill="#dbeafe"/>
+          <text x="26" y="13" text-anchor="middle" class="font" font-size="10" fill="#1d4ed8">📞 电话</text>
+          <text x="60" y="13" class="font" font-size="11" fill="#94a3b8">王亮 · 昨天 16:32</text>
+        </g>
+        <text x="14" y="58" class="font" font-size="11" fill="#475569">客户反馈下周可以确认合作细节</text>
+        <text x="14" y="72" class="font" font-size="11" fill="#475569">方案，约定周四上门签约</text>
+      </g>
+
+      <g transform="translate(0 108)">
+        <rect width="340" height="60" rx="12" fill="#f8fafc"/>
+        <g transform="translate(14 20)">
+          <rect width="52" height="18" rx="4" fill="#d1fae5"/>
+          <text x="26" y="13" text-anchor="middle" class="font" font-size="10" fill="#059669">✉ 邮件</text>
+          <text x="60" y="13" class="font" font-size="11" fill="#94a3b8">王亮 · 3 天前</text>
+        </g>
+        <text x="14" y="52" class="font" font-size="11" fill="#475569">发送了报价单 PDF（¥ 128,000）</text>
+      </g>
+    </g>
+
+    <!-- 底部操作按钮组 -->
+    <g transform="translate(20 516)">
+      <g><rect width="104" height="40" rx="20" fill="#ffffff" stroke="#3b82f6"/>
+        <g transform="translate(24 20)"><text y="4" class="font" font-size="14">📞</text></g>
+        <text x="68" y="25" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#1d4ed8">打电话</text></g>
+      <g transform="translate(118 0)"><rect width="104" height="40" rx="20" fill="#ffffff" stroke="#10b981"/>
+        <g transform="translate(24 20)"><text y="4" class="font" font-size="14">✉</text></g>
+        <text x="68" y="25" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#059669">发邮件</text></g>
+      <g transform="translate(236 0)"><rect width="104" height="40" rx="20" fill="url(#lg-orange)"/>
+        <g transform="translate(24 20)"><text y="4" class="font" font-size="14">📝</text></g>
+        <text x="68" y="25" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#ffffff">新建跟进</text></g>
+    </g>
+
+    <!-- AI 助手快捷入口 -->
+    <g transform="translate(20 572)">
+      <rect width="340" height="64" rx="14" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.2)"/>
+      <g transform="translate(30 32)"><circle r="20" fill="url(#lg-purple)"/><text y="6" text-anchor="middle" class="font" font-size="18" fill="#ffffff">✨</text></g>
+      <text x="64" y="30" class="font" font-size="13" font-weight="600" fill="#6d28d9">AI 帮你生成跟进话术</text>
+      <text x="64" y="50" class="font" font-size="11" fill="#7c3aed">基于历史对话 · 一键套用</text>
+      <text x="322" y="38" class="font" font-size="14" fill="#6d28d9">›</text>
+    </g>
+  </g>
+
+  <!-- ============ 右上浮卡：能力说明 ============ -->
+  <g transform="translate(1020 200)" filter="url(#fx-card)">
+    <rect width="500" height="240" rx="18" fill="#ffffff"/>
+    <g transform="translate(30 30)">
+      <rect width="80" height="24" rx="12" fill="rgba(16,185,129,0.12)"/>
+      <text x="40" y="17" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#059669">✓ 能力闭环</text>
+    </g>
+    <text x="30" y="86" class="font" font-size="18" font-weight="700" fill="#0f172a">端到端业务闭环</text>
+    <text x="30" y="110" class="font" font-size="12" fill="#64748b">列表 → 详情 → 操作 → 跟进记录</text>
+
+    <g transform="translate(30 130)">
+      <g><rect width="8" height="8" rx="2" fill="url(#lg-green)" transform="translate(0 4)"/>
+        <text x="20" y="10" class="font" font-size="12" fill="#334155">统一 request.js：token、401、错误提示</text></g>
+      <g transform="translate(0 24)"><rect width="8" height="8" rx="2" fill="url(#lg-green)" transform="translate(0 4)"/>
+        <text x="20" y="10" class="font" font-size="12" fill="#334155">权限码 guardCrmPermission 自动拦截</text></g>
+      <g transform="translate(0 48)"><rect width="8" height="8" rx="2" fill="url(#lg-green)" transform="translate(0 4)"/>
+        <text x="20" y="10" class="font" font-size="12" fill="#334155">后台新增字段 → 移动端表单自动跟随</text></g>
+      <g transform="translate(0 72)"><rect width="8" height="8" rx="2" fill="url(#lg-green)" transform="translate(0 4)"/>
+        <text x="20" y="10" class="font" font-size="12" fill="#334155">打电话、邮件、AI 话术深度集成</text></g>
+    </g>
+  </g>
+
+  <!-- 代码片段：展示移动端 API 调用 -->
+  <g transform="translate(1020 480)" filter="url(#fx-card)">
+    <rect width="500" height="320" rx="12" fill="#0f172a"/>
+    <g transform="translate(20 20)">
+      <circle r="5" cx="0" cy="0" fill="#fb7185"/>
+      <circle r="5" cx="16" cy="0" fill="#fbbf24"/>
+      <circle r="5" cx="32" cy="0" fill="#34d399"/>
+      <text x="56" y="4" class="font" font-size="11" fill="#64748b">customer-list.vue · UniApp</text>
+    </g>
+    <g transform="translate(20 60)" class="mono" font-size="12">
+      <text y="0" fill="#64748b">// 统一封装，自动注入 token</text>
+      <text y="22"><tspan fill="#c084fc">import</tspan><tspan fill="#e2e8f0"> { crmApi } </tspan><tspan fill="#c084fc">from</tspan><tspan fill="#fbbf24"> './api/index'</tspan></text>
+      <text y="44"><tspan fill="#c084fc">import</tspan><tspan fill="#e2e8f0"> { guardCrmPermission } </tspan><tspan fill="#c084fc">from</tspan></text>
+      <text y="62"><tspan fill="#e2e8f0">  </tspan><tspan fill="#fbbf24">'./utils/guard'</tspan></text>
+      <text y="92" fill="#64748b">// 拦截无权限用户</text>
+      <text y="114"><tspan fill="#c084fc">if</tspan><tspan fill="#e2e8f0"> (!</tspan><tspan fill="#93c5fd">guardCrmPermission</tspan><tspan fill="#e2e8f0">(</tspan><tspan fill="#fbbf24">'crm:customer'</tspan><tspan fill="#e2e8f0">)) </tspan></text>
+      <text y="132"><tspan fill="#e2e8f0">  </tspan><tspan fill="#c084fc">return</tspan></text>
+      <text y="162" fill="#64748b">// 调用业务接口（自动走鉴权链路）</text>
+      <text y="184"><tspan fill="#c084fc">const</tspan><tspan fill="#e2e8f0"> result = </tspan><tspan fill="#c084fc">await</tspan><tspan fill="#e2e8f0"> crmApi.</tspan><tspan fill="#93c5fd">getCustomers</tspan><tspan fill="#e2e8f0">({</tspan></text>
+      <text y="202"><tspan fill="#e2e8f0">  </tspan><tspan fill="#a5b4fc">page</tspan><tspan fill="#e2e8f0">: </tspan><tspan fill="#f472b6">1</tspan><tspan fill="#e2e8f0">, </tspan><tspan fill="#a5b4fc">pageSize</tspan><tspan fill="#e2e8f0">: </tspan><tspan fill="#f472b6">50</tspan><tspan fill="#e2e8f0">,</tspan></text>
+      <text y="220"><tspan fill="#e2e8f0">  </tspan><tspan fill="#a5b4fc">keyword</tspan><tspan fill="#e2e8f0">: keyword.value</tspan></text>
+      <text y="238"><tspan fill="#e2e8f0">})</tspan></text>
+      <text y="266"><tspan fill="#e2e8f0">customers.value = result.items</tspan></text>
+    </g>
+  </g>
+</svg>

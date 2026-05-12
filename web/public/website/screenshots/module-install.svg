@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GinkgoAdmin 首页 - 一键安装与热加载样张
+  复刻 ModuleManager.vue 的「版本选择对话框 + 安装进度对话框」组合
+  聚焦：版本选择 + 实时进度 + 完成后自动热加载
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="GinkgoAdmin 一键安装与热加载">
+  <defs>
+    <linearGradient id="lg-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
+    <linearGradient id="lg-primary" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#a855f7"/></linearGradient>
+    <linearGradient id="lg-btn-primary" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#4f46e5"/></linearGradient>
+    <linearGradient id="lg-success" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <linearGradient id="cov-ai" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient>
+    <filter id="fx-card" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.04"/></filter>
+    <filter id="fx-dialog" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="20" stdDeviation="30" flood-color="#0f172a" flood-opacity="0.25"/></filter>
+  </defs>
+  <style>
+    .font { font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, sans-serif; }
+    .mono { font-family: Consolas, 'Courier New', monospace; }
+  </style>
+
+  <!-- 背景：半透明遮罩 -->
+  <rect width="1600" height="1000" fill="#f9fafb"/>
+
+  <!-- 背景层：模糊的商店列表（作为背景衬托） -->
+  <g opacity="0.35">
+    <rect x="0" y="0" width="220" height="1000" fill="#ffffff"/>
+    <line x1="220" y1="0" x2="220" y2="1000" stroke="#e5e7eb"/>
+    <rect x="220" y="0" width="1380" height="56" fill="#ffffff"/>
+    <line x1="220" y1="56" x2="1600" y2="56" stroke="#e5e7eb"/>
+    <!-- 简化的卡片网格背景 -->
+    <g transform="translate(268 116)">
+      <rect width="400" height="280" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect width="400" height="120" rx="12" fill="url(#cov-ai)"/>
+      <rect y="112" width="400" height="8" fill="url(#cov-ai)"/>
+      <rect x="420" width="400" height="280" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="420" width="400" height="120" rx="12" fill="#10b981"/>
+      <rect x="840" width="400" height="280" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="840" width="400" height="120" rx="12" fill="#f59e0b"/>
+    </g>
+  </g>
+
+  <!-- 遮罩 -->
+  <rect width="1600" height="1000" fill="rgba(15,23,42,0.55)"/>
+
+  <!-- ================= 主 Dialog：安装进度（核心焦点） ================= -->
+  <g transform="translate(530 170)" filter="url(#fx-dialog)">
+    <rect width="540" height="520" rx="16" fill="#ffffff"/>
+
+    <!-- Dialog 头 -->
+    <g>
+      <rect width="540" height="60" rx="16" fill="#f8fafc"/>
+      <rect y="52" width="540" height="8" fill="#f8fafc"/>
+      <line x1="0" y1="60" x2="540" y2="60" stroke="#e5e7eb"/>
+      <text x="24" y="38" class="font" font-size="16" font-weight="700" fill="#1f2937">安装插件 - AICore 智能引擎</text>
+      <text x="516" y="38" text-anchor="end" class="font" font-size="20" fill="#94a3b8">×</text>
+    </g>
+
+    <!-- 插件信息 -->
+    <g transform="translate(24 84)">
+      <rect width="492" height="80" rx="10" fill="#eef2ff" stroke="rgba(79,70,229,0.2)"/>
+      <g transform="translate(20 40)">
+        <rect x="-8" y="-24" width="48" height="48" rx="10" fill="url(#cov-ai)"/>
+        <text x="16" y="8" text-anchor="middle" class="font" font-size="22">🤖</text>
+      </g>
+      <text x="64" y="26" class="font" font-size="14" font-weight="700" fill="#1f2937">AICore 智能引擎</text>
+      <g transform="translate(64 36)">
+        <rect width="56" height="18" rx="4" fill="#ffffff" stroke="#c7d2fe"/>
+        <text x="28" y="13" text-anchor="middle" class="font" font-size="10" fill="#4f46e5">v2.4.1</text>
+      </g>
+      <g transform="translate(128 36)">
+        <rect width="56" height="18" rx="4" fill="#d1fae5"/>
+        <text x="28" y="13" text-anchor="middle" class="font" font-size="10" fill="#059669">编译包</text>
+      </g>
+      <g transform="translate(192 36)">
+        <rect width="56" height="18" rx="4" fill="#dbeafe"/>
+        <text x="28" y="13" text-anchor="middle" class="font" font-size="10" fill="#2563eb">免费</text>
+      </g>
+      <text x="64" y="68" class="font" font-size="11" fill="#6b7280">包大小 8.4 MB · 依赖 Microsoft.Agents.AI · 开发环境</text>
+    </g>
+
+    <!-- 进度条 -->
+    <g transform="translate(24 192)">
+      <text class="font" font-size="13" font-weight="600" fill="#1f2937">整体进度</text>
+      <text x="492" text-anchor="end" class="font" font-size="20" font-weight="800" fill="#10b981">85%</text>
+      <!-- 进度条底 -->
+      <rect y="16" width="492" height="12" rx="6" fill="#f1f5f9"/>
+      <!-- 进度条填充 (85%) -->
+      <rect y="16" width="418" height="12" rx="6" fill="url(#lg-success)"/>
+      <!-- 进度条动画标记 -->
+      <circle cx="418" cy="22" r="5" fill="#ffffff" stroke="#10b981" stroke-width="2"/>
+    </g>
+
+    <!-- 当前步骤提示 -->
+    <g transform="translate(24 244)">
+      <text class="font" font-size="13" fill="#64748b">当前步骤：</text>
+      <text x="90" class="font" font-size="13" font-weight="600" fill="#1f2937">前端插件能力热加载中...</text>
+    </g>
+
+    <!-- 步骤列表 -->
+    <g transform="translate(24 272)">
+      <!-- Step 1 完成 -->
+      <g>
+        <circle cx="14" cy="14" r="12" fill="url(#lg-success)"/>
+        <path d="M9 14 L12 17 L19 11" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="36" y="18" class="font" font-size="13" fill="#1f2937">下载插件包</text>
+        <text x="492" y="18" text-anchor="end" class="mono" font-size="11" fill="#059669">8.4 MB · 0.8s</text>
+      </g>
+      <!-- line -->
+      <line x1="14" y1="28" x2="14" y2="44" stroke="#10b981" stroke-width="2"/>
+
+      <!-- Step 2 完成 -->
+      <g transform="translate(0 36)">
+        <circle cx="14" cy="14" r="12" fill="url(#lg-success)"/>
+        <path d="M9 14 L12 17 L19 11" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="36" y="18" class="font" font-size="13" fill="#1f2937">验证数字签名 &amp; 完整性</text>
+        <text x="492" y="18" text-anchor="end" class="mono" font-size="11" fill="#059669">SHA-256 校验通过</text>
+      </g>
+      <line x1="14" y1="64" x2="14" y2="80" stroke="#10b981" stroke-width="2"/>
+
+      <!-- Step 3 完成 -->
+      <g transform="translate(0 72)">
+        <circle cx="14" cy="14" r="12" fill="url(#lg-success)"/>
+        <path d="M9 14 L12 17 L19 11" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="36" y="18" class="font" font-size="13" fill="#1f2937">ALC 隔离加载 &amp; 契约检查</text>
+        <text x="492" y="18" text-anchor="end" class="mono" font-size="11" fill="#059669">Contracts 兼容</text>
+      </g>
+      <line x1="14" y1="100" x2="14" y2="116" stroke="#10b981" stroke-width="2"/>
+
+      <!-- Step 4 完成 -->
+      <g transform="translate(0 108)">
+        <circle cx="14" cy="14" r="12" fill="url(#lg-success)"/>
+        <path d="M9 14 L12 17 L19 11" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="36" y="18" class="font" font-size="13" fill="#1f2937">执行数据库迁移（含 ginkgo_AI_* 表）</text>
+        <text x="492" y="18" text-anchor="end" class="mono" font-size="11" fill="#059669">18 张表已就绪</text>
+      </g>
+      <line x1="14" y1="136" x2="14" y2="152" stroke="#10b981" stroke-width="2" stroke-dasharray="2 3"/>
+
+      <!-- Step 5 进行中 -->
+      <g transform="translate(0 144)">
+        <circle cx="14" cy="14" r="12" fill="#ffffff" stroke="#6366f1" stroke-width="2"/>
+        <circle cx="14" cy="14" r="5" fill="#6366f1">
+          <animate attributeName="r" values="4;7;4" dur="1.2s" repeatCount="indefinite"/>
+        </circle>
+        <text x="36" y="18" class="font" font-size="13" font-weight="600" fill="#4f46e5">前端插件能力热加载中...</text>
+        <text x="492" y="18" text-anchor="end" class="mono" font-size="11" fill="#6366f1">已注册路由 12/14</text>
+      </g>
+      <line x1="14" y1="172" x2="14" y2="188" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="2 3"/>
+
+      <!-- Step 6 待执行 -->
+      <g transform="translate(0 180)">
+        <circle cx="14" cy="14" r="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="2"/>
+        <text x="36" y="18" class="font" font-size="13" fill="#94a3b8">刷新菜单缓存 &amp; 权限码</text>
+      </g>
+    </g>
+
+    <!-- 提示信息 -->
+    <g transform="translate(24 484)">
+      <rect width="492" height="20" rx="4" fill="#fef3c7"/>
+      <text x="12" y="14" class="font" font-size="11" fill="#92400e">💡 前端已热加载，无需重启；后端服务重启后即完全生效</text>
+    </g>
+  </g>
+
+  <!-- ================= 左侧：版本选择对话框（次要展示） ================= -->
+  <g transform="translate(72 120)" filter="url(#fx-dialog)" opacity="0.95">
+    <rect width="420" height="720" rx="12" fill="#ffffff"/>
+
+    <!-- header -->
+    <g>
+      <rect width="420" height="54" rx="12" fill="#f8fafc"/>
+      <rect y="46" width="420" height="8" fill="#f8fafc"/>
+      <line x1="0" y1="54" x2="420" y2="54" stroke="#e5e7eb"/>
+      <text x="20" y="34" class="font" font-size="15" font-weight="700" fill="#1f2937">选择版本 - AICore 智能引擎</text>
+      <text x="400" y="34" text-anchor="end" class="font" font-size="18" fill="#94a3b8">×</text>
+    </g>
+
+    <!-- 插件描述 -->
+    <g transform="translate(20 68)">
+      <text class="font" font-size="12" fill="#6b7280">多模型适配、Tool Calling、人工审批、会话管理。一站式 AI 能力，支持 OpenAI / DeepSeek / 智谱。</text>
+    </g>
+
+    <!-- 当前环境提示 -->
+    <g transform="translate(20 112)">
+      <rect width="380" height="36" rx="6" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.2)"/>
+      <text x="14" y="22" class="font" font-size="12" fill="#065f46">✓ 当前：<tspan font-weight="700">开发模式（源码调试）</tspan></text>
+    </g>
+
+    <!-- 版本卡片：社区版（free） -->
+    <g transform="translate(20 168)">
+      <rect width="380" height="140" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+      <g transform="translate(20 20)">
+        <text class="font" font-size="14" font-weight="700" fill="#1f2937">社区版</text>
+        <g transform="translate(64 -12)">
+          <rect width="46" height="18" rx="4" fill="#e0e7ff"/>
+          <text x="23" y="13" text-anchor="middle" class="font" font-size="10" fill="#4338ca">v2.4.1</text>
+        </g>
+        <g transform="translate(114 -12)">
+          <rect width="46" height="18" rx="4" fill="#d1fae5"/>
+          <text x="23" y="13" text-anchor="middle" class="font" font-size="10" fill="#059669">编译包</text>
+        </g>
+      </g>
+      <text x="20" y="62" class="font" font-size="12" fill="#64748b">基础对话、单工具调用、10 条会话记录</text>
+      <text x="20" y="82" class="font" font-size="12" fill="#64748b">开源协议 MIT · 商业可用</text>
+      <g transform="translate(20 100)">
+        <text class="font" font-size="18" font-weight="700" fill="#10b981">免费</text>
+        <g transform="translate(232 -16)">
+          <rect width="128" height="32" rx="6" fill="url(#lg-btn-primary)"/>
+          <text x="64" y="20" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#ffffff">⬇ 免费安装</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- 版本卡片：企业版（推荐、当前正在安装） -->
+    <g transform="translate(20 324)">
+      <rect width="380" height="180" rx="10" fill="rgba(79,70,229,0.04)" stroke="#6366f1" stroke-width="2"/>
+      <!-- 推荐 ribbon -->
+      <g transform="translate(310 -6)">
+        <rect width="64" height="22" rx="11" fill="#6366f1"/>
+        <text x="32" y="15" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#ffffff">推荐</text>
+      </g>
+      <g transform="translate(20 20)">
+        <text class="font" font-size="14" font-weight="700" fill="#1f2937">企业版</text>
+        <g transform="translate(56 -12)">
+          <rect width="46" height="18" rx="4" fill="#e0e7ff"/>
+          <text x="23" y="13" text-anchor="middle" class="font" font-size="10" fill="#4338ca">v2.4.1</text>
+        </g>
+        <g transform="translate(106 -12)">
+          <rect width="46" height="18" rx="4" fill="#d1fae5"/>
+          <text x="23" y="13" text-anchor="middle" class="font" font-size="10" fill="#059669">编译包</text>
+        </g>
+        <g transform="translate(156 -12)">
+          <rect width="52" height="18" rx="4" fill="rgba(139,92,246,0.15)"/>
+          <text x="26" y="13" text-anchor="middle" class="font" font-size="10" fill="#6d28d9">已购买</text>
+        </g>
+      </g>
+      <text x="20" y="62" class="font" font-size="12" fill="#475569">✓ 无限会话、多工具并发、风险审批、代理编排</text>
+      <text x="20" y="80" class="font" font-size="12" fill="#475569">✓ Tool Calling 全链路日志审计</text>
+      <text x="20" y="98" class="font" font-size="12" fill="#475569">✓ 优先技术支持 · 12 个月升级保障</text>
+      <g transform="translate(20 130)">
+        <text class="font" font-size="20" font-weight="700" fill="#d97706">¥ 2,880</text>
+        <text x="108" y="-2" class="font" font-size="11" fill="#94a3b8" text-decoration="line-through">¥ 3,680</text>
+        <g transform="translate(212 -20)">
+          <rect width="148" height="36" rx="6" fill="url(#lg-primary)"/>
+          <!-- 动画 loading -->
+          <g transform="translate(20 18)">
+            <circle r="6" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+            <circle r="6" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-dasharray="9 18" transform="rotate(-60)"/>
+          </g>
+          <text x="82" y="22" text-anchor="middle" class="font" font-size="13" font-weight="600" fill="#ffffff">安装中...</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- 版本卡片：源码版 -->
+    <g transform="translate(20 520)">
+      <rect width="380" height="160" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+      <g transform="translate(20 20)">
+        <text class="font" font-size="14" font-weight="700" fill="#1f2937">源码版</text>
+        <g transform="translate(56 -12)">
+          <rect width="46" height="18" rx="4" fill="#e0e7ff"/>
+          <text x="23" y="13" text-anchor="middle" class="font" font-size="10" fill="#4338ca">v2.4.1</text>
+        </g>
+        <g transform="translate(106 -12)">
+          <rect width="46" height="18" rx="4" fill="#fef3c7"/>
+          <text x="23" y="13" text-anchor="middle" class="font" font-size="10" fill="#d97706">源码包</text>
+        </g>
+      </g>
+      <text x="20" y="62" class="font" font-size="12" fill="#64748b">包含完整源码、可二次开发</text>
+      <text x="20" y="80" class="font" font-size="12" fill="#64748b">永久授权 · 无限使用 · 不含未来大版本</text>
+      <g transform="translate(20 110)">
+        <text class="font" font-size="20" font-weight="700" fill="#d97706">¥ 8,880</text>
+        <g transform="translate(232 -18)">
+          <rect width="128" height="32" rx="6" fill="#f0fdf4" stroke="#10b981"/>
+          <text x="64" y="20" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#059669">🛒 购买</text>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- ================= 右下角：成功 Toast ================= -->
+  <g transform="translate(1108 720)" filter="url(#fx-dialog)">
+    <rect width="440" height="160" rx="10" fill="#ffffff" stroke="#10b981" stroke-width="2"/>
+    <!-- 左侧色条 -->
+    <rect width="6" height="160" rx="3" fill="url(#lg-success)"/>
+
+    <g transform="translate(32 28)">
+      <circle cx="14" cy="14" r="14" fill="url(#lg-success)"/>
+      <path d="M9 14 L12 17 L19 11" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="72" y="42" class="font" font-size="14" font-weight="700" fill="#065f46">前端插件能力已刷新</text>
+    <text x="72" y="62" class="font" font-size="12" fill="#6b7280">AICore 企业版已热加载完成，新菜单已可用：</text>
+    <g transform="translate(72 78)">
+      <rect width="96" height="22" rx="11" fill="#d1fae5"/>
+      <text x="48" y="15" text-anchor="middle" class="font" font-size="11" fill="#065f46">AI 对话</text>
+    </g>
+    <g transform="translate(176 78)">
+      <rect width="108" height="22" rx="11" fill="#d1fae5"/>
+      <text x="54" y="15" text-anchor="middle" class="font" font-size="11" fill="#065f46">能力广场</text>
+    </g>
+    <g transform="translate(292 78)">
+      <rect width="108" height="22" rx="11" fill="#d1fae5"/>
+      <text x="54" y="15" text-anchor="middle" class="font" font-size="11" fill="#065f46">审批记录</text>
+    </g>
+    <g transform="translate(72 110)">
+      <rect width="148" height="22" rx="11" fill="#fef3c7"/>
+      <text x="74" y="15" text-anchor="middle" class="font" font-size="11" fill="#92400e">💡 请重启后端服务</text>
+    </g>
+
+    <text x="416" y="28" text-anchor="end" class="font" font-size="16" fill="#94a3b8">×</text>
+  </g>
+</svg>

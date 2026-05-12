@@ -1,0 +1,161 @@
+<Project>
+
+  <!--
+    【编译包模块】发布时自动收集逻辑
+    =================================
+    背景：
+    - 源码包模块通过 Ginkgo.Module.* 的 .csproj 加入到 sln，由 publish-all.ps1 显式拷到 publishDir/modules/ 下。
+    - DLL 编译包模块安装后，server/ 下没有 .csproj（只有 bin/*.dll + module.json + install.json + sql/config 等），
+      因此既不会被 dotnet publish 原生包含，也不会被 publish-all.ps1 命中（后者只处理有 csproj 的模块）。
+    该 Target 的作用：
+    - 在 `dotnet publish` / VS Publish 流程中，扫描 src/Module/Ginkgo.Module.*，识别 DLL 编译包（无 csproj），
+      把整个 server/ 目录按 modules/<id>/<version>/server/** 结构加入 $(PublishDir)。
+    - 与运行期 ScanProductionModules 的加载路径完全对齐（entryAssembly 已在打包时被改为相对 server/ 的 bin/<id>.dll）。
+
+    注意：
+    - 仅在 publish 触发（BeforeTargets="ComputeFilesToPublish"），不影响日常 build。
+      这样日常 F5 调试仍由 DevModuleBootstrap 从源码目录加载 DLL，避免与 ScanProductionModules 重复加载。
+    - 可通过属性 `DisableCompiledModuleCollection=true` 强制跳过（例如用 publish-all.ps1 时希望由脚本完全掌控）。
+  -->
+
+  <UsingTask TaskName="DiscoverCompiledModulePackages"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <ModuleRoot ParameterType="System.String" Required="true" />
+      <DiscoveredFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Using Namespace="Microsoft.Build.Framework" />
+      <Using Namespace="Microsoft.Build.Utilities" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+          var results = new List<ITaskItem>();
+          try
+          {
+            if (string.IsNullOrEmpty(ModuleRoot) || !Directory.Exists(ModuleRoot))
+            {
+              DiscoveredFiles = results.ToArray();
+              return true;
+            }
+
+            foreach (var moduleDir in Directory.EnumerateDirectories(ModuleRoot, "Ginkgo.Module.*"))
+            {
+              var dirName = Path.GetFileName(moduleDir);
+              var serverDir = Path.Combine(moduleDir, "server");
+              if (!Directory.Exists(serverDir)) continue;
+
+              var manifestPath = Path.Combine(serverDir, "module.json");
+              if (!File.Exists(manifestPath)) continue;
+
+              // 只处理 DLL 编译包：server/ 下不能有 *.csproj（那是源码包，由 publish-all.ps1 或 ProjectReference 处理）
+              if (Directory.EnumerateFiles(serverDir, "*.csproj").Any()) continue;
+
+              // server/bin/ 下必须有 DLL，否则视为未安装/不完整
+              var binDir = Path.Combine(serverDir, "bin");
+              if (!Directory.Exists(binDir) || !Directory.EnumerateFiles(binDir, "*.dll", SearchOption.AllDirectories).Any())
+              {
+                Log.LogMessage(MessageImportance.Low, "[CompiledModule] {0} 跳过：无 csproj 但 bin/ 下也无 DLL", dirName);
+                continue;
+              }
+
+              // 读取 id / version（容错：正则提取，避免引入 JSON 序列化依赖）
+              string id = dirName;
+              string version = "0.0.0";
+              try
+              {
+                var json = File.ReadAllText(manifestPath);
+                var idMatch = Regex.Match(json, "\"id\"\\s*:\\s*\"([^\"]+)\"");
+                if (idMatch.Success) id = idMatch.Groups[1].Value;
+                var verMatch = Regex.Match(json, "\"version\"\\s*:\\s*\"([^\"]+)\"");
+                if (verMatch.Success) version = verMatch.Groups[1].Value;
+              }
+              catch (Exception ex)
+              {
+                Log.LogWarning("[CompiledModule] 解析 {0}/module.json 失败，使用目录名兜底: {1}", dirName, ex.Message);
+              }
+
+              Log.LogMessage(MessageImportance.High, "[CompiledModule] 发现编译包 {0} v{1} → modules/{0}/{1}/server/", id, version);
+
+              // 枚举整个 server/ 目录下的所有文件（包含 bin/、sql/、config/、module.json、install.json 等）
+              // 【低成本反编译防御】跳过 .pdb / .xml：即使 server/ 下存在遗留的调试符号或文档，也不会被带入 $(PublishDir)
+              foreach (var file in Directory.EnumerateFiles(serverDir, "*", SearchOption.AllDirectories))
+              {
+                var ext = Path.GetExtension(file);
+                if (string.Equals(ext, ".pdb", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(ext, ".xml", StringComparison.OrdinalIgnoreCase))
+                {
+                  continue;
+                }
+                var rel = file.Substring(serverDir.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                var item = new TaskItem(file);
+                item.SetMetadata("ModuleId", id);
+                item.SetMetadata("ModuleVersion", version);
+                // 目标相对 $(PublishDir)：modules/<id>/<version>/server/<rel>
+                item.SetMetadata("PublishRelativePath", string.Format("modules/{0}/{1}/server/{2}", id, version, rel.Replace('\\', '/')));
+                results.Add(item);
+              }
+
+              // 如果模块根目录有 install-manifest.json / README.md / LICENSE 等辅助文件，也一并带入
+              // 目标路径：modules/<id>/<version>/<file>
+              foreach (var rootFile in new[] { "install-manifest.json", "README.md", "LICENSE", "CHANGELOG.md" })
+              {
+                var rootPath = Path.Combine(moduleDir, rootFile);
+                if (File.Exists(rootPath))
+                {
+                  var item = new TaskItem(rootPath);
+                  item.SetMetadata("ModuleId", id);
+                  item.SetMetadata("ModuleVersion", version);
+                  item.SetMetadata("PublishRelativePath", string.Format("modules/{0}/{1}/{2}", id, version, rootFile));
+                  results.Add(item);
+                }
+              }
+            }
+          }
+          catch (Exception ex)
+          {
+            Log.LogWarning("[CompiledModule] 扫描失败: {0}", ex.Message);
+          }
+
+          DiscoveredFiles = results.ToArray();
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <!--
+    在 Publish 流程中插入编译包模块文件
+    通过 ResolvedFileToPublish + RelativePath 指定发布产物的相对路径
+  -->
+  <Target Name="IncludeCompiledModulesInPublish"
+          BeforeTargets="ComputeFilesToPublish"
+          Condition="'$(DisableCompiledModuleCollection)' != 'true'">
+
+    <PropertyGroup>
+      <_CompiledModulesRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\Module'))</_CompiledModulesRoot>
+    </PropertyGroup>
+
+    <Message Text="[CompiledModule] 扫描模块根目录: $(_CompiledModulesRoot)" Importance="normal" />
+
+    <DiscoverCompiledModulePackages ModuleRoot="$(_CompiledModulesRoot)">
+      <Output TaskParameter="DiscoveredFiles" ItemName="_CompiledModuleFile" />
+    </DiscoverCompiledModulePackages>
+
+    <ItemGroup>
+      <ResolvedFileToPublish Include="@(_CompiledModuleFile)">
+        <RelativePath>%(_CompiledModuleFile.PublishRelativePath)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+
+    <Message Text="[CompiledModule] 已加入发布: %(_CompiledModuleFile.PublishRelativePath)"
+             Importance="low"
+             Condition="'@(_CompiledModuleFile)' != ''" />
+  </Target>
+
+</Project>

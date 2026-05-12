@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 960" font-family="'PingFang SC','Microsoft YaHei','Segoe UI',Arial,sans-serif">
+  <!-- ========== 背景 & 渐变定义 ========== -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="100%" stop-color="#111a2e"/>
+    </linearGradient>
+    <linearGradient id="clientGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="apiGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="appGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="domainGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="infraGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="moduleGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="dataGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrowDashed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="960" fill="url(#bg)"/>
+
+  <!-- ========== 标题 ========== -->
+  <text x="640" y="46" text-anchor="middle" font-size="26" font-weight="700" fill="#e2e8f0" letter-spacing="1">
+    GinkgoAdmin  架构总览
+  </text>
+  <text x="640" y="74" text-anchor="middle" font-size="13" fill="#94a3b8">
+    DDD 分层架构 · 模块化微内核 · ALC 隔离 · Contracts 契约驱动
+  </text>
+
+  <!-- ========== 第 1 层：四端交付层 ========== -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="100" width="1160" height="110" rx="16" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  </g>
+  <text x="80" y="128" font-size="14" font-weight="700" fill="#cbd5e1">① 四端交付层  Delivery Layer</text>
+
+  <g font-size="14" font-weight="600" fill="#ffffff">
+    <rect x="90" y="142" width="260" height="56" rx="10" fill="url(#clientGrad)"/>
+    <text x="220" y="167" text-anchor="middle">Web 后台</text>
+    <text x="220" y="185" text-anchor="middle" font-size="11" font-weight="400" fill="#dbeafe">Vue 3 + Element Plus + Vite</text>
+
+    <rect x="370" y="142" width="260" height="56" rx="10" fill="url(#clientGrad)"/>
+    <text x="500" y="167" text-anchor="middle">Web 前台门户</text>
+    <text x="500" y="185" text-anchor="middle" font-size="11" font-weight="400" fill="#dbeafe">官网 · 文档 · 插件商店</text>
+
+    <rect x="650" y="142" width="260" height="56" rx="10" fill="url(#clientGrad)"/>
+    <text x="780" y="167" text-anchor="middle">UniApp 移动端</text>
+    <text x="780" y="185" text-anchor="middle" font-size="11" font-weight="400" fill="#dbeafe">H5 · 小程序 · App</text>
+
+    <rect x="930" y="142" width="260" height="56" rx="10" fill="url(#clientGrad)"/>
+    <text x="1060" y="167" text-anchor="middle">WPF 桌面端</text>
+    <text x="1060" y="185" text-anchor="middle" font-size="11" font-weight="400" fill="#dbeafe">Windows 客户端</text>
+  </g>
+
+  <!-- ↓ 箭头：四端 → API -->
+  <g stroke="#64748b" stroke-width="1.5" fill="none">
+    <path d="M220 210 L220 240" marker-end="url(#arrow)"/>
+    <path d="M500 210 L500 240" marker-end="url(#arrow)"/>
+    <path d="M780 210 L780 240" marker-end="url(#arrow)"/>
+    <path d="M1060 210 L1060 240" marker-end="url(#arrow)"/>
+  </g>
+  <text x="640" y="234" text-anchor="middle" font-size="11" fill="#94a3b8" font-style="italic">REST / SignalR  ·  统一鉴权 Token</text>
+
+  <!-- ========== 第 2 层：API 网关 ========== -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="252" width="1160" height="64" rx="12" fill="url(#apiGrad)"/>
+  </g>
+  <text x="640" y="284" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">
+    ② Ginkgo.Api  (ASP.NET Core · 认证鉴权 · 路由编排 · 中间件管道 · 插件加载宿主)
+  </text>
+  <text x="640" y="304" text-anchor="middle" font-size="11" fill="#e0f2fe">
+    JWT · 权限策略 · 多租户上下文 · 动态路由注入 · 异常捕获 · 审计
+  </text>
+
+  <!-- ↓ -->
+  <g stroke="#64748b" stroke-width="1.5" fill="none">
+    <path d="M640 316 L640 340" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- ========== 第 3 层：DDD 分层 ========== -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="352" width="1160" height="180" rx="16" fill="#1e293b" stroke="#334155"/>
+  </g>
+  <text x="80" y="378" font-size="14" font-weight="700" fill="#cbd5e1">③ DDD 分层核心  Domain-Driven Layers</text>
+
+  <!-- Application -->
+  <g filter="url(#shadow)">
+    <rect x="90" y="394" width="355" height="120" rx="12" fill="url(#appGrad)"/>
+  </g>
+  <text x="267" y="420" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">Application 应用服务层</text>
+  <g font-size="11" fill="#ecfdf5">
+    <text x="267" y="442" text-anchor="middle">用例编排 · DTO 转换 · 事务边界</text>
+    <text x="267" y="462" text-anchor="middle">AppService · CQRS 命令/查询</text>
+    <text x="267" y="482" text-anchor="middle">— 不关心具体 ORM / HTTP 细节 —</text>
+  </g>
+
+  <!-- Domain -->
+  <g filter="url(#shadow)">
+    <rect x="462" y="394" width="355" height="120" rx="12" fill="url(#domainGrad)"/>
+  </g>
+  <text x="640" y="420" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">Domain 领域层（核心）</text>
+  <g font-size="11" fill="#fff7ed">
+    <text x="640" y="442" text-anchor="middle">实体 · 值对象 · 聚合根 · 仓储接口</text>
+    <text x="640" y="462" text-anchor="middle">领域事件 · 业务规则 · 不变式</text>
+    <text x="640" y="482" text-anchor="middle">— 零技术依赖，可独立演进 —</text>
+  </g>
+
+  <!-- Infrastructure -->
+  <g filter="url(#shadow)">
+    <rect x="834" y="394" width="356" height="120" rx="12" fill="url(#infraGrad)"/>
+  </g>
+  <text x="1012" y="420" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">Infrastructure 基础设施</text>
+  <g font-size="11" fill="#f3e8ff">
+    <text x="1012" y="442" text-anchor="middle">SqlSugar 仓储实现 · 缓存 · 日志</text>
+    <text x="1012" y="462" text-anchor="middle">OSS · SignalR · 邮件 · 任务调度</text>
+    <text x="1012" y="482" text-anchor="middle">Plugin.Abstractions · CodeGen · Shared</text>
+  </g>
+
+  <!-- ↓ 依赖倒置提示 -->
+  <text x="640" y="544" text-anchor="middle" font-size="11" fill="#94a3b8" font-style="italic">
+    ↑ 依赖倒置：Application / Infrastructure 均依赖 Domain 定义的接口，Domain 不反向依赖任何外层 ↑
+  </text>
+
+  <!-- ========== 第 4 层：ALC 插件隔离 + 业务模块 ========== -->
+  <g stroke="#64748b" stroke-width="1.5" stroke-dasharray="6 4" fill="none">
+    <path d="M640 552 L640 582" marker-end="url(#arrowDashed)"/>
+  </g>
+  <text x="640" y="574" text-anchor="middle" font-size="11" fill="#94a3b8" font-style="italic">
+    AssemblyLoadContext 隔离加载  ·  Contracts 契约调用（零硬引用）
+  </text>
+
+  <g filter="url(#shadow)">
+    <rect x="60" y="594" width="1160" height="168" rx="16" fill="#0f172a" stroke="#334155" stroke-dasharray="6 4"/>
+  </g>
+  <text x="80" y="620" font-size="14" font-weight="700" fill="#cbd5e1">
+    ④ 业务模块层  Pluggable Modules （可按需启停 · 可独立升级 · 可商业分发）
+  </text>
+
+  <g font-size="12" font-weight="600" fill="#ffffff">
+    <!-- 第一行：模拟业务模块 -->
+    <rect x="90" y="636" width="135" height="50" rx="8" fill="url(#moduleGrad)"/>
+    <text x="157" y="657" text-anchor="middle">CRM</text>
+    <text x="157" y="674" text-anchor="middle" font-size="10" fill="#ccfbf1">客户 · 商机 · 跟进</text>
+
+    <rect x="237" y="636" width="135" height="50" rx="8" fill="url(#moduleGrad)"/>
+    <text x="304" y="657" text-anchor="middle">WMS</text>
+    <text x="304" y="674" text-anchor="middle" font-size="10" fill="#ccfbf1">仓储 · 出入库 · 盘点</text>
+
+    <rect x="384" y="636" width="135" height="50" rx="8" fill="url(#moduleGrad)"/>
+    <text x="451" y="657" text-anchor="middle">ERP</text>
+    <text x="451" y="674" text-anchor="middle" font-size="10" fill="#ccfbf1">进销存 · 采购 · 库存</text>
+
+    <rect x="531" y="636" width="135" height="50" rx="8" fill="url(#moduleGrad)"/>
+    <text x="598" y="657" text-anchor="middle">Mall</text>
+    <text x="598" y="674" text-anchor="middle" font-size="10" fill="#ccfbf1">商城 · 订单 · 营销</text>
+
+    <rect x="678" y="636" width="135" height="50" rx="8" fill="url(#moduleGrad)"/>
+    <text x="745" y="657" text-anchor="middle">社区治理</text>
+    <text x="745" y="674" text-anchor="middle" font-size="10" fill="#ccfbf1">网格 · 巡检 · 事件</text>
+
+    <rect x="825" y="636" width="135" height="50" rx="8" fill="url(#moduleGrad)"/>
+    <text x="892" y="657" text-anchor="middle">OA</text>
+    <text x="892" y="674" text-anchor="middle" font-size="10" fill="#ccfbf1">审批 · 流程 · 公文</text>
+
+    <rect x="972" y="636" width="115" height="50" rx="8" fill="url(#moduleGrad)"/>
+    <text x="1029" y="657" text-anchor="middle">HR</text>
+    <text x="1029" y="674" text-anchor="middle" font-size="10" fill="#ccfbf1">人事 · 考勤 · 薪酬</text>
+
+    <rect x="1099" y="636" width="121" height="50" rx="8" fill="url(#moduleGrad)"/>
+    <text x="1159" y="657" text-anchor="middle">Finance</text>
+    <text x="1159" y="674" text-anchor="middle" font-size="10" fill="#ccfbf1">财务 · 账单 · 核算</text>
+
+    <!-- 第二行：更多模拟模块 -->
+    <rect x="90" y="698" width="135" height="50" rx="8" fill="url(#moduleGrad)" opacity="0.85"/>
+    <text x="157" y="719" text-anchor="middle">PM</text>
+    <text x="157" y="736" text-anchor="middle" font-size="10" fill="#ccfbf1">项目 · 任务 · 协作</text>
+
+    <rect x="237" y="698" width="135" height="50" rx="8" fill="url(#moduleGrad)" opacity="0.85"/>
+    <text x="304" y="719" text-anchor="middle">AfterSale</text>
+    <text x="304" y="736" text-anchor="middle" font-size="10" fill="#ccfbf1">售后 · 工单 · 服务</text>
+
+    <rect x="384" y="698" width="135" height="50" rx="8" fill="url(#moduleGrad)" opacity="0.85"/>
+    <text x="451" y="719" text-anchor="middle">Logistics</text>
+    <text x="451" y="736" text-anchor="middle" font-size="10" fill="#ccfbf1">物流 · 配送 · 追踪</text>
+
+    <rect x="531" y="698" width="135" height="50" rx="8" fill="url(#moduleGrad)" opacity="0.85"/>
+    <text x="598" y="719" text-anchor="middle">Portal</text>
+    <text x="598" y="736" text-anchor="middle" font-size="10" fill="#ccfbf1">门户 · CMS · 资讯</text>
+
+    <rect x="678" y="698" width="135" height="50" rx="8" fill="url(#moduleGrad)" opacity="0.85"/>
+    <text x="745" y="719" text-anchor="middle">Report</text>
+    <text x="745" y="736" text-anchor="middle" font-size="10" fill="#ccfbf1">报表 · 分析 · BI</text>
+
+    <rect x="825" y="698" width="135" height="50" rx="8" fill="url(#moduleGrad)" opacity="0.85"/>
+    <text x="892" y="719" text-anchor="middle">IoT</text>
+    <text x="892" y="736" text-anchor="middle" font-size="10" fill="#ccfbf1">设备 · 监控 · 告警</text>
+
+    <rect x="972" y="698" width="135" height="50" rx="8" fill="url(#moduleGrad)" opacity="0.85"/>
+    <text x="1039" y="719" text-anchor="middle">Education</text>
+    <text x="1039" y="736" text-anchor="middle" font-size="10" fill="#ccfbf1">培训 · 课程 · 考试</text>
+
+    <rect x="1147" y="698" width="43" height="50" rx="8" fill="#334155" stroke="#475569" stroke-dasharray="4 3"/>
+    <text x="1168" y="723" text-anchor="middle" font-size="13" fill="#cbd5e1">…</text>
+  </g>
+
+  <!-- ========== 第 5 层：数据与运行时 ========== -->
+  <g stroke="#64748b" stroke-width="1.5" fill="none">
+    <path d="M640 762 L640 788" marker-end="url(#arrow)"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="60" y="798" width="1160" height="115" rx="14" fill="url(#dataGrad)"/>
+  </g>
+  <text x="80" y="824" font-size="14" font-weight="700" fill="#f1f5f9">⑤ 数据与运行时  Data &amp; Runtime</text>
+  <g font-size="12" fill="#ffffff">
+    <rect x="260" y="848" width="150" height="42" rx="8" fill="#1e293b" stroke="#475569"/>
+    <text x="335" y="866" text-anchor="middle" font-weight="600">SqlSugar ORM</text>
+    <text x="335" y="882" text-anchor="middle" font-size="10" fill="#cbd5e1">统一数据访问</text>
+
+    <rect x="428" y="848" width="120" height="42" rx="8" fill="#1e293b" stroke="#475569"/>
+    <text x="488" y="866" text-anchor="middle" font-weight="600">MySQL（默认）</text>
+    <text x="488" y="882" text-anchor="middle" font-size="10" fill="#cbd5e1">InnoDB · UTF8MB4</text>
+
+    <rect x="566" y="848" width="100" height="42" rx="8" fill="#1e293b" stroke="#475569"/>
+    <text x="616" y="866" text-anchor="middle" font-weight="600">MSSQL</text>
+    <text x="616" y="882" text-anchor="middle" font-size="10" fill="#cbd5e1">可切换</text>
+
+    <rect x="684" y="848" width="160" height="42" rx="8" fill="#1e293b" stroke="#475569"/>
+    <text x="764" y="866" text-anchor="middle" font-weight="600">PostgreSQL / SQLite / …</text>
+    <text x="764" y="882" text-anchor="middle" font-size="10" fill="#cbd5e1">按需适配</text>
+
+    <rect x="862" y="848" width="140" height="42" rx="8" fill="#1e293b" stroke="#475569"/>
+    <text x="932" y="866" text-anchor="middle" font-weight="600">Redis / 缓存</text>
+    <text x="932" y="882" text-anchor="middle" font-size="10" fill="#cbd5e1">会话 · 分布式锁</text>
+  </g>
+
+  <!-- ========== 底部版权 ========== -->
+  <text x="640" y="942" text-anchor="middle" font-size="11" fill="#64748b">
+    © GinkgoAdmin  ·  http://www.ginkgoadmin.com
+  </text>
+</svg>

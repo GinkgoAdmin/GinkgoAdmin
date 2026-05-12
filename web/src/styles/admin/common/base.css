@@ -1,0 +1,734 @@
+/* Common base styles shared by all themes.
+   - Layout skeleton wrappers
+   - Resets that don't conflict with Tailwind/Element Plus
+   - Structural helpers that should not encode colors
+*/
+/* empty initially; migrate shared non-color rules here incrementally. */
+
+
+/* ==================== 工具类（Utilities） ==================== */
+/* LOGO 动画（结构与交互，无颜色） */
+.ginkgo-logo-animate {
+  transition: all 0.3s ease;
+}
+
+.ginkgo-logo-animate:hover {
+  transform: rotate(360deg) scale(1.05);
+}
+
+/* ==================== 头部标签页 通用结构（无颜色） ==================== */
+/* 标签容器、图标、标题（仅结构与排版） */
+.header-tab-label {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* 统一：TAB 图标与标题间距 */
+  max-width: 220px;
+}
+
+.header-tab-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.header-tab-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 16px;
+  font-weight: inherit;
+  letter-spacing: 0.2px;
+}
+
+/* 响应式：仅结构尺寸与排版调整 */
+@media (max-width: 1200px) {
+  .header-tab-label { max-width: 140px; }
+  .header-admin-tabs .el-tabs__item {
+    padding: 0 16px;
+    height: 38px;
+    line-height: 36px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 992px) {
+  .header-tab-label { max-width: 110px; }
+  .header-admin-tabs .el-tabs__item {
+    padding: 0 14px;
+    margin-right: 6px;
+    height: 36px;
+    line-height: 34px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-tab-label { max-width: 90px; }
+  .header-tab-icon { display: none; }
+  .header-admin-tabs .el-tabs__item {
+    padding: 0 12px;
+    margin-right: 4px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-tab-label { max-width: 60px; }
+}
+
+/* ==================== 侧边栏 折叠状态结构（无颜色） ==================== */
+/* 菜单居中、箭头隐藏、品牌区布局调整，仅结构性样式 */
+.ginkgo-sidebar.is-collapsed .ginkgo-menu-search { display: none; }
+
+/* 一级菜单项完全居中 */
+.ginkgo-sidebar.is-collapsed .ginkgo-sidebar-menu .el-menu-item {
+  margin: 2px 8px;
+  padding: 0 !important;
+  justify-content: center;
+  text-align: center;
+  width: calc(100% - 16px);
+}
+.ginkgo-sidebar.is-collapsed .ginkgo-sidebar-menu .el-menu-item .el-icon {
+  margin-right: 0 !important;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 子菜单标题完全居中 */
+.ginkgo-sidebar.is-collapsed .ginkgo-sidebar-menu .el-sub-menu__title {
+  margin: 2px 8px;
+  padding: 0 !important;
+  justify-content: center;
+  text-align: center;
+  padding-left: 8px; /* 略向右偏移，满足折叠有子菜单时的居中偏右需求 */
+  width: calc(100% - 16px);
+}
+.ginkgo-sidebar.is-collapsed .ginkgo-sidebar-menu .el-sub-menu__title .el-icon {
+  margin-right: 0 !important;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 隐藏子菜单展开箭头 */
+.ginkgo-sidebar.is-collapsed .ginkgo-sidebar-menu .el-sub-menu__icon-arrow { display: none !important; }
+/* 强化选择器，防止不同 DOM 结构下箭头残留 */
+.ginkgo-sidebar.is-collapsed .ginkgo-sidebar-menu .el-sub-menu .el-sub-menu__icon-arrow,
+.ginkgo-sidebar.is-collapsed .ginkgo-sidebar-menu .el-sub-menu.is-active .el-sub-menu__icon-arrow { display: none !important; }
+
+/* 品牌区与折叠按钮水平居中 */
+.ginkgo-sidebar.is-collapsed .ginkgo-brand-header { justify-content: center; }
+.ginkgo-sidebar.is-collapsed .ginkgo-brand-content { display: none; }
+.ginkgo-sidebar.is-collapsed .ginkgo-collapse-btn {
+  margin-right: 0;
+  margin-left: 0;
+  position: static; /* 使用父容器居中对齐 */
+}
+
+/* 确保图标在80px宽度内完美居中 */
+.ginkgo-sidebar.is-collapsed .ginkgo-sidebar-menu .el-menu-item,
+.ginkgo-sidebar.is-collapsed .ginkgo-sidebar-menu .el-sub-menu__title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==================== 移动端菜单切换按钮（无颜色） ==================== */
+.mobile-menu-toggle {
+  display: none;
+}
+
+/* ==================== 侧边栏遮罩层（无颜色） ==================== */
+.sidebar-overlay {
+  display: none;
+}
+
+/* ==================== 侧边栏 移动端结构（无颜色） ==================== */
+@media (max-width: 768px) {
+  /* 移动端菜单切换按钮 */
+  .mobile-menu-toggle {
+    display: block;
+    margin-right: 8px;
+  }
+
+  /* 侧边栏遮罩层 */
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    animation: fadeIn 0.3s ease;
+    cursor: pointer;
+    /* 确保可以接收点击事件 */
+    pointer-events: auto;
+  }
+
+  /* Element Plus el-container：移动端强制 flex 布局 */
+  .el-container {
+    display: flex !important;
+  }
+
+  /* Element Plus el-aside 组件：移动端完全不占据布局空间 */
+  .el-aside.ginkgo-sidebar {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    z-index: 1000 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+    /* 侧边栏实际宽度为 280px */
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+    /* 关键：flex 属性设为 0，不占据布局空间 */
+    flex: 0 0 0 !important;
+    flex-basis: 0 !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    /* iOS 滚动优化 */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .el-aside.ginkgo-sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  /* 移动端强制展开菜单（不使用折叠状态） */
+  .el-aside.ginkgo-sidebar .ginkgo-sidebar-menu {
+    width: 280px !important;
+  }
+
+  /* 移动端隐藏折叠按钮 */
+  .el-aside.ginkgo-sidebar .ginkgo-collapse-btn {
+    display: none !important;
+  }
+
+  /* 移动端强制显示菜单搜索框 */
+  .el-aside.ginkgo-sidebar .ginkgo-menu-search {
+    display: block !important;
+  }
+
+  /* 主内容区域：强制占据全屏宽度 */
+  .el-container.main-container {
+    margin-left: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    flex: 1 1 100% !important;
+    flex-basis: 100% !important;
+  }
+
+  .search-container { display: none; }
+  .user-details { display: none !important; }
+
+  /* 移动端头部布局调整（结构） */
+  .header-content { gap: 12px; padding: 4px 12px; }
+}
+
+/* ==================== 侧边栏 容器结构（无颜色） ==================== */
+.ginkgo-sidebar {
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 100;
+}
+
+/* ==================== 侧边栏 品牌区结构（无颜色） ==================== */
+.ginkgo-brand-header {
+  position: relative;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  overflow: hidden; /* 防止内容溢出 */
+}
+.ginkgo-brand-content { 
+  flex: 1; 
+  padding: 12px 16px; 
+  min-width: 0; /* 允许 flex 子元素收缩 */
+  overflow: hidden;
+}
+.brand-expanded { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  max-width: 100%;
+  overflow: hidden;
+}
+.brand-collapsed { display: flex; justify-content: center; align-items: center; height: 40px; }
+
+/* ==================== 侧边栏 菜单搜索结构（无颜色） ==================== */
+.ginkgo-menu-search {
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.ginkgo-menu-search .el-input { width: 100%; }
+.ginkgo-menu-search .el-input__wrapper {
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  padding: 10px 14px;
+}
+
+/* ==================== 侧边栏 菜单项/子菜单 结构（无颜色） ==================== */
+.ginkgo-sidebar-menu .el-menu-item {
+  margin: 2px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  height: 40px;
+  line-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px !important;
+}
+.ginkgo-sidebar-menu .el-menu-item .el-icon {
+  margin-right: 10px; /* 统一：主菜单图标与文字间距 */
+  font-size: 18px; width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+.ginkgo-sidebar-menu .el-sub-menu { margin: 2px 16px; }
+.ginkgo-sidebar-menu .el-sub-menu__title {
+  height: 40px; line-height: 40px; border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex; align-items: center;
+  padding: 0 16px !important;
+}
+.ginkgo-sidebar-menu .el-sub-menu__title .el-icon {
+  margin-right: 10px; /* 统一：目录图标与文字间距 */
+  font-size: 18px; width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ==================== 侧边栏 折叠按钮 结构（无颜色） ==================== */
+.ginkgo-collapse-btn {
+  position: relative;
+  right: 0; top: 0;
+  transform: none;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+.collapse-icon { width: 16px; height: 16px; transition: transform 0.2s ease; }
+
+/* ==================== 侧边栏 菜单容器 结构（无颜色） ==================== */
+.ginkgo-menu-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+  /* iOS 滚动优化 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ==================== 侧边栏 子菜单项 结构（无颜色） ==================== */
+.ginkgo-sidebar-menu .el-menu-item-child {
+  margin: 1px 0;
+  border-radius: 6px;
+  height: 40px; line-height: 40px;
+  padding-left: 52px !important;
+  display: flex; align-items: center;
+  transition: all 0.2s ease;
+}
+.ginkgo-sidebar-menu .el-menu-item-child .el-icon {
+  margin-right: 8px; /* 子项略紧凑 */
+  font-size: 16px; width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ==================== 侧边栏 悬停位移 结构（无颜色） ==================== */
+.ginkgo-sidebar-menu .el-menu-item:hover { transform: translateX(2px); }
+.ginkgo-sidebar-menu .el-sub-menu__title:hover { transform: translateX(2px); }
+.ginkgo-sidebar-menu .el-menu-item-child:hover { transform: translateX(4px); }
+
+/* ==================== 顶部容器与内容 结构（无颜色） ==================== */
+.header-container {
+  height: 96px;
+  position: relative;
+  z-index: 50;
+  overflow: visible !important;  /* 强制 visible，确保不裁剪子元素 */
+}
+.header-content {
+  display: flex;
+  align-items: center;  /* 保持居中对齐 */
+  justify-content: space-between;
+  height: 100%;
+  padding: 16px 24px 18px 24px;
+  gap: 24px;
+  overflow: visible !important;  /* 强制 visible，确保不裁剪子元素 */
+}
+.header-left { flex-shrink: 0; min-width: 200px; }
+/* 关键修复：确保标签页容器不裁剪内容 */
+.header-tabs {
+  flex: 1;
+  display: flex;
+  align-items: center;  /* 保持居中对齐 */
+  gap: 12px;
+  min-width: 0;
+  max-width: calc(100vw - 600px);
+  overflow: visible !important;  /* 强制 visible，确保不裁剪标签页 */
+}
+.header-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 顶部操作区按钮（仅结构尺寸，无颜色） - 移除 margin-top 实现垂直对齐 */
+.header-tabs-actions { flex-shrink: 0; }
+.header-tabs-actions .el-button { width: 40px; height: 40px; transition: all 0.3s ease; border-radius: 8px; margin: 0; }
+.header-tabs-actions .el-button:hover { transform: translateY(-2px); }
+
+/* ==================== 顶部 响应式结构 ==================== */
+@media (max-width: 1200px) {
+  .header-tabs { max-width: calc(100vw - 500px); }
+}
+@media (max-width: 992px) {
+  .header-content { gap: 16px; padding: 6px 16px; }
+  .header-left { min-width: 150px; }
+  .header-tabs { max-width: calc(100vw - 400px); }
+}
+@media (max-width: 768px) {
+  /* ==================== 移动端顶部导航栏优化 ==================== */
+
+  /* 隐藏标签页区域（包括标签页和操作按钮） */
+  .header-tabs {
+    display: none !important;
+  }
+
+  /* 隐藏标签页容器 */
+  .header-admin-tabs {
+    display: none !important;
+  }
+
+  /* 隐藏标签页操作按钮 */
+  .header-tabs-actions {
+    display: none !important;
+  }
+
+  /* 隐藏面包屑导航（如果存在） */
+  .breadcrumb {
+    display: none !important;
+  }
+
+  /* 调整头部内容布局 */
+  .header-content {
+    justify-content: space-between !important;
+    gap: 12px !important;
+    padding: 8px 12px !important;
+  }
+
+  /* 调整头部容器高度 */
+  .header-container {
+    height: 56px !important;
+  }
+
+  /* 确保右侧按钮组正常显示 */
+  .header-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 统一操作按钮尺寸为 36px */
+  .notification-btn, .theme-btn, .fullscreen-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  /* 用户下拉菜单优化 */
+  .user-dropdown {
+    flex-shrink: 0 !important;
+  }
+
+  .user-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .user-avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* 移动端始终显示用户名 */
+  .user-details {
+    display: flex !important;
+    flex-direction: column !important;
+    line-height: 1.2 !important;
+  }
+
+  .user-name {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+  }
+
+  .user-role {
+    font-size: 12px !important;
+    opacity: 0.7 !important;
+  }
+
+  /* 通知徽章优化 */
+  .notification-badge {
+    flex-shrink: 0 !important;
+  }
+
+  /* 内容区域内边距调整 */
+  .content-wrapper {
+    padding: 12px !important;
+  }
+}
+@media (max-width: 480px) {
+  /* ==================== 小屏手机进一步优化 ==================== */
+
+  /* 头部内容进一步紧凑 */
+  .header-content {
+    gap: 8px !important;
+    padding: 6px 8px !important;
+  }
+
+  /* 头部容器高度进一步缩小 */
+  .header-container {
+    height: 52px !important;
+  }
+
+  /* 右侧按钮组间距缩小 */
+  .header-right {
+    gap: 6px !important;
+  }
+
+  /* 操作按钮进一步缩小 */
+  .notification-btn, .theme-btn, .fullscreen-btn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+  }
+
+  /* 用户头像缩小 */
+  .user-avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  /* 用户信息文字缩小 */
+  .user-name {
+    font-size: 13px !important;
+  }
+
+  .user-role {
+    font-size: 11px !important;
+  }
+
+  /* 移动端菜单切换按钮缩小 */
+  .mobile-menu-toggle .el-button {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* 内容区域内边距进一步缩小 */
+  .content-wrapper {
+    padding: 8px !important;
+  }
+}
+
+/* ==================== 顶部标签页 滚动容器与箭头 结构（无颜色） ==================== */
+.header-admin-tabs {
+  width: 100%;
+  overflow: visible !important;  /* 关键：确保标签页容器不裁剪内容 */
+}
+/* 关键修复：不使用 padding-top，保持垂直居中对齐 */
+.header-admin-tabs .el-tabs__header {
+  margin: 0;
+  padding-bottom: 12px;
+  display: flex;
+  align-items: center;
+  overflow: visible !important;  /* 确保不裁剪子元素 */
+}
+/* 关键修复：overflow-y 改为 visible，避免裁剪标签页上边缘 */
+.header-admin-tabs .el-tabs__nav-wrap {
+  overflow-x: auto !important;
+  overflow-y: visible !important;  /* 强制 visible，覆盖 Element Plus 默认样式 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.header-admin-tabs .el-tabs__nav-wrap::-webkit-scrollbar { display: none; }
+/* 可滚动状态下为箭头留出空间 */
+.header-admin-tabs .el-tabs__nav-wrap.is-scrollable { padding: 0 30px; }
+/* 确保 nav 容器也不裁剪内容，并为标签页的阴影和圆角留出空间 */
+.header-admin-tabs .el-tabs__nav {
+  overflow: visible !important;
+  padding-top: 6px !important;  /* 为标签页向上移动和阴影效果留出空间 */
+  padding-bottom: 6px !important;  /* 为标签页阴影效果留出空间 */
+}
+/* 箭头按钮结构尺寸（颜色在 layout.css） - 添加 padding 与标签页对齐 */
+.header-admin-tabs .el-tabs__nav-prev,
+.header-admin-tabs .el-tabs__nav-next {
+  width: 16px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  /* 关键修复：添加与 .el-tabs__nav 相同的 padding，确保与标签页垂直对齐 */
+  padding-top: 6px;
+  padding-bottom: 6px;
+  transition: all 0.2s ease;
+}
+.header-admin-tabs .el-tabs__nav-prev .el-icon,
+.header-admin-tabs .el-tabs__nav-next .el-icon { font-size: 18px; }
+
+/* ==================== 顶部标签页 项与伪元素 结构（无颜色） ==================== */
+/* 保持原有的 margin 设置，依赖父容器 align-items: center 实现垂直居中 */
+.header-admin-tabs .el-tabs__item {
+  border: none;
+  border-radius: 12px;
+  margin-right: 10px;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0 24px;
+  height: 40px;
+  line-height: 40px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;  /* 确保标签页不被其他元素遮挡 */
+}
+.header-admin-tabs .el-tabs__item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;  /* 确保伪元素在标签页内容下方 */
+}
+/* 交互位移与显隐 */
+.header-admin-tabs .el-tabs__item:hover {
+  transform: translateY(-2px);
+  z-index: 20;  /* 悬停时提升层级 */
+}
+.header-admin-tabs .el-tabs__item:hover::before { opacity: 1; }
+.header-admin-tabs .el-tabs__item.is-active {
+  transform: translateY(-2px);
+  font-weight: 700;
+  z-index: 20;  /* 激活时提升层级 */
+}
+/* 关闭图标 结构 */
+.header-admin-tabs .el-tabs__item .el-icon-close {
+  margin-left: 10px; font-size: 14px; width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; opacity: 0.8;
+}
+.header-admin-tabs .el-tabs__item .el-icon-close:hover { transform: scale(1.15); opacity: 1; }
+/* nav-wrap 尾部分割线隐藏（结构） */
+.header-admin-tabs .el-tabs__nav-wrap::after { display: none; }
+/* 标签页滚动容器（结构） - 关键修复：确保 overflow 为 visible，不裁剪标签页 */
+.tabs-scroll-container {
+  flex: 1;
+  min-width: 0;
+  padding-top: 10px;  /* 保持原有的 10px，不影响垂直对齐 */
+  overflow: visible !important;  /* 强制 visible，确保不裁剪标签页 */
+}
+/* 标签页拖拽滚动光标提示 */
+.tabs-scroll-container .el-tabs__nav-scroll {
+  cursor: grab;
+}
+.tabs-scroll-container .el-tabs__nav-scroll:active {
+  cursor: grabbing;
+}
+
+/* ==================== 侧边栏 活跃指示条 结构（无颜色） ==================== */
+.ginkgo-sidebar-menu .el-menu-item.is-active { font-weight: 700; }
+.ginkgo-sidebar-menu .el-menu-item.is-active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 0 2px 2px 0; }
+.ginkgo-sidebar-menu .el-menu-item-child.is-active { position: relative; font-weight: 600; }
+.ginkgo-sidebar-menu .el-menu-item-child.is-active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 0 2px 2px 0; }
+
+/* ==================== 品牌区 结构（无颜色） ==================== */
+.logo-container { flex-shrink: 0; }
+.brand-text { 
+  flex: 1; 
+  min-width: 0; 
+  max-width: calc(100% - 52px); /* 减去 logo 宽度和间距 */
+  overflow: hidden;
+}
+.brand-title { 
+  font-size: 18px; 
+  font-weight: 700; 
+  margin: 0; 
+  line-height: 1.3; 
+  /* 超长文本处理：最多显示2行，超出省略 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-all;
+  max-height: 2.6em; /* 2行 * 1.3行高 */
+}
+.brand-subtitle { font-size: 12px; margin: 2px 0 0 0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ==================== 用户信息 与 下拉菜单 结构（无颜色） ==================== */
+.user-dropdown { cursor: pointer; }
+.user-info { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; transition: all 0.2s ease; }
+.user-details { display: flex; flex-direction: column; align-items: flex-start; }
+.user-name { font-size: 16px; font-weight: 600; line-height: 1.2; }
+.user-role { font-size: 12px; line-height: 1.2; }
+.dropdown-icon { transition: transform 0.2s ease; }
+.user-dropdown.is-active .dropdown-icon { transform: rotate(180deg); }
+.user-dropdown .el-dropdown-menu__item { border-radius: 8px; padding: 8px 12px; margin: 2px 0; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease; }
+
+/* ====================         ==================== */
+/* :  */
+.ginkgo-menu-search .el-input__inner { font-size: 14px; letter-spacing: 0.2px; }
+
+/*      */
+.ginkgo-sidebar-menu .el-menu-item { font-weight: 600; font-size: 15px; }
+.ginkgo-sidebar-menu .el-sub-menu__title { font-weight: 600; font-size: 15px; }
+.ginkgo-sidebar-menu .el-menu-item-child { font-size: 13px; font-weight: 500; }
+
+/*     */
+.notification-btn, .theme-btn, .fullscreen-btn { width: 40px; height: 40px; border-radius: 10px; transition: all 0.2s ease; }
+
+/*   */
+.user-avatar { font-weight: 600; }
+
+/*   */
+.main-content { padding: 0; overflow: hidden; }
+.content-wrapper {
+  padding: 24px;
+  height: 100%;
+  overflow-y: auto;
+  animation: fadeIn 0.3s ease-out;
+  /* iOS 滚动优化 */
+  -webkit-overflow-scrolling: touch;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/*     */
+.user-dropdown .el-dropdown-menu { padding: 8px; }

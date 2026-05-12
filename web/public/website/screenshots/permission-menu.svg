@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GinkgoAdmin 首页 - 菜单权限分配样张
+  复刻 web/src/views/admin/system/Roles.vue 右侧 perm-card 的完整菜单权限树
+  聚焦：多层菜单勾选 + 统计 + 权限类型 tag
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="GinkgoAdmin 菜单权限分配">
+  <defs>
+    <linearGradient id="lg-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
+    <linearGradient id="lg-primary" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#a855f7"/></linearGradient>
+    <linearGradient id="lg-btn-primary" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#4f46e5"/></linearGradient>
+    <filter id="fx-card" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.04"/></filter>
+  </defs>
+  <style>
+    .font { font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, sans-serif; }
+    .mono { font-family: Consolas, 'Courier New', monospace; }
+  </style>
+
+  <rect width="1600" height="1000" fill="#f9fafb"/>
+
+  <!-- Sidebar -->
+  <rect x="0" y="0" width="220" height="1000" fill="#ffffff"/>
+  <line x1="220" y1="0" x2="220" y2="1000" stroke="#e5e7eb"/>
+  <g>
+    <rect x="18" y="12" width="40" height="40" rx="10" fill="url(#lg-logo)"/>
+    <path d="M38 22 L28 30 L28 46 L34 46 L34 40 L42 40 L42 46 L48 46 L48 30 Z" fill="#ffffff"/>
+    <text x="66" y="32" class="font" font-size="15" font-weight="700" fill="#1f2937">GinkgoAdmin</text>
+    <text x="66" y="50" class="font" font-size="11" fill="#9ca3af">管理后台</text>
+  </g>
+  <g class="font" font-size="13">
+    <g transform="translate(8 100)"><rect width="204" height="40" rx="6" fill="transparent"/><text x="48" y="25" fill="#475569">工作台</text></g>
+    <g transform="translate(8 140)"><rect width="204" height="40" rx="6" fill="rgba(139,92,246,0.08)"/><text x="48" y="25" fill="#1f2937" font-weight="600">系统管理</text><path d="M192 17 L196 21 L200 17" stroke="#94a3b8" stroke-width="1.4" fill="none"/></g>
+    <g transform="translate(8 180)"><rect width="204" height="36" rx="6" fill="transparent"/><text x="60" y="23" fill="#475569">用户管理</text></g>
+    <g transform="translate(8 216)"><rect width="204" height="36" rx="6" fill="rgba(139,92,246,0.1)"/><rect width="3" height="36" fill="#8b5cf6"/><text x="60" y="23" fill="#8b5cf6" font-weight="600">角色管理</text></g>
+    <g transform="translate(8 252)"><rect width="204" height="36" rx="6" fill="transparent"/><text x="60" y="23" fill="#475569">菜单管理</text></g>
+    <g transform="translate(8 288)"><rect width="204" height="36" rx="6" fill="transparent"/><text x="60" y="23" fill="#475569">部门管理</text></g>
+    <g transform="translate(8 324)"><rect width="204" height="36" rx="6" fill="transparent"/><text x="60" y="23" fill="#475569">数据字典</text></g>
+    <g transform="translate(8 372)"><rect width="204" height="40" rx="6" fill="transparent"/><text x="48" y="25" fill="#475569">插件中心</text></g>
+    <g transform="translate(8 412)"><rect width="204" height="40" rx="6" fill="transparent"/><text x="48" y="25" fill="#475569">AI 对话</text></g>
+    <g transform="translate(8 452)"><rect width="204" height="40" rx="6" fill="transparent"/><text x="48" y="25" fill="#475569">日志审计</text></g>
+  </g>
+
+  <!-- Header -->
+  <rect x="220" y="0" width="1380" height="56" fill="#ffffff"/>
+  <line x1="220" y1="56" x2="1600" y2="56" stroke="#e5e7eb"/>
+  <g transform="translate(244 14)">
+    <g><path d="M0 28 L8 0 L150 0 L158 28 Z" fill="#ffffff"/><path d="M0 28 L8 0 L150 0 L158 28" stroke="#e5e7eb" fill="none"/><rect x="24" y="24" width="110" height="2" rx="1" fill="#8b5cf6"/><text x="79" y="18" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#8b5cf6">🛡️ 角色管理</text></g>
+  </g>
+  <g transform="translate(1440 20)">
+    <circle r="14" fill="#f8fafc" stroke="#e5e7eb"/>
+    <path d="M-5 -4 Q -5 -8 0 -8 Q 5 -8 5 -4 L 5 3 L 7 6 L -7 6 L -5 3 Z" stroke="#64748b" stroke-width="1.6" fill="none"/>
+    <circle cx="5" cy="-6" r="4" fill="#ef4444"/>
+  </g>
+  <g transform="translate(1520 20)"><circle r="14" fill="#f8fafc" stroke="#e5e7eb"/><circle r="5" fill="url(#lg-primary)"/></g>
+
+  <!-- 左侧 tree-card（简化，聚焦菜单权限，所以左侧只用小空间） -->
+  <g transform="translate(244 80)" filter="url(#fx-card)">
+    <rect width="260" height="896" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+    <line x1="0" y1="56" x2="260" y2="56" stroke="#f1f5f9"/>
+    <g transform="translate(24 28)" stroke="#8b5cf6" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="-3.5" y="-10" width="7" height="5" rx="1"/><rect x="-10" y="5" width="7" height="5" rx="1"/><rect x="3" y="5" width="7" height="5" rx="1"/><path d="M0 -5 L0 0 L-6.5 0 L-6.5 5 M0 0 L6.5 0 L6.5 5"/>
+    </g>
+    <text x="44" y="33" class="font" font-size="15" font-weight="600" fill="#1f2937">角色列表</text>
+    <text x="236" y="33" text-anchor="end" class="font" font-size="12" fill="#6b7280">15 个</text>
+
+    <g transform="translate(12 80)">
+      <!-- 超级管理员 (current) -->
+      <g><rect width="236" height="40" rx="8" fill="rgba(139,92,246,0.1)"/><rect width="3" height="40" fill="#8b5cf6"/>
+        <text x="20" y="25" class="font" font-size="13" fill="#334155">超级管理员</text>
+        <rect x="170" y="12" width="36" height="16" rx="8" fill="#8b5cf6"/>
+        <text x="188" y="24" text-anchor="middle" class="font" font-size="10" font-weight="600" fill="#ffffff">当前</text>
+      </g>
+      <g transform="translate(0 48)"><rect width="236" height="40" rx="8" fill="transparent"/><text x="20" y="25" class="font" font-size="13" fill="#334155">平台运营</text></g>
+      <g transform="translate(0 96)"><rect width="236" height="40" rx="8" fill="transparent"/><text x="20" y="25" class="font" font-size="13" fill="#334155">业务负责人</text></g>
+      <g transform="translate(0 144)"><rect width="236" height="40" rx="8" fill="transparent"/><text x="36" y="25" class="font" font-size="13" fill="#334155">CRM 销售</text></g>
+      <g transform="translate(0 192)"><rect width="236" height="40" rx="8" fill="transparent"/><text x="36" y="25" class="font" font-size="13" fill="#334155">财务审核</text></g>
+      <g transform="translate(0 240)"><rect width="236" height="40" rx="8" fill="transparent"/><text x="20" y="25" class="font" font-size="13" fill="#334155">区域管理</text></g>
+      <g transform="translate(0 288)"><rect width="236" height="40" rx="8" fill="transparent"/><text x="20" y="25" class="font" font-size="13" fill="#334155">只读访客</text></g>
+      <g transform="translate(0 336)"><rect width="236" height="40" rx="8" fill="transparent"/><text x="20" y="25" class="font" font-size="13" fill="#334155">外部审计员</text></g>
+      <g transform="translate(0 384)"><rect width="236" height="40" rx="8" fill="transparent"/><text x="20" y="25" class="font" font-size="13" fill="#334155">API 调用方</text></g>
+      <g transform="translate(0 432)"><rect width="236" height="40" rx="8" fill="transparent"/><text x="20" y="25" class="font" font-size="13" fill="#334155">租户管理员</text></g>
+    </g>
+  </g>
+
+  <!-- 右侧 perm-card（大 - 重点区域） -->
+  <g transform="translate(528 80)" filter="url(#fx-card)">
+    <rect width="1048" height="896" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+
+    <!-- header -->
+    <line x1="0" y1="56" x2="1048" y2="56" stroke="#f1f5f9"/>
+    <g transform="translate(24 28)" fill="#8b5cf6"><circle cx="-4" cy="0" r="5"/><rect x="1" y="-1.5" width="11" height="3" rx="0.5"/><rect x="9" y="1.5" width="3" height="3"/></g>
+    <text x="44" y="33" class="font" font-size="15" font-weight="600" fill="#1f2937">权限分配</text>
+    <rect x="124" y="19" width="80" height="22" rx="11" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.3)"/>
+    <text x="164" y="34" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#8b5cf6">超级管理员</text>
+
+    <g transform="translate(1024 28)">
+      <g transform="translate(-90 0)"><rect x="-46" y="-14" width="92" height="28" rx="4" fill="url(#lg-btn-primary)"/>
+        <path d="M-32 -2 L-28 2 L-22 -6" stroke="#ffffff" stroke-width="2" fill="none"/>
+        <text x="4" y="4" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#ffffff">保存权限</text></g>
+      <g transform="translate(-192 0)"><rect x="-34" y="-14" width="68" height="28" rx="4" fill="#ffffff" stroke="#d1d5db"/><text x="0" y="4" text-anchor="middle" class="font" font-size="12" fill="#475569">全不选</text></g>
+      <g transform="translate(-274 0)"><rect x="-28" y="-14" width="56" height="28" rx="4" fill="#ffffff" stroke="#d1d5db"/><text x="0" y="4" text-anchor="middle" class="font" font-size="12" fill="#475569">全选</text></g>
+    </g>
+
+    <!-- 数据范围（简化一行） -->
+    <g transform="translate(24 80)">
+      <g transform="translate(10 10)" stroke="#10b981" stroke-width="1.6" fill="none"><path d="M0 -6 L-5 -4 L-5 2 Q -5 6 0 8 Q 5 6 5 2 L 5 -4 Z"/></g>
+      <text x="28" y="16" class="font" font-size="13" font-weight="500" fill="#475569">数据范围：</text>
+      <rect x="104" y="0" width="200" height="32" rx="4" fill="#ffffff" stroke="#d1d5db"/>
+      <text x="120" y="20" class="font" font-size="13" fill="#1f2937">全部数据</text>
+    </g>
+
+    <line x1="24" y1="132" x2="1024" y2="132" stroke="#f1f5f9"/>
+
+    <!-- 权限统计 pills -->
+    <g transform="translate(24 148)" class="font" font-size="13">
+      <g><rect width="96" height="28" rx="8" fill="#fef3c7" stroke="#fde68a"/><text x="14" y="18" fill="#92400e">📁 目录</text><text x="82" y="18" text-anchor="end" fill="#d97706" font-weight="700">12</text></g>
+      <g transform="translate(108 0)"><rect width="96" height="28" rx="8" fill="#dbeafe" stroke="#bfdbfe"/><text x="14" y="18" fill="#1e40af">🪟 菜单</text><text x="82" y="18" text-anchor="end" fill="#2563eb" font-weight="700">38</text></g>
+      <g transform="translate(216 0)"><rect width="108" height="28" rx="8" fill="#e0e7ff" stroke="#c7d2fe"/><text x="14" y="18" fill="#3730a3">📄 菜单项</text><text x="94" y="18" text-anchor="end" fill="#4f46e5" font-weight="700">124</text></g>
+      <g transform="translate(336 0)"><rect width="96" height="28" rx="8" fill="#d1fae5" stroke="#a7f3d0"/><text x="14" y="18" fill="#065f46">👆 按钮</text><text x="82" y="18" text-anchor="end" fill="#059669" font-weight="700">86</text></g>
+      <g transform="translate(444 0)"><rect width="108" height="28" rx="8" fill="#fee2e2" stroke="#fecaca"/><text x="14" y="18" fill="#991b1b">🌐 接口</text><text x="94" y="18" text-anchor="end" fill="#dc2626" font-weight="700">215</text></g>
+      <g transform="translate(564 0)"><rect width="108" height="28" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.2)"/><text x="14" y="18" fill="#6d28d9" font-weight="600">合计</text><text x="94" y="18" text-anchor="end" fill="#8b5cf6" font-weight="700">475</text></g>
+    </g>
+
+    <!-- 搜索 -->
+    <g transform="translate(24 196)">
+      <rect width="420" height="32" rx="4" fill="#ffffff" stroke="#d1d5db"/>
+      <text x="34" y="20" class="font" font-size="12" fill="#9ca3af">🔍 搜索权限名称、路由或Code</text>
+    </g>
+
+    <!-- 权限树 - 这是重点！ -->
+    <g transform="translate(24 244)" class="font" font-size="13">
+      <!-- 工作台（目录，展开） -->
+      <g>
+        <rect width="1000" height="28" rx="4" fill="transparent"/>
+        <path d="M6 10 L12 14 L6 18" stroke="#94a3b8" stroke-width="1.4" fill="none" transform="rotate(90 9 14)"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" font-weight="500" fill="#334155">📁 工作台</text>
+        <rect x="118" y="6" width="36" height="16" rx="8" fill="#fef3c7" stroke="#fde68a"/>
+        <text x="136" y="18" text-anchor="middle" font-size="10" fill="#d97706">目录</text>
+      </g>
+      <!-- ├ 仪表盘 菜单 -->
+      <g transform="translate(22 36)">
+        <rect width="978" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">🪟 仪表盘</text>
+        <rect x="116" y="6" width="36" height="16" rx="8" fill="#dbeafe" stroke="#bfdbfe"/>
+        <text x="134" y="18" text-anchor="middle" font-size="10" fill="#2563eb">菜单</text>
+        <text x="162" y="18" class="mono" font-size="11" fill="#64748b">/dashboard</text>
+      </g>
+      <g transform="translate(46 68)"><rect width="954" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">📄 数据概览</text>
+        <rect x="130" y="6" width="44" height="16" rx="8" fill="#e0e7ff" stroke="#c7d2fe"/>
+        <text x="152" y="18" text-anchor="middle" font-size="10" fill="#4f46e5">菜单项</text>
+        <text x="184" y="18" class="mono" font-size="11" fill="#64748b">overview:view</text>
+      </g>
+      <g transform="translate(46 100)"><rect width="954" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">👆 刷新仪表盘</text>
+        <rect x="140" y="6" width="36" height="16" rx="8" fill="#d1fae5" stroke="#a7f3d0"/>
+        <text x="158" y="18" text-anchor="middle" font-size="10" fill="#059669">按钮</text>
+        <text x="186" y="18" class="mono" font-size="11" fill="#64748b">dashboard:refresh</text>
+      </g>
+      <g transform="translate(46 132)"><rect width="954" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">🌐 查询统计数据</text>
+        <rect x="170" y="6" width="36" height="16" rx="8" fill="#fee2e2" stroke="#fecaca"/>
+        <text x="188" y="18" text-anchor="middle" font-size="10" fill="#dc2626">接口</text>
+        <text x="214" y="18" class="mono" font-size="11" fill="#64748b">GET /api/dashboard/stats</text>
+      </g>
+
+      <!-- 系统管理（目录，展开，背景淡灰以强调这组是重点） -->
+      <g transform="translate(0 176)"><rect width="1000" height="28" rx="4" fill="#f9fafb"/>
+        <path d="M6 10 L12 14 L6 18" stroke="#94a3b8" stroke-width="1.4" fill="none" transform="rotate(90 9 14)"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" font-weight="600" fill="#1f2937">📁 系统管理</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#fef3c7" stroke="#fde68a"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#d97706">目录</text>
+      </g>
+      <!-- 角色管理菜单 with 按钮细分 -->
+      <g transform="translate(22 212)"><rect width="978" height="28" rx="4" fill="rgba(139,92,246,0.06)"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" font-weight="600" fill="#1f2937">🪟 角色管理</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#dbeafe" stroke="#bfdbfe"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#2563eb">菜单</text>
+        <text x="178" y="18" class="mono" font-size="11" fill="#64748b">/system/roles</text>
+      </g>
+      <g transform="translate(46 244)"><rect width="954" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">👆 新增角色</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#d1fae5" stroke="#a7f3d0"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#059669">按钮</text>
+        <text x="176" y="18" class="mono" font-size="11" fill="#64748b">role:add</text>
+      </g>
+      <g transform="translate(46 276)"><rect width="954" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">👆 编辑角色</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#d1fae5" stroke="#a7f3d0"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#059669">按钮</text>
+        <text x="176" y="18" class="mono" font-size="11" fill="#64748b">role:edit</text>
+      </g>
+      <g transform="translate(46 308)"><rect width="954" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">👆 保存权限</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#d1fae5" stroke="#a7f3d0"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#059669">按钮</text>
+        <text x="176" y="18" class="mono" font-size="11" fill="#64748b">role:save</text>
+      </g>
+      <g transform="translate(46 340)"><rect width="954" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="#ffffff" stroke="#ef4444" stroke-width="1.4"/>
+        <line x1="25" y1="14" x2="33" y2="14" stroke="#ef4444" stroke-width="2"/>
+        <text x="46" y="18" fill="#334155">👆 删除角色</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#d1fae5" stroke="#a7f3d0"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#059669">按钮</text>
+        <text x="176" y="18" class="mono" font-size="11" fill="#64748b">role:delete</text>
+        <text x="320" y="18" class="font" font-size="11" fill="#dc2626">⚠ 高危操作，已排除</text>
+      </g>
+      <g transform="translate(46 372)"><rect width="954" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">🌐 查询角色列表</text>
+        <rect x="170" y="6" width="36" height="16" rx="8" fill="#fee2e2" stroke="#fecaca"/>
+        <text x="188" y="18" text-anchor="middle" font-size="10" fill="#dc2626">接口</text>
+        <text x="216" y="18" class="mono" font-size="11" fill="#64748b">GET /api/system/roles</text>
+      </g>
+      <g transform="translate(46 404)"><rect width="954" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">🌐 创建角色</text>
+        <rect x="140" y="6" width="36" height="16" rx="8" fill="#fee2e2" stroke="#fecaca"/>
+        <text x="158" y="18" text-anchor="middle" font-size="10" fill="#dc2626">接口</text>
+        <text x="186" y="18" class="mono" font-size="11" fill="#64748b">POST /api/system/roles</text>
+      </g>
+      <!-- 用户管理（半选） -->
+      <g transform="translate(22 440)"><rect width="978" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="#ffffff" stroke="#6366f1" stroke-width="1.4"/>
+        <line x1="25" y1="14" x2="33" y2="14" stroke="#6366f1" stroke-width="2"/>
+        <text x="46" y="18" fill="#334155">🪟 用户管理</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#dbeafe" stroke="#bfdbfe"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#2563eb">菜单</text>
+        <text x="178" y="18" class="mono" font-size="11" fill="#64748b">/system/users</text>
+        <text x="320" y="18" class="font" font-size="11" fill="#6366f1">半选：部分子权限已配置</text>
+      </g>
+      <!-- 菜单管理 -->
+      <g transform="translate(22 472)"><rect width="978" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">🪟 菜单管理</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#dbeafe" stroke="#bfdbfe"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#2563eb">菜单</text>
+        <text x="178" y="18" class="mono" font-size="11" fill="#64748b">/system/menus</text>
+      </g>
+      <!-- 部门管理 -->
+      <g transform="translate(22 504)"><rect width="978" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">🪟 部门管理</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#dbeafe" stroke="#bfdbfe"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#2563eb">菜单</text>
+        <text x="178" y="18" class="mono" font-size="11" fill="#64748b">/system/departments</text>
+      </g>
+
+      <!-- 插件中心（目录） -->
+      <g transform="translate(0 544)"><rect width="1000" height="28" rx="4" fill="#f9fafb"/>
+        <path d="M6 10 L12 14 L6 18" stroke="#94a3b8" stroke-width="1.4" fill="none" transform="rotate(90 9 14)"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" font-weight="600" fill="#1f2937">📁 插件中心</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#fef3c7" stroke="#fde68a"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#d97706">目录</text>
+      </g>
+      <g transform="translate(22 580)"><rect width="978" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">🪟 插件商店</text>
+        <rect x="130" y="6" width="36" height="16" rx="8" fill="#dbeafe" stroke="#bfdbfe"/>
+        <text x="148" y="18" text-anchor="middle" font-size="10" fill="#2563eb">菜单</text>
+        <text x="178" y="18" class="mono" font-size="11" fill="#64748b">/plugin/store</text>
+      </g>
+      <g transform="translate(22 612)"><rect width="978" height="28" rx="4" fill="transparent"/>
+        <rect x="22" y="7" width="14" height="14" rx="2" fill="url(#lg-btn-primary)"/>
+        <path d="M25 14 L28 17 L33 11" stroke="#ffffff" stroke-width="1.8" fill="none"/>
+        <text x="46" y="18" fill="#334155">🪟 已安装模块</text>
+        <rect x="140" y="6" width="36" height="16" rx="8" fill="#dbeafe" stroke="#bfdbfe"/>
+        <text x="158" y="18" text-anchor="middle" font-size="10" fill="#2563eb">菜单</text>
+        <text x="188" y="18" class="mono" font-size="11" fill="#64748b">/plugin/installed</text>
+      </g>
+    </g>
+
+    <!-- 滚动条指示 -->
+    <rect x="1040" y="700" width="4" height="100" rx="2" fill="#e5e7eb"/>
+  </g>
+</svg>

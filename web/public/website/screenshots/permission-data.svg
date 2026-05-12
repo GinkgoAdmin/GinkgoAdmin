@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GinkgoAdmin 首页 - 数据范围控制（部门管理视角）
+  画面叙事：「部门管理 → 数据范围审计」，把数据可见性以部门为主体呈现，
+  与「角色管理 = 功能权限」分开表达。
+  画布 1600×1000，所有区块上下严格错开，无重叠。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="GinkgoAdmin 部门管理 · 数据范围视图">
+  <defs>
+    <linearGradient id="lg-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
+    <linearGradient id="lg-primary" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient>
+    <linearGradient id="lg-btn-primary" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#0284c7"/></linearGradient>
+    <linearGradient id="lg-success" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <filter id="fx-card" x="-3%" y="-3%" width="106%" height="110%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.04"/></filter>
+  </defs>
+  <style>
+    .font { font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, sans-serif; }
+    .mono { font-family: Consolas, 'Courier New', monospace; }
+  </style>
+
+  <rect width="1600" height="1000" fill="#f9fafb"/>
+
+  <!-- ========== 左侧 Sidebar（高亮：部门管理） ========== -->
+  <rect x="0" y="0" width="220" height="1000" fill="#ffffff"/>
+  <line x1="220" y1="0" x2="220" y2="1000" stroke="#e5e7eb"/>
+  <rect x="18" y="12" width="40" height="40" rx="10" fill="url(#lg-logo)"/>
+  <path d="M38 22 L28 30 L28 46 L34 46 L34 40 L42 40 L42 46 L48 46 L48 30 Z" fill="#ffffff"/>
+  <text x="66" y="32" class="font" font-size="15" font-weight="700" fill="#1f2937">GinkgoAdmin</text>
+  <text x="66" y="50" class="font" font-size="11" fill="#9ca3af">管理后台</text>
+  <g class="font" font-size="13">
+    <g transform="translate(8 100)"><text x="48" y="25" fill="#475569">工作台</text></g>
+    <g transform="translate(8 140)"><rect width="204" height="40" rx="6" fill="rgba(14,165,233,0.08)"/><text x="48" y="25" fill="#1f2937" font-weight="600">系统管理</text><path d="M192 17 L196 21 L200 17" stroke="#94a3b8" stroke-width="1.4" fill="none"/></g>
+    <g transform="translate(8 180)"><text x="60" y="25" fill="#475569">用户管理</text></g>
+    <g transform="translate(8 216)"><text x="60" y="25" fill="#475569">角色管理</text></g>
+    <g transform="translate(8 252)"><text x="60" y="25" fill="#475569">菜单管理</text></g>
+    <!-- 当前选中：部门管理 -->
+    <g transform="translate(8 288)"><rect width="204" height="36" rx="6" fill="rgba(14,165,233,0.12)"/><rect width="3" height="36" fill="#0ea5e9"/><text x="60" y="23" fill="#0369a1" font-weight="600">部门管理</text></g>
+    <g transform="translate(8 324)"><text x="60" y="25" fill="#475569">数据字典</text></g>
+    <g transform="translate(8 360)"><text x="60" y="25" fill="#475569">系统配置</text></g>
+    <g transform="translate(8 408)"><text x="48" y="25" fill="#475569">插件中心</text></g>
+    <g transform="translate(8 448)"><text x="48" y="25" fill="#475569">AI 对话</text></g>
+  </g>
+
+  <!-- ========== Header ========== -->
+  <rect x="220" y="0" width="1380" height="56" fill="#ffffff"/>
+  <line x1="220" y1="56" x2="1600" y2="56" stroke="#e5e7eb"/>
+  <g transform="translate(244 14)">
+    <path d="M0 28 L8 0 L150 0 L158 28 Z" fill="#ffffff"/>
+    <path d="M0 28 L8 0 L150 0 L158 28" stroke="#e5e7eb" fill="none"/>
+    <rect x="24" y="24" width="110" height="2" rx="1" fill="#0ea5e9"/>
+    <text x="79" y="18" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#0369a1">🏢 部门管理</text>
+  </g>
+  <text x="420" y="33" class="font" font-size="12" fill="#9ca3af">系统管理 › 部门管理 › 数据范围审计</text>
+  <g transform="translate(1520 20)"><circle r="14" fill="#f8fafc" stroke="#e5e7eb"/><circle r="5" fill="url(#lg-primary)"/></g>
+
+  <!-- ========== 左侧部门树面板 ========== -->
+  <g transform="translate(244 80)" filter="url(#fx-card)">
+    <rect width="280" height="896" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+    <line x1="0" y1="56" x2="280" y2="56" stroke="#f1f5f9"/>
+    <text x="20" y="33" class="font" font-size="15" font-weight="600" fill="#1f2937">🏢 组织结构</text>
+    <text x="260" y="33" text-anchor="end" class="font" font-size="12" fill="#6b7280">12 部门</text>
+
+    <!-- 搜索框 -->
+    <g transform="translate(12 76)">
+      <rect width="256" height="32" rx="16" fill="#f8fafc" stroke="#e5e7eb"/>
+      <text x="14" y="21" class="font" font-size="12" fill="#9ca3af">🔍 搜索部门</text>
+    </g>
+
+    <!-- 部门树 -->
+    <g transform="translate(12 124)" class="font" font-size="13">
+      <!-- 集团 -->
+      <g><rect width="256" height="32" rx="6" fill="transparent"/>
+        <path d="M8 12 L14 16 L8 20" stroke="#94a3b8" stroke-width="1.4" fill="none" transform="rotate(90 11 16)"/>
+        <text x="32" y="20" fill="#1f2937" font-weight="600">🏢 Ginkgo 集团</text>
+        <text x="240" y="20" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">1247</text>
+      </g>
+      <!-- ├ 华东大区（当前选中） -->
+      <g transform="translate(20 36)">
+        <rect width="236" height="36" rx="6" fill="rgba(14,165,233,0.12)"/>
+        <rect width="3" height="36" fill="#0ea5e9"/>
+        <path d="M14 14 L22 18 L14 22" stroke="#0ea5e9" stroke-width="1.4" fill="none"/>
+        <text x="34" y="22" fill="#0369a1" font-weight="700">🏢 华东大区</text>
+        <rect x="138" y="11" width="36" height="14" rx="7" fill="#0ea5e9"/>
+        <text x="156" y="22" text-anchor="middle" font-size="9" font-weight="600" fill="#ffffff">当前</text>
+        <text x="226" y="22" text-anchor="end" class="mono" font-size="11" fill="#0369a1" font-weight="600">218</text>
+      </g>
+      <!-- │  ├ 上海总部 -->
+      <g transform="translate(40 76)">
+        <rect width="216" height="28" rx="4" fill="transparent"/>
+        <text x="14" y="18" fill="#475569">📍 上海总部</text>
+        <text x="206" y="18" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">86</text>
+      </g>
+      <!-- │  ├ 江苏分公司 -->
+      <g transform="translate(40 108)">
+        <rect width="216" height="28" rx="4" fill="transparent"/>
+        <path d="M6 10 L12 14 L6 18" stroke="#94a3b8" stroke-width="1.2" fill="none" transform="rotate(90 9 14)"/>
+        <text x="22" y="18" fill="#475569">📍 江苏分公司</text>
+        <text x="206" y="18" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">52</text>
+      </g>
+      <g transform="translate(60 140)">
+        <text x="14" y="18" fill="#64748b" font-size="12">└ 苏州研发中心</text>
+        <text x="186" y="18" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">28</text>
+      </g>
+      <!-- │  ├ 浙江分公司 -->
+      <g transform="translate(40 172)">
+        <rect width="216" height="28" rx="4" fill="transparent"/>
+        <path d="M6 10 L12 14 L6 18" stroke="#94a3b8" stroke-width="1.2" fill="none" transform="rotate(90 9 14)"/>
+        <text x="22" y="18" fill="#475569">📍 浙江分公司</text>
+        <text x="206" y="18" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">42</text>
+      </g>
+      <g transform="translate(60 204)">
+        <text x="14" y="18" fill="#64748b" font-size="12">└ 杭州客服中心</text>
+        <text x="186" y="18" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">10</text>
+      </g>
+      <!-- ├ 华北大区 -->
+      <g transform="translate(20 240)">
+        <rect width="236" height="32" rx="6" fill="transparent"/>
+        <path d="M8 12 L14 16 L8 20" stroke="#94a3b8" stroke-width="1.4" fill="none"/>
+        <text x="32" y="20" fill="#475569">🏢 华北大区</text>
+        <text x="226" y="20" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">189</text>
+      </g>
+      <!-- ├ 华南大区 -->
+      <g transform="translate(20 276)">
+        <rect width="236" height="32" rx="6" fill="transparent"/>
+        <path d="M8 12 L14 16 L8 20" stroke="#94a3b8" stroke-width="1.4" fill="none"/>
+        <text x="32" y="20" fill="#475569">🏢 华南大区</text>
+        <text x="226" y="20" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">156</text>
+      </g>
+      <!-- ├ 财务中心 -->
+      <g transform="translate(20 312)">
+        <rect width="236" height="32" rx="6" fill="transparent"/>
+        <text x="32" y="20" fill="#475569">🏢 财务中心</text>
+        <text x="226" y="20" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">38</text>
+      </g>
+      <!-- ├ 技术研发部 -->
+      <g transform="translate(20 348)">
+        <rect width="236" height="32" rx="6" fill="transparent"/>
+        <text x="32" y="20" fill="#475569">🏢 技术研发部</text>
+        <text x="226" y="20" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">96</text>
+      </g>
+      <!-- ├ 信息中心 -->
+      <g transform="translate(20 384)">
+        <rect width="236" height="32" rx="6" fill="transparent"/>
+        <text x="32" y="20" fill="#475569">🏢 信息中心</text>
+        <text x="226" y="20" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">24</text>
+      </g>
+      <!-- ├ 客服中心 -->
+      <g transform="translate(20 420)">
+        <rect width="236" height="32" rx="6" fill="transparent"/>
+        <text x="32" y="20" fill="#475569">🏢 客服中心</text>
+        <text x="226" y="20" text-anchor="end" class="mono" font-size="11" fill="#94a3b8">102</text>
+      </g>
+    </g>
+
+    <!-- 底部按钮 -->
+    <g transform="translate(12 820)">
+      <rect width="256" height="36" rx="6" fill="url(#lg-btn-primary)"/>
+      <g transform="translate(20 18)" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round">
+        <line x1="-5" y1="0" x2="5" y2="0"/><line x1="0" y1="-5" x2="0" y2="5"/>
+      </g>
+      <text x="138" y="23" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#ffffff">+ 新建部门</text>
+    </g>
+  </g>
+
+  <!-- ========== 右侧主面板：华东大区 · 数据范围审计 ========== -->
+  <g transform="translate(548 80)" filter="url(#fx-card)">
+    <rect width="1028" height="896" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+
+    <!-- 标题栏 -->
+    <line x1="0" y1="68" x2="1028" y2="68" stroke="#f1f5f9"/>
+    <g transform="translate(24 22)">
+      <rect width="40" height="40" rx="8" fill="rgba(14,165,233,0.12)"/>
+      <text x="20" y="28" text-anchor="middle" font-size="20">🏢</text>
+    </g>
+    <text x="76" y="32" class="font" font-size="17" font-weight="700" fill="#1f2937">华东大区</text>
+    <g transform="translate(180 18)">
+      <rect width="80" height="22" rx="11" fill="rgba(14,165,233,0.12)"/>
+      <text x="40" y="15" text-anchor="middle" class="font" font-size="11" font-weight="600" fill="#0369a1">已启用</text>
+    </g>
+    <text x="76" y="54" class="font" font-size="12" fill="#6b7280">EastChina · 4 个直属子部门 · 218 名成员 · 部门负责人 王亮</text>
+
+    <g transform="translate(880 24)">
+      <rect width="60" height="32" rx="6" fill="#ffffff" stroke="#e5e7eb"/>
+      <text x="30" y="21" text-anchor="middle" class="font" font-size="12" fill="#475569">编辑</text>
+    </g>
+    <g transform="translate(948 24)">
+      <rect width="80" height="32" rx="6" fill="#ffffff" stroke="#e5e7eb"/>
+      <text x="40" y="21" text-anchor="middle" class="font" font-size="12" fill="#475569">+ 子部门</text>
+    </g>
+
+    <!-- Tab 切换条 -->
+    <g transform="translate(24 88)">
+      <text class="font" font-size="13" fill="#6b7280">基本信息</text>
+      <text x="80" class="font" font-size="13" fill="#6b7280">成员管理</text>
+      <g transform="translate(160 -8)">
+        <rect width="100" height="32" rx="16" fill="rgba(14,165,233,0.12)"/>
+        <text x="50" y="13" text-anchor="middle" class="font" font-size="13" font-weight="600" fill="#0369a1">数据范围审计</text>
+      </g>
+      <text x="284" class="font" font-size="13" fill="#6b7280">权限矩阵</text>
+    </g>
+
+    <!-- 信息横幅 -->
+    <g transform="translate(24 136)">
+      <rect width="980" height="56" rx="8" fill="#ecfeff" stroke="rgba(8,145,178,0.25)"/>
+      <g transform="translate(24 28)" fill="#0891b2"><circle r="10"/>
+        <text y="4" text-anchor="middle" class="font" font-size="13" font-weight="700" fill="#ffffff">i</text>
+      </g>
+      <text x="48" y="24" class="font" font-size="13" font-weight="600" fill="#155e75">数据范围审计（部门视角）</text>
+      <text x="48" y="42" class="font" font-size="12" fill="#0e7490">查看以「华东大区」作为主体时，谁能看到它、它能看到谁。功能权限请到「角色管理」配置。</text>
+    </g>
+
+    <!-- =========== 区域 A：本部门作为「数据主体」===== y=212 -->
+    <g transform="translate(24 212)">
+      <text y="14" class="font" font-size="14" font-weight="700" fill="#1f2937">① 本部门可被哪些角色看到</text>
+      <text y="32" class="font" font-size="12" fill="#64748b">列出在「角色管理 → 数据范围 → 指定部门」中勾选了「华东大区」的角色</text>
+    </g>
+
+    <!-- 角色卡片列表（横向 4 张） y=256 -->
+    <g transform="translate(24 256)">
+      <!-- 卡 1: 超级管理员 -->
+      <g>
+        <rect width="236" height="92" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+        <g transform="translate(16 16)">
+          <rect width="28" height="28" rx="14" fill="rgba(220,38,38,0.1)"/>
+          <text x="14" y="20" text-anchor="middle" font-size="13">👑</text>
+        </g>
+        <text x="56" y="26" class="font" font-size="13" font-weight="700" fill="#1f2937">超级管理员</text>
+        <text x="56" y="44" class="font" font-size="11" fill="#9ca3af">SUPERADMIN</text>
+        <line x1="16" y1="56" x2="220" y2="56" stroke="#f1f5f9"/>
+        <text x="16" y="76" class="font" font-size="11" fill="#6b7280">数据范围 · </text>
+        <text x="74" y="76" class="font" font-size="11" font-weight="600" fill="#dc2626">全部数据</text>
+      </g>
+
+      <!-- 卡 2: 华东区经理 -->
+      <g transform="translate(248 0)">
+        <rect width="236" height="92" rx="10" fill="rgba(14,165,233,0.04)" stroke="#0ea5e9"/>
+        <g transform="translate(16 16)">
+          <rect width="28" height="28" rx="14" fill="rgba(14,165,233,0.12)"/>
+          <text x="14" y="20" text-anchor="middle" font-size="13">📊</text>
+        </g>
+        <text x="56" y="26" class="font" font-size="13" font-weight="700" fill="#1f2937">华东区经理</text>
+        <text x="56" y="44" class="font" font-size="11" fill="#9ca3af">EAST_MGR · 4 人</text>
+        <line x1="16" y1="56" x2="220" y2="56" stroke="rgba(14,165,233,0.2)"/>
+        <text x="16" y="76" class="font" font-size="11" fill="#6b7280">数据范围 · </text>
+        <text x="74" y="76" class="font" font-size="11" font-weight="600" fill="#0369a1">指定部门（含本部门）</text>
+      </g>
+
+      <!-- 卡 3: 业务负责人 -->
+      <g transform="translate(496 0)">
+        <rect width="236" height="92" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+        <g transform="translate(16 16)">
+          <rect width="28" height="28" rx="14" fill="rgba(245,158,11,0.12)"/>
+          <text x="14" y="20" text-anchor="middle" font-size="13">💼</text>
+        </g>
+        <text x="56" y="26" class="font" font-size="13" font-weight="700" fill="#1f2937">业务负责人</text>
+        <text x="56" y="44" class="font" font-size="11" fill="#9ca3af">BIZ_LEAD · 12 人</text>
+        <line x1="16" y1="56" x2="220" y2="56" stroke="#f1f5f9"/>
+        <text x="16" y="76" class="font" font-size="11" fill="#6b7280">数据范围 · </text>
+        <text x="74" y="76" class="font" font-size="11" font-weight="600" fill="#d97706">本部门及子部门</text>
+      </g>
+
+      <!-- 卡 4: 财务审核 -->
+      <g transform="translate(744 0)">
+        <rect width="236" height="92" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+        <g transform="translate(16 16)">
+          <rect width="28" height="28" rx="14" fill="rgba(99,102,241,0.12)"/>
+          <text x="14" y="20" text-anchor="middle" font-size="13">📑</text>
+        </g>
+        <text x="56" y="26" class="font" font-size="13" font-weight="700" fill="#1f2937">财务审核</text>
+        <text x="56" y="44" class="font" font-size="11" fill="#9ca3af">FIN_AUDIT · 6 人</text>
+        <line x1="16" y1="56" x2="220" y2="56" stroke="#f1f5f9"/>
+        <text x="16" y="76" class="font" font-size="11" fill="#6b7280">数据范围 · </text>
+        <text x="74" y="76" class="font" font-size="11" font-weight="600" fill="#4f46e5">指定部门（仅财务凭证）</text>
+      </g>
+    </g>
+
+    <!-- 分隔线 y=372 -->
+    <line x1="24" y1="372" x2="1004" y2="372" stroke="#f1f5f9"/>
+
+    <!-- =========== 区域 B：本部门成员实际可见的数据 ===== y=388 -->
+    <g transform="translate(24 388)">
+      <text y="14" class="font" font-size="14" font-weight="700" fill="#1f2937">② 本部门成员能看到多少数据</text>
+      <text y="32" class="font" font-size="12" fill="#64748b">汇总「华东大区」218 名成员在各业务表上的可见数据量（按角色叠加去重计算）</text>
+    </g>
+
+    <!-- 5 张能力卡片 y=432 -->
+    <g transform="translate(24 432)">
+      <g>
+        <rect width="188" height="124" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+        <g transform="translate(16 16)">
+          <circle cx="14" cy="14" r="14" fill="rgba(99,102,241,0.1)"/>
+          <text x="14" y="19" text-anchor="middle" class="font" font-size="16">👥</text>
+        </g>
+        <text x="52" y="24" class="font" font-size="13" font-weight="600" fill="#1f2937">用户列表</text>
+        <text x="52" y="40" class="font" font-size="11" fill="#6b7280">仅可见所选部门</text>
+        <text x="16" y="78" class="font" font-size="22" font-weight="700" fill="#6366f1">466</text>
+        <text x="16" y="94" class="font" font-size="11" fill="#94a3b8">可见 / 1,247 总</text>
+        <rect x="16" y="104" width="156" height="6" rx="3" fill="#e5e7eb"/>
+        <rect x="16" y="104" width="58" height="6" rx="3" fill="#6366f1"/>
+      </g>
+      <g transform="translate(200 0)">
+        <rect width="188" height="124" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+        <g transform="translate(16 16)">
+          <circle cx="14" cy="14" r="14" fill="rgba(16,185,129,0.1)"/>
+          <text x="14" y="19" text-anchor="middle" class="font" font-size="16">💼</text>
+        </g>
+        <text x="52" y="24" class="font" font-size="13" font-weight="600" fill="#1f2937">CRM 客户</text>
+        <text x="52" y="40" class="font" font-size="11" fill="#6b7280">仅可见所选部门</text>
+        <text x="16" y="78" class="font" font-size="22" font-weight="700" fill="#10b981">1,842</text>
+        <text x="16" y="94" class="font" font-size="11" fill="#94a3b8">可见 / 4,516 总</text>
+        <rect x="16" y="104" width="156" height="6" rx="3" fill="#e5e7eb"/>
+        <rect x="16" y="104" width="63" height="6" rx="3" fill="#10b981"/>
+      </g>
+      <g transform="translate(400 0)">
+        <rect width="188" height="124" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+        <g transform="translate(16 16)">
+          <circle cx="14" cy="14" r="14" fill="rgba(245,158,11,0.12)"/>
+          <text x="14" y="19" text-anchor="middle" class="font" font-size="16">📋</text>
+        </g>
+        <text x="52" y="24" class="font" font-size="13" font-weight="600" fill="#1f2937">订单</text>
+        <text x="52" y="40" class="font" font-size="11" fill="#6b7280">仅可见所选部门</text>
+        <text x="16" y="78" class="font" font-size="22" font-weight="700" fill="#d97706">3,211</text>
+        <text x="16" y="94" class="font" font-size="11" fill="#94a3b8">可见 / 8,804 总</text>
+        <rect x="16" y="104" width="156" height="6" rx="3" fill="#e5e7eb"/>
+        <rect x="16" y="104" width="56" height="6" rx="3" fill="#d97706"/>
+      </g>
+      <g transform="translate(600 0)">
+        <rect width="188" height="124" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+        <g transform="translate(16 16)">
+          <circle cx="14" cy="14" r="14" fill="rgba(236,72,153,0.1)"/>
+          <text x="14" y="19" text-anchor="middle" class="font" font-size="16">💰</text>
+        </g>
+        <text x="52" y="24" class="font" font-size="13" font-weight="600" fill="#1f2937">财务凭证</text>
+        <text x="52" y="40" class="font" font-size="11" fill="#6b7280">仅可见所选部门</text>
+        <text x="16" y="78" class="font" font-size="22" font-weight="700" fill="#db2777">2,106</text>
+        <text x="16" y="94" class="font" font-size="11" fill="#94a3b8">可见 / 5,892 总</text>
+        <rect x="16" y="104" width="156" height="6" rx="3" fill="#e5e7eb"/>
+        <rect x="16" y="104" width="55" height="6" rx="3" fill="#db2777"/>
+      </g>
+      <g transform="translate(800 0)">
+        <rect width="180" height="124" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+        <g transform="translate(16 16)">
+          <circle cx="14" cy="14" r="14" fill="rgba(59,130,246,0.1)"/>
+          <text x="14" y="19" text-anchor="middle" class="font" font-size="16">📊</text>
+        </g>
+        <text x="52" y="24" class="font" font-size="13" font-weight="600" fill="#1f2937">日志审计</text>
+        <text x="52" y="40" class="font" font-size="11" fill="#6b7280">仅可见所选部门</text>
+        <text x="16" y="78" class="font" font-size="22" font-weight="700" fill="#2563eb">12.4K</text>
+        <text x="16" y="94" class="font" font-size="11" fill="#94a3b8">可见 / 35.6K 总</text>
+        <rect x="16" y="104" width="148" height="6" rx="3" fill="#e5e7eb"/>
+        <rect x="16" y="104" width="52" height="6" rx="3" fill="#2563eb"/>
+      </g>
+    </g>
+
+    <!-- =========== 区域 C：自动注入 SQL ===== y=580 -->
+    <g transform="translate(24 580)">
+      <text y="14" class="font" font-size="14" font-weight="700" fill="#1f2937">③ 框架如何自动收紧 SQL</text>
+      <text y="32" class="font" font-size="12" fill="#64748b">部门主体 + 当前用户角色，由 IDataScopeResolver 解析后自动注入 where 子句</text>
+    </g>
+
+    <g transform="translate(24 624)">
+      <rect width="980" height="156" rx="10" fill="#0f172a"/>
+      <g transform="translate(20 22)">
+        <circle r="5" cx="0" cy="0" fill="#fb7185"/>
+        <circle r="5" cx="16" cy="0" fill="#fbbf24"/>
+        <circle r="5" cx="32" cy="0" fill="#34d399"/>
+        <text x="56" y="4" class="font" font-size="11" fill="#64748b">框架自动为 SQL / EF 查询注入的部门过滤 · 业务代码无需感知</text>
+      </g>
+      <g transform="translate(24 56)" class="mono" font-size="13">
+        <text y="0" fill="#64748b">-- 当前登录人：王亮（华东区经理）</text>
+        <text y="26" fill="#60a5fa">SELECT</text><text x="56" y="26" fill="#e5e7eb"> id, name, manager </text><text x="220" y="26" fill="#60a5fa">FROM</text><text x="260" y="26" fill="#e5e7eb"> crm_customer</text>
+        <text y="52" fill="#60a5fa">WHERE</text><text x="56" y="52" fill="#e5e7eb"> tenant_id = </text><text x="160" y="52" fill="#fbbf24">'t001'</text>
+        <text y="78" fill="#e5e7eb">  </text><text x="20" y="78" fill="#a78bfa">AND</text><text x="56" y="78" fill="#e5e7eb"> department_id </text><text x="176" y="78" fill="#a78bfa">IN</text><text x="200" y="78" fill="#fbbf24"> ('1001', '1003', '1004', '1007', '1012', '1018', '1023', '1031')</text>
+        <text y="104" fill="#64748b">-- 由 ScopeQueryFilter 注入 · 已通过审计追踪</text>
+      </g>
+    </g>
+
+    <!-- =========== 底部说明 ===== y=796 -->
+    <g transform="translate(24 796)">
+      <rect width="980" height="80" rx="10" fill="#f0fdf4" stroke="#bbf7d0"/>
+      <g transform="translate(24 24)">
+        <circle r="14" fill="#10b981"/>
+        <path d="M-6 0 L-2 4 L6 -4" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <text x="56" y="30" class="font" font-size="14" font-weight="700" fill="#065f46">部门数据视图已生效</text>
+      <text x="180" y="30" class="font" font-size="12" fill="#047857">· 列表 / 详情 / 报表 / OpenAPI 同等约束 · 全部行为写入审计</text>
+      <g transform="translate(24 50)" class="font" font-size="12" fill="#065f46">
+        <text>提示：「功能权限（菜单 / 按钮 / 接口鉴权）」请到「角色管理」配置；本页只展示部门维度的数据可见性。</text>
+      </g>
+    </g>
+  </g>
+</svg>

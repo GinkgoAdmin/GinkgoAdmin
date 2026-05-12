@@ -1,0 +1,184 @@
+/* =============================================================
+   GinkgoAdmin 官网 - 暗色主题 (Dark Theme)
+   作用选择器：.ginkgo-web.dark
+   此文件覆写浅色主题变量，布局结构保持完全一致。
+   对比度设计原则（以 #0d1117 底色计算）：
+     heading  ≥ WCAG AAA (#f0f6fc on #0d1117 ≈ 18:1)
+     body     ≥ WCAG AA  (#c9d1d9 on #0d1117 ≈ 12:1)
+     muted    ≥ WCAG AA  (#8b949e on #0d1117 ≈  6.1:1)
+   ============================================================= */
+
+.ginkgo-web.dark {
+  /* ---------- 表面 / 背景 ---------- */
+  /* 对齐 GitHub Dark palette，可读性最佳的深色基准 */
+  --gw-bg-body:        #0d1117;
+  --gw-bg-alt:         #161b22;
+  --gw-bg-hero:        #010409;
+  /* 卡片使用稍亮的深蓝，与底色产生层次感 */
+  --gw-bg-card:        rgba(22, 27, 34, 0.95);
+  --gw-bg-card-hover:  rgba(30, 37, 46, 0.95);
+  --gw-bg-footer:      #010409;
+
+  /* 导航栏滚动后背景（暗色毛玻璃） */
+  --gw-bg-header:        rgba(13, 17, 23, 0.95);
+  --gw-bg-header-border: rgba(255, 255, 255, 0.07);
+  --gw-bg-header-shadow: 0 1px 4px rgba(0, 0, 0, 0.40);
+
+  /* 代码 / 高亮块 */
+  --gw-bg-code:        #1c2128;
+  --gw-bg-code-header: #21262d;
+
+  /* ---------- 文字 ---------- */
+  --gw-text-heading:   #f0f6fc;
+  --gw-text-body:      #c9d1d9;
+  --gw-text-muted:     #8b949e;
+  --gw-text-hero:      #ffffff;
+  --gw-text-hero-sub:  rgba(226, 232, 240, 0.80);
+  --gw-text-link:      #58a6ff;
+  --gw-text-code:      #e2e8f0;
+
+  /* ---------- 边框 ---------- */
+  --gw-border:         #30363d;
+  --gw-border-light:   #21262d;
+  --gw-border-focus:   #58a6ff;
+
+  /* ---------- 阴影 ---------- */
+  /* 暗色模式下阴影更深，确保层次感 */
+  --gw-shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.40);
+  --gw-shadow-md:  0 4px 24px rgba(0, 0, 0, 0.50);
+  --gw-shadow-lg:  0 12px 40px rgba(0, 0, 0, 0.60);
+  --gw-shadow-xl:  0 24px 48px rgba(0, 0, 0, 0.70);
+
+  /* ---------- 输入控件 ---------- */
+  --gw-input-bg:      #0d1117;
+  --gw-input-border:  #30363d;
+  --gw-input-text:    #f0f6fc;
+  --gw-input-placeholder: #8b949e;
+
+  /* ---------- 主色亮色背景（暗色下调低饱和度） ---------- */
+  --gw-primary-light:  rgba(31, 111, 235, 0.15);
+  --gw-primary-muted:  rgba(88, 166, 255, 0.10);
+
+  /* ---------- 滚动条 ---------- */
+  --gw-scrollbar-track: #0d1117;
+  --gw-scrollbar-thumb: #484f58;
+
+  color-scheme: dark;
+}
+
+/* ============================================================
+   暗色模式下全局 body 背景（防止页面切换时露白）
+   ============================================================ */
+.ginkgo-web.dark,
+.ginkgo-web.dark .gw-main {
+  background: var(--gw-bg-body);
+}
+
+/* ============================================================
+   暗色模式下提升各类通用区块的可读性
+   ============================================================ */
+
+/* section 交替背景区 */
+.ginkgo-web.dark [class*="__section--alt"],
+.ginkgo-web.dark [class*="section--alt"],
+.ginkgo-web.dark [class*="-alt"] {
+  background: var(--gw-bg-alt);
+}
+
+/* 通用卡片边框 */
+.ginkgo-web.dark [class*="__card"],
+.ginkgo-web.dark [class*="-card"] {
+  border-color: var(--gw-border);
+}
+
+/* 通用标题文字 */
+.ginkgo-web.dark h1,
+.ginkgo-web.dark h2,
+.ginkgo-web.dark h3,
+.ginkgo-web.dark h4,
+.ginkgo-web.dark h5,
+.ginkgo-web.dark h6 {
+  color: var(--gw-text-heading);
+}
+
+/* 通用正文文字（不覆盖带 class 的精细控制） */
+.ginkgo-web.dark p:not([class]),
+.ginkgo-web.dark li:not([class]),
+.ginkgo-web.dark span:not([class]) {
+  color: var(--gw-text-body);
+}
+
+/* 链接 */
+.ginkgo-web.dark a:not([class]) {
+  color: var(--gw-text-link);
+}
+
+/* 分隔线 */
+.ginkgo-web.dark hr {
+  border-color: var(--gw-border);
+}
+
+/* 滚动条（Webkit） */
+.ginkgo-web.dark ::-webkit-scrollbar { width: 6px; height: 6px; }
+.ginkgo-web.dark ::-webkit-scrollbar-track { background: var(--gw-scrollbar-track); }
+.ginkgo-web.dark ::-webkit-scrollbar-thumb { background: var(--gw-scrollbar-thumb); border-radius: 3px; }
+.ginkgo-web.dark ::-webkit-scrollbar-thumb:hover { background: #6e7681; }
+/* ============================================================
+   价格页 FAQ 区块暗黑主题专属覆写
+   （.pp__faq-item 基础背景已使用 var(--gw-bg-card)，以下覆写交互和装饰效果）
+   ============================================================ */
+.ginkgo-web.dark .pp__faq-item {
+  border-color: var(--gw-border);
+}
+.ginkgo-web.dark .pp__faq-item:hover {
+  border-color: rgba(129,140,248,0.35);
+  box-shadow: 0 6px 22px -6px rgba(0,0,0,0.5);
+}
+.ginkgo-web.dark .pp__faq-item--open {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 1.5px rgba(129,140,248,0.55),
+    0 12px 36px -10px rgba(129,140,248,0.3);
+}
+.ginkgo-web.dark .pp__faq-item::before {
+  background: linear-gradient(135deg, rgba(129,140,248,0.07), rgba(168,85,247,0.05));
+}
+.ginkgo-web.dark .pp__faq-item--open::before { opacity: 1; }
+.ginkgo-web.dark .pp__faq-q:hover,
+.ginkgo-web.dark .pp__faq-item--open .pp__faq-q { color: #a5b4fc; }
+.ginkgo-web.dark .pp__faq-bar { background: linear-gradient(180deg, #818cf8, #c084fc); }
+.ginkgo-web.dark .pp__faq-icon { background: rgba(129,140,248,0.1); }
+.ginkgo-web.dark .pp__faq-item:hover .pp__faq-icon { background: rgba(129,140,248,0.18); }
+.ginkgo-web.dark .pp__faq-item--open .pp__faq-icon {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  box-shadow: 0 4px 14px -2px rgba(129,140,248,0.45);
+}
+.ginkgo-web.dark .pp__faq-icon-bar { background: #a5b4fc; }
+.ginkgo-web.dark .pp__faq-item--open .pp__faq-num { color: #a5b4fc; }
+.ginkgo-web.dark .pp__faq-item--open .pp__faq-icon-bar { background: #fff; }
+
+/* ============================================================
+   登录页 / 注册页卡片暗黑主题覆写
+   （scoped CSS 编译后携带 data-v-xxx 属性优先级高于普通全局选择器，需 !important 强制覆盖）
+   ============================================================ */
+.ginkgo-web.dark .auth-card {
+  background: #141926 !important;
+  border-color: rgba(255,255,255,0.07) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.2) !important;
+}
+.ginkgo-web.dark .auth-card .card-title {
+  color: #f0f6fc !important;
+}
+.ginkgo-web.dark .auth-card .card-desc {
+  color: #8b949e !important;
+}
+.ginkgo-web.dark .auth-card .el-input__wrapper {
+  background: #1c2235 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+.ginkgo-web.dark .auth-card .el-input__inner {
+  color: #f0f6fc !important;
+}
+.ginkgo-web.dark .auth-card .el-input__inner::placeholder {
+  color: #64748b !important;
+}

@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GinkgoAdmin 首页 - WPF 桌面客户端样张
+  复刻 src/Client/Ginkgo.Wpf/Views/ShellWindow.xaml + UsersPage.xaml
+  结构：自定义标题栏 + 深色侧边菜单 + 用户管理页 + 状态栏
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="GinkgoAdmin WPF 桌面客户端">
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f1f5f9"/><stop offset="100%" stop-color="#e2e8f0"/></linearGradient>
+    <linearGradient id="lg-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <linearGradient id="lg-btn" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <linearGradient id="lg-btn-blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
+    <filter id="fx-win"><feDropShadow dx="0" dy="24" stdDeviation="30" flood-color="#0f172a" flood-opacity="0.25"/></filter>
+  </defs>
+  <style>.font{font-family:'Microsoft YaHei','Segoe UI',Arial,sans-serif}.mono{font-family:Consolas,monospace}</style>
+
+  <rect width="1600" height="1000" fill="url(#bg-grad)"/>
+
+  <!-- 窗口外框（模拟桌面窗口阴影） -->
+  <g transform="translate(40 40)" filter="url(#fx-win)">
+    <rect width="1520" height="920" fill="#ffffff"/>
+
+    <!-- ======== 顶部标题栏（#1F2937 深色 40px 高） ======== -->
+    <rect width="1520" height="40" fill="#1F2937"/>
+
+    <!-- Logo + 标题 -->
+    <g transform="translate(8 4)">
+      <rect width="32" height="32" rx="4" fill="url(#lg-logo)"/>
+      <text x="16" y="22" text-anchor="middle" class="font" font-size="18" font-weight="700" fill="#ffffff">G</text>
+    </g>
+    <text x="52" y="26" class="font" font-size="16" font-weight="600" fill="#ffffff">GinkgoAdmin 桌面客户端</text>
+
+    <!-- 右侧：用户菜单 + 窗口控制 -->
+    <g transform="translate(1272 8)">
+      <g fill="#ffffff">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="#ffffff" stroke-width="1.4"/>
+        <circle cx="12" cy="10" r="3" fill="none" stroke="#ffffff" stroke-width="1.4"/>
+        <path d="M6 18 Q 12 14 18 18" fill="none" stroke="#ffffff" stroke-width="1.4"/>
+      </g>
+      <text x="32" y="18" class="font" font-size="13" fill="#ffffff">张立（超级管理员）</text>
+      <path d="M186 12 L192 18 L198 12" stroke="#ffffff" stroke-width="1.4" fill="none"/>
+      <!-- 红点 -->
+      <circle cx="18" cy="4" r="6" fill="#ef4444"/>
+      <text x="18" y="7" text-anchor="middle" class="font" font-size="9" font-weight="700" fill="#ffffff">5</text>
+    </g>
+
+    <!-- 最小化/最大化/关闭 -->
+    <g transform="translate(1412 0)" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round">
+      <g><rect width="36" height="40" fill="transparent"/><line x1="10" y1="22" x2="26" y2="22"/></g>
+      <g transform="translate(36 0)"><rect width="36" height="40" fill="transparent"/><rect x="12" y="14" width="12" height="12" fill="none"/></g>
+      <g transform="translate(72 0)"><rect width="36" height="40" fill="#ef4444"/><line x1="12" y1="14" x2="24" y2="26" stroke="#ffffff"/><line x1="24" y1="14" x2="12" y2="26" stroke="#ffffff"/></g>
+    </g>
+
+    <!-- ======== 左侧菜单栏（280px 深色） ======== -->
+    <rect x="0" y="40" width="280" height="820" fill="#1F2937"/>
+
+    <!-- 菜单项列表 -->
+    <g transform="translate(8 52)" class="font" font-size="14">
+      <!-- 工作台 -->
+      <g><rect width="264" height="40" rx="8" fill="transparent"/>
+        <g transform="translate(20 20)" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M-6 2 L0 -4 L6 2 L6 6 L-6 6 Z"/></g>
+        <text x="40" y="25" fill="#ffffff" font-weight="500">工作台</text>
+      </g>
+
+      <!-- 系统管理（展开） -->
+      <g transform="translate(0 48)"><rect width="264" height="40" rx="8" fill="rgba(16,185,129,0.15)"/>
+        <g transform="translate(20 20)" fill="none" stroke="#10b981" stroke-width="1.6" stroke-linecap="round"><rect x="-6" y="-6" width="12" height="12" rx="2"/><line x1="-3" y1="-1" x2="3" y2="-1"/><line x1="-3" y1="3" x2="3" y2="3"/></g>
+        <text x="40" y="25" fill="#10b981" font-weight="600">系统管理</text>
+        <path d="M232 16 L240 22 L248 16" stroke="#9CA3AF" stroke-width="1.4" fill="none" stroke-linecap="round" transform="rotate(180 240 19)"/>
+      </g>
+      <!-- 子菜单 -->
+      <g transform="translate(0 96)"><rect width="264" height="36" rx="6" fill="rgba(16,185,129,0.22)"/>
+        <rect width="3" height="36" fill="#10b981"/>
+        <text x="44" y="23" fill="#10b981" font-weight="600">用户管理</text>
+      </g>
+      <g transform="translate(0 136)"><rect width="264" height="36" rx="6" fill="transparent"/>
+        <text x="44" y="23" fill="#D1D5DB">角色管理</text>
+      </g>
+      <g transform="translate(0 176)"><rect width="264" height="36" rx="6" fill="transparent"/>
+        <text x="44" y="23" fill="#D1D5DB">菜单管理</text>
+      </g>
+      <g transform="translate(0 216)"><rect width="264" height="36" rx="6" fill="transparent"/>
+        <text x="44" y="23" fill="#D1D5DB">部门管理</text>
+      </g>
+      <g transform="translate(0 256)"><rect width="264" height="36" rx="6" fill="transparent"/>
+        <text x="44" y="23" fill="#D1D5DB">数据字典</text>
+      </g>
+      <g transform="translate(0 296)"><rect width="264" height="36" rx="6" fill="transparent"/>
+        <text x="44" y="23" fill="#D1D5DB">系统配置</text>
+      </g>
+
+      <!-- 模块管理 -->
+      <g transform="translate(0 348)"><rect width="264" height="40" rx="8" fill="transparent"/>
+        <g transform="translate(20 20)" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round"><rect x="-5" y="-5" width="10" height="10" rx="1"/><rect x="-5" y="-1" width="3" height="3" fill="#ffffff"/></g>
+        <text x="40" y="25" fill="#ffffff">模块管理</text>
+        <path d="M232 16 L240 22 L248 16" stroke="#9CA3AF" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <!-- 通知 -->
+      <g transform="translate(0 396)"><rect width="264" height="40" rx="8" fill="transparent"/>
+        <g transform="translate(20 20)" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M-5 -2 Q -5 -7 0 -7 Q 5 -7 5 -2 L 5 3 L 7 5 L -7 5 L -5 3 Z"/></g>
+        <text x="40" y="25" fill="#ffffff">我的通知</text>
+        <g transform="translate(228 20)"><rect width="28" height="16" rx="8" fill="#ef4444"/><text x="14" y="12" text-anchor="middle" class="font" font-size="10" font-weight="700" fill="#ffffff">12</text></g>
+      </g>
+
+      <!-- 文件管理 -->
+      <g transform="translate(0 444)"><rect width="264" height="40" rx="8" fill="transparent"/>
+        <g transform="translate(20 20)" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M-6 -4 L-2 -4 L0 -6 L6 -6 L6 4 L-6 4 Z"/></g>
+        <text x="40" y="25" fill="#ffffff">文件管理</text>
+      </g>
+
+      <!-- 日志审计 -->
+      <g transform="translate(0 492)"><rect width="264" height="40" rx="8" fill="transparent"/>
+        <g transform="translate(20 20)" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round"><rect x="-5" y="-6" width="10" height="12" rx="1"/><line x1="-3" y1="-3" x2="3" y2="-3"/><line x1="-3" y1="0" x2="3" y2="0"/><line x1="-3" y1="3" x2="1" y2="3"/></g>
+        <text x="40" y="25" fill="#ffffff">日志审计</text>
+      </g>
+
+      <!-- 底部固定按钮 -->
+      <g transform="translate(0 744)">
+        <line x1="0" y1="-4" x2="264" y2="-4" stroke="#374151"/>
+        <g transform="translate(0 8)">
+          <rect width="128" height="48" fill="transparent"/>
+          <text x="64" y="20" text-anchor="middle" class="font" font-size="11" fill="#9CA3AF">连接状态</text>
+          <g transform="translate(50 32)"><circle r="4" fill="#10b981"/><text x="10" y="4" class="font" font-size="11" fill="#10b981">已连接</text></g>
+        </g>
+        <g transform="translate(132 8)">
+          <rect width="132" height="48" fill="transparent"/>
+          <text x="66" y="20" text-anchor="middle" class="font" font-size="11" fill="#9CA3AF">版本</text>
+          <text x="66" y="38" text-anchor="middle" class="font" font-size="11" fill="#ffffff">v2.4.1 企业版</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- ======== 中部内容区：用户管理页 ======== -->
+    <g transform="translate(280 40)">
+      <rect width="1240" height="820" fill="#ffffff"/>
+
+      <!-- 面包屑 / 页面标题栏 -->
+      <g transform="translate(24 20)">
+        <text class="font" font-size="11" fill="#9ca3af">系统管理 › 用户管理</text>
+        <text y="32" class="font" font-size="20" font-weight="700" fill="#111827">用户管理</text>
+      </g>
+
+      <!-- 顶部工具栏（HandyControls 按钮风格） -->
+      <g transform="translate(24 92)">
+        <!-- 搜索 -->
+        <rect width="280" height="32" fill="#ffffff" stroke="#D1D5DB"/>
+        <text x="14" y="20" class="font" font-size="12" fill="#9ca3af">🔍 搜索用户名 / 邮箱 / 手机</text>
+
+        <!-- 状态下拉 -->
+        <g transform="translate(292 0)">
+          <rect width="140" height="32" fill="#ffffff" stroke="#D1D5DB"/>
+          <text x="14" y="20" class="font" font-size="12" fill="#374151">状态：全部</text>
+          <path d="M116 12 L124 18 L132 12" stroke="#9ca3af" stroke-width="1.4" fill="none"/>
+        </g>
+
+        <!-- 部门下拉 -->
+        <g transform="translate(444 0)">
+          <rect width="160" height="32" fill="#ffffff" stroke="#D1D5DB"/>
+          <text x="14" y="20" class="font" font-size="12" fill="#374151">部门：全部</text>
+          <path d="M136 12 L144 18 L152 12" stroke="#9ca3af" stroke-width="1.4" fill="none"/>
+        </g>
+
+        <!-- 查询按钮 -->
+        <g transform="translate(616 0)">
+          <rect width="72" height="32" fill="url(#lg-btn)"/>
+          <text x="36" y="20" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#ffffff">🔎 查询</text>
+        </g>
+        <g transform="translate(692 0)">
+          <rect width="72" height="32" fill="#ffffff" stroke="#D1D5DB"/>
+          <text x="36" y="20" text-anchor="middle" class="font" font-size="12" fill="#374151">重置</text>
+        </g>
+
+        <!-- 右侧操作 -->
+        <g transform="translate(1060 0)">
+          <rect width="72" height="32" fill="#ffffff" stroke="#D1D5DB"/>
+          <text x="36" y="20" text-anchor="middle" class="font" font-size="12" fill="#374151">导出</text>
+        </g>
+        <g transform="translate(1136 0)">
+          <rect width="76" height="32" fill="url(#lg-btn)"/>
+          <text x="38" y="20" text-anchor="middle" class="font" font-size="12" font-weight="600" fill="#ffffff">+ 新增用户</text>
+        </g>
+      </g>
+
+      <!-- ListView (DataGrid) -->
+      <g transform="translate(24 144)">
+        <rect width="1188" height="620" fill="#ffffff" stroke="#E5E7EB"/>
+
+        <!-- 表头 -->
+        <rect width="1188" height="36" fill="#F3F4F6"/>
+        <line x1="0" y1="36" x2="1188" y2="36" stroke="#E5E7EB"/>
+        <g class="font" font-size="12" font-weight="600" fill="#374151">
+          <text x="16" y="24">☐</text>
+          <text x="44" y="24">用户名</text>
+          <text x="180" y="24">姓名</text>
+          <text x="288" y="24">手机</text>
+          <text x="408" y="24">邮箱</text>
+          <text x="576" y="24">部门</text>
+          <text x="710" y="24">角色</text>
+          <text x="850" y="24">状态</text>
+          <text x="940" y="24">创建时间</text>
+          <text x="1080" y="24">操作</text>
+        </g>
+        <!-- 列分隔线 -->
+        <g stroke="#E5E7EB"><line x1="36" y1="0" x2="36" y2="36"/><line x1="172" y1="0" x2="172" y2="36"/><line x1="280" y1="0" x2="280" y2="36"/><line x1="400" y1="0" x2="400" y2="36"/><line x1="568" y1="0" x2="568" y2="36"/><line x1="700" y1="0" x2="700" y2="36"/><line x1="840" y1="0" x2="840" y2="36"/><line x1="932" y1="0" x2="932" y2="36"/><line x1="1072" y1="0" x2="1072" y2="36"/></g>
+
+        <!-- 数据行 (9 行) -->
+        <g class="font" font-size="12" fill="#374151">
+          <!-- 行 1 选中 -->
+          <g transform="translate(0 36)">
+            <rect width="1188" height="44" fill="#ECFDF5"/>
+            <rect width="3" height="44" fill="#10b981"/>
+            <line y1="44" x2="1188" y2="44" stroke="#F3F4F6"/>
+            <text x="16" y="28" fill="#10b981">☑</text>
+            <text x="44" y="28" font-weight="500">admin</text>
+            <text x="180" y="28">张立</text>
+            <text x="288" y="28">138****1234</text>
+            <text x="408" y="28">zhang.li@ginkgo.com</text>
+            <text x="576" y="28">信息中心</text>
+            <g transform="translate(710 16)"><rect width="50" height="20" rx="4" fill="#FEE2E2"/><text x="25" y="14" text-anchor="middle" font-size="11" fill="#DC2626">超管</text></g>
+            <g transform="translate(850 16)"><circle cx="5" cy="10" r="4" fill="#10b981"/><text x="16" y="14" font-size="11" fill="#059669">启用</text></g>
+            <text x="940" y="28" font-size="11">2024-01-15</text>
+            <g transform="translate(1080 16)" class="mono" font-size="11" fill="#3b82f6"><text>编辑</text><text x="36" fill="#f59e0b">停用</text><text x="72" fill="#ef4444">删除</text></g>
+          </g>
+          <!-- 行 2 -->
+          <g transform="translate(0 80)">
+            <rect width="1188" height="44" fill="#ffffff"/>
+            <line y1="44" x2="1188" y2="44" stroke="#F3F4F6"/>
+            <text x="16" y="28">☐</text>
+            <text x="44" y="28">wangliang</text>
+            <text x="180" y="28">王亮</text>
+            <text x="288" y="28">135****5566</text>
+            <text x="408" y="28">wang.liang@ginkgo.com</text>
+            <text x="576" y="28">华南销售大区</text>
+            <g transform="translate(710 16)"><rect width="62" height="20" rx="4" fill="#DBEAFE"/><text x="31" y="14" text-anchor="middle" font-size="11" fill="#1d4ed8">CRM 销售</text></g>
+            <g transform="translate(850 16)"><circle cx="5" cy="10" r="4" fill="#10b981"/><text x="16" y="14" font-size="11" fill="#059669">启用</text></g>
+            <text x="940" y="28" font-size="11">2024-03-22</text>
+            <g transform="translate(1080 16)" class="mono" font-size="11" fill="#3b82f6"><text>编辑</text><text x="36" fill="#f59e0b">停用</text><text x="72" fill="#ef4444">删除</text></g>
+          </g>
+          <!-- 行 3 -->
+          <g transform="translate(0 124)">
+            <rect width="1188" height="44" fill="#F9FAFB"/>
+            <line y1="44" x2="1188" y2="44" stroke="#F3F4F6"/>
+            <text x="16" y="28">☐</text>
+            <text x="44" y="28">lihua</text>
+            <text x="180" y="28">李华</text>
+            <text x="288" y="28">139****2233</text>
+            <text x="408" y="28">li.hua@ginkgo.com</text>
+            <text x="576" y="28">运营支持</text>
+            <g transform="translate(710 16)"><rect width="62" height="20" rx="4" fill="#FEF3C7"/><text x="31" y="14" text-anchor="middle" font-size="11" fill="#92400e">平台运营</text></g>
+            <g transform="translate(850 16)"><circle cx="5" cy="10" r="4" fill="#10b981"/><text x="16" y="14" font-size="11" fill="#059669">启用</text></g>
+            <text x="940" y="28" font-size="11">2024-05-08</text>
+            <g transform="translate(1080 16)" class="mono" font-size="11" fill="#3b82f6"><text>编辑</text><text x="36" fill="#f59e0b">停用</text><text x="72" fill="#ef4444">删除</text></g>
+          </g>
+          <!-- 行 4 -->
+          <g transform="translate(0 168)">
+            <rect width="1188" height="44" fill="#ffffff"/>
+            <line y1="44" x2="1188" y2="44" stroke="#F3F4F6"/>
+            <text x="16" y="28">☐</text>
+            <text x="44" y="28">chenfang</text>
+            <text x="180" y="28">陈芳</text>
+            <text x="288" y="28">186****8899</text>
+            <text x="408" y="28">chen.fang@ginkgo.com</text>
+            <text x="576" y="28">财务中心</text>
+            <g transform="translate(710 16)"><rect width="62" height="20" rx="4" fill="#E0E7FF"/><text x="31" y="14" text-anchor="middle" font-size="11" fill="#4338ca">财务审核</text></g>
+            <g transform="translate(850 16)"><circle cx="5" cy="10" r="4" fill="#10b981"/><text x="16" y="14" font-size="11" fill="#059669">启用</text></g>
+            <text x="940" y="28" font-size="11">2024-07-11</text>
+            <g transform="translate(1080 16)" class="mono" font-size="11" fill="#3b82f6"><text>编辑</text><text x="36" fill="#f59e0b">停用</text><text x="72" fill="#ef4444">删除</text></g>
+          </g>
+          <!-- 行 5 -->
+          <g transform="translate(0 212)">
+            <rect width="1188" height="44" fill="#F9FAFB"/>
+            <line y1="44" x2="1188" y2="44" stroke="#F3F4F6"/>
+            <text x="16" y="28">☐</text>
+            <text x="44" y="28">zhaowei</text>
+            <text x="180" y="28">赵伟</text>
+            <text x="288" y="28">133****4455</text>
+            <text x="408" y="28">zhao.wei@ginkgo.com</text>
+            <text x="576" y="28">业务部</text>
+            <g transform="translate(710 16)"><rect width="74" height="20" rx="4" fill="#D1FAE5"/><text x="37" y="14" text-anchor="middle" font-size="11" fill="#065f46">业务负责人</text></g>
+            <g transform="translate(850 16)"><circle cx="5" cy="10" r="4" fill="#f59e0b"/><text x="16" y="14" font-size="11" fill="#d97706">已停用</text></g>
+            <text x="940" y="28" font-size="11">2024-09-02</text>
+            <g transform="translate(1080 16)" class="mono" font-size="11" fill="#3b82f6"><text>编辑</text><text x="36" fill="#10b981">启用</text><text x="72" fill="#ef4444">删除</text></g>
+          </g>
+          <!-- 行 6 -->
+          <g transform="translate(0 256)">
+            <rect width="1188" height="44" fill="#ffffff"/>
+            <line y1="44" x2="1188" y2="44" stroke="#F3F4F6"/>
+            <text x="16" y="28">☐</text>
+            <text x="44" y="28">liuyun</text>
+            <text x="180" y="28">刘云</text>
+            <text x="288" y="28">152****7733</text>
+            <text x="408" y="28">liu.yun@ginkgo.com</text>
+            <text x="576" y="28">技术部 / 苏州研发</text>
+            <g transform="translate(710 16)"><rect width="62" height="20" rx="4" fill="#FCE7F3"/><text x="31" y="14" text-anchor="middle" font-size="11" fill="#be185d">开发工程师</text></g>
+            <g transform="translate(850 16)"><circle cx="5" cy="10" r="4" fill="#10b981"/><text x="16" y="14" font-size="11" fill="#059669">启用</text></g>
+            <text x="940" y="28" font-size="11">2024-11-18</text>
+            <g transform="translate(1080 16)" class="mono" font-size="11" fill="#3b82f6"><text>编辑</text><text x="36" fill="#f59e0b">停用</text><text x="72" fill="#ef4444">删除</text></g>
+          </g>
+          <!-- 行 7 -->
+          <g transform="translate(0 300)">
+            <rect width="1188" height="44" fill="#F9FAFB"/>
+            <line y1="44" x2="1188" y2="44" stroke="#F3F4F6"/>
+            <text x="16" y="28">☐</text>
+            <text x="44" y="28">sunlei</text>
+            <text x="180" y="28">孙磊</text>
+            <text x="288" y="28">176****0011</text>
+            <text x="408" y="28">sun.lei@ginkgo.com</text>
+            <text x="576" y="28">华北销售大区</text>
+            <g transform="translate(710 16)"><rect width="62" height="20" rx="4" fill="#DBEAFE"/><text x="31" y="14" text-anchor="middle" font-size="11" fill="#1d4ed8">CRM 销售</text></g>
+            <g transform="translate(850 16)"><circle cx="5" cy="10" r="4" fill="#10b981"/><text x="16" y="14" font-size="11" fill="#059669">启用</text></g>
+            <text x="940" y="28" font-size="11">2025-02-05</text>
+            <g transform="translate(1080 16)" class="mono" font-size="11" fill="#3b82f6"><text>编辑</text><text x="36" fill="#f59e0b">停用</text><text x="72" fill="#ef4444">删除</text></g>
+          </g>
+          <!-- 行 8 -->
+          <g transform="translate(0 344)">
+            <rect width="1188" height="44" fill="#ffffff"/>
+            <line y1="44" x2="1188" y2="44" stroke="#F3F4F6"/>
+            <text x="16" y="28">☐</text>
+            <text x="44" y="28">huyan</text>
+            <text x="180" y="28">胡燕</text>
+            <text x="288" y="28">158****9911</text>
+            <text x="408" y="28">hu.yan@ginkgo.com</text>
+            <text x="576" y="28">客服中心</text>
+            <g transform="translate(710 16)"><rect width="50" height="20" rx="4" fill="#F1F5F9"/><text x="25" y="14" text-anchor="middle" font-size="11" fill="#475569">客服</text></g>
+            <g transform="translate(850 16)"><circle cx="5" cy="10" r="4" fill="#10b981"/><text x="16" y="14" font-size="11" fill="#059669">启用</text></g>
+            <text x="940" y="28" font-size="11">2025-03-14</text>
+            <g transform="translate(1080 16)" class="mono" font-size="11" fill="#3b82f6"><text>编辑</text><text x="36" fill="#f59e0b">停用</text><text x="72" fill="#ef4444">删除</text></g>
+          </g>
+          <!-- 行 9 -->
+          <g transform="translate(0 388)">
+            <rect width="1188" height="44" fill="#F9FAFB"/>
+            <line y1="44" x2="1188" y2="44" stroke="#F3F4F6"/>
+            <text x="16" y="28">☐</text>
+            <text x="44" y="28">guoqiang</text>
+            <text x="180" y="28">郭强</text>
+            <text x="288" y="28">170****2244</text>
+            <text x="408" y="28">guo.qiang@ginkgo.com</text>
+            <text x="576" y="28">合规审计</text>
+            <g transform="translate(710 16)"><rect width="62" height="20" rx="4" fill="#E0E7FF"/><text x="31" y="14" text-anchor="middle" font-size="11" fill="#4338ca">外部审计</text></g>
+            <g transform="translate(850 16)"><circle cx="5" cy="10" r="4" fill="#ef4444"/><text x="16" y="14" font-size="11" fill="#dc2626">已锁定</text></g>
+            <text x="940" y="28" font-size="11">2025-04-20</text>
+            <g transform="translate(1080 16)" class="mono" font-size="11" fill="#3b82f6"><text>编辑</text><text x="36" fill="#10b981">解锁</text><text x="72" fill="#ef4444">删除</text></g>
+          </g>
+        </g>
+
+        <!-- 分页 -->
+        <g transform="translate(16 580)">
+          <text y="16" class="font" font-size="12" fill="#6b7280">共 1,247 条 · 显示 1-9</text>
+          <g transform="translate(860 0)">
+            <g><rect width="28" height="28" fill="#ffffff" stroke="#D1D5DB"/><text x="14" y="19" text-anchor="middle" class="font" font-size="12" fill="#9ca3af">‹</text></g>
+            <g transform="translate(34 0)"><rect width="28" height="28" fill="url(#lg-btn)"/><text x="14" y="19" text-anchor="middle" class="font" font-size="12" font-weight="700" fill="#ffffff">1</text></g>
+            <g transform="translate(68 0)"><rect width="28" height="28" fill="#ffffff" stroke="#D1D5DB"/><text x="14" y="19" text-anchor="middle" class="font" font-size="12" fill="#374151">2</text></g>
+            <g transform="translate(102 0)"><rect width="28" height="28" fill="#ffffff" stroke="#D1D5DB"/><text x="14" y="19" text-anchor="middle" class="font" font-size="12" fill="#374151">3</text></g>
+            <g transform="translate(136 0)"><rect width="28" height="28" fill="#ffffff" stroke="#D1D5DB"/><text x="14" y="19" text-anchor="middle" class="font" font-size="12" fill="#374151">...</text></g>
+            <g transform="translate(170 0)"><rect width="36" height="28" fill="#ffffff" stroke="#D1D5DB"/><text x="18" y="19" text-anchor="middle" class="font" font-size="12" fill="#374151">139</text></g>
+            <g transform="translate(212 0)"><rect width="28" height="28" fill="#ffffff" stroke="#D1D5DB"/><text x="14" y="19" text-anchor="middle" class="font" font-size="12" fill="#374151">›</text></g>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <!-- ======== 底部状态栏 60px ======== -->
+    <rect y="860" width="1520" height="60" fill="#F3F4F6"/>
+    <line x1="0" y1="860" x2="1520" y2="860" stroke="#E5E7EB"/>
+    <g transform="translate(24 890)" class="font" font-size="12" fill="#6b7280">
+      <circle r="4" cx="0" cy="0" fill="#10b981"/>
+      <text x="12" y="4">后端服务已连接</text>
+      <text x="160" y="4">·</text>
+      <text x="176" y="4">api.ginkgo.local:5000</text>
+      <text x="340" y="4">·</text>
+      <text x="356" y="4">AI 引擎运行中（DeepSeek v3.1）</text>
+      <text x="580" y="4">·</text>
+      <text x="596" y="4">已安装插件 12 个</text>
+    </g>
+    <g transform="translate(1496 890)" class="font" font-size="12" fill="#6b7280" text-anchor="end">
+      <text>CPU 12% · 内存 248MB · 延迟 42ms</text>
+    </g>
+  </g>
+
+  <!-- 左上角装饰标签 -->
+  <g transform="translate(76 76)">
+    <rect width="160" height="28" rx="14" fill="#0f172a" opacity="0.85"/>
+    <g transform="translate(18 14)" fill="#10b981"><rect x="-5" y="-5" width="10" height="10" rx="1"/></g>
+    <text x="38" y="19" class="font" font-size="12" font-weight="600" fill="#ffffff">WPF 桌面客户端</text>
+  </g>
+</svg>

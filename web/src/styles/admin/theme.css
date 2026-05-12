@@ -1,0 +1,128 @@
+/* Admin Theme Tokens (variables-first) */
+/* Light/Dark variables defined once; components consume only variables */
+
+:root {
+  /* Brand scale */
+  --admin-primary-400: #60a5fa;
+  --admin-primary-500: #3b82f6;
+  --admin-primary-600: #2563eb;
+
+  /* Surfaces & backgrounds (light) */
+  --admin-surface: #ffffff;
+  --admin-surface-2: #f9fafb; /* cards/content bg */
+  --admin-surface-3: #f8fafc; /* subtle bg */
+  --admin-bg-secondary: #f3f4f6;
+
+  /* Text (light) */
+  --admin-text-primary: #1f2937;
+  --admin-text-secondary: #6b7280;
+  --admin-text-muted: #9ca3af;
+
+  /* Borders (light) */
+  --admin-border: #e5e7eb;
+  --admin-border-strong: #e2e8f0;
+  --admin-border-soft: #cbd5e1;
+  --admin-divider: #f3f4f6;
+
+  /* Sidebar/Header specific (light) */
+  --admin-sidebar-bg: var(--admin-surface);
+  --admin-sidebar-border: var(--admin-border);
+  --admin-header-bg: var(--admin-surface);
+  --admin-header-border: var(--admin-border);
+
+  /* Menu (light) */
+  --admin-menu-text: #374151;
+  --admin-menu-hover-bg: #f1f5f9;
+  --admin-menu-hover-text: #1e293b;
+  --admin-menu-child-text: #64748b;
+  --admin-menu-child-hover-bg: #f8fafc;
+  --admin-menu-child-hover-text: #334155;
+
+  /* Dropdown/Popper (light) */
+  --admin-popper-bg: #ffffff;
+  --admin-popper-border: #e5e7eb;
+  --admin-on-primary: #ffffff;
+
+  /* Mixed overlays (light) */
+  --admin-tab-bg: rgba(248, 250, 252, 0.9);
+  --admin-tab-border: rgba(226, 232, 240, 0.6);
+  --admin-tab-arrow-bg: rgba(248, 250, 252, 0.95);
+  --admin-tab-arrow-border: rgba(226, 232, 240, 0.8);
+  --admin-tab-hover-bg: rgba(239, 246, 255, 0.95);
+  --admin-tab-hover-border: rgba(59, 130, 246, 0.3);
+  --admin-tab-hover-text: #3b82f6;
+  --admin-tab-arrow-hover-bg: rgba(241, 245, 249, 0.98);
+  --admin-tab-arrow-hover-border: rgba(203, 213, 225, 0.9);
+  --admin-tab-arrow-text: #334155;
+
+  /* Controls hover accents (light) */
+  --admin-control-hover-bg: #f3f4f6;
+  --admin-text-hover-emphasis: #475569;
+
+  /* Notifications/Badges */
+  --admin-danger-500: #ef4444;
+}
+
+.dark {
+  /* Surfaces & backgrounds (dark) */
+  --admin-surface: #1f2937;
+  --admin-surface-2: #111827; /* content bg */
+  --admin-surface-3: #374151; /* subtle bg */
+  --admin-bg-secondary: #1f2937;
+
+  /* Text (dark) */
+  --admin-text-primary: #e5e7eb;
+  --admin-text-secondary: #9ca3af;
+  --admin-text-muted: #cbd5e1;
+
+  /* Borders (dark) */
+  --admin-border: #374151;
+  --admin-border-strong: #4b5563;
+  --admin-border-soft: #6b7280;
+
+  /* Sidebar/Header specific (dark) */
+  --admin-sidebar-bg: var(--admin-surface);
+  --admin-sidebar-border: var(--admin-border);
+  --admin-header-bg: var(--admin-surface);
+  --admin-header-border: var(--admin-border);
+
+  /* Menu (dark) */
+  --admin-menu-text: #e2e8f0;
+  --admin-menu-hover-bg: #374151;
+  --admin-menu-hover-text: #f9fafb;
+  --admin-menu-child-text: #94a3b8;
+  --admin-menu-child-hover-bg: #334155;
+  --admin-menu-child-hover-text: #e2e8f0;
+
+  /* Dropdown/Popper (dark) */
+  --admin-popper-bg: #1f2937;
+  --admin-popper-border: #374151;
+  --admin-on-primary: #ffffff;
+
+  /* Mixed overlays (dark) */
+  --admin-tab-bg: rgba(51, 65, 85, 0.9);
+  --admin-tab-border: rgba(75, 85, 99, 0.6);
+  --admin-tab-arrow-bg: rgba(51, 65, 85, 0.9);
+  --admin-tab-arrow-border: rgba(75, 85, 99, 0.8);
+  --admin-tab-hover-bg: rgba(71, 85, 105, 0.95);
+  --admin-tab-hover-border: rgba(96, 165, 250, 0.4);
+  --admin-tab-hover-text: #60a5fa;
+  --admin-menu-hover-text: #f1f5f9;
+  --admin-tab-arrow-hover-bg: rgba(71, 85, 105, 0.95);
+  --admin-tab-arrow-hover-border: rgba(107, 114, 128, 0.9);
+  --admin-tab-arrow-text: #94a3b8;
+
+  /* Controls hover accents (dark) */
+  --admin-control-hover-bg: #4b5563;
+  --admin-text-hover-emphasis: #d1d5db;
+}
+
+/* Element Plus variable mapping (optional, admin scope) */
+:root {
+  --el-color-primary: var(--admin-primary-500);
+  --el-color-primary-dark-2: var(--admin-primary-600);
+}
+.dark {
+  --el-color-primary: var(--admin-primary-400);
+}
+

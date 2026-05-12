@@ -1,0 +1,762 @@
+/* =============================================================
+   GinkgoAdmin 官网 - 个人中心暗色主题覆写
+   作用选择器：.ginkgo-web.dark
+   覆盖 UserCenter / UserProfile / UserNotifications / UserLogs
+   以及共享侧边栏 WebUserSidebar 的浅色硬编码样式
+   ============================================================= */
+
+/* ============================================================
+   § 0  Element Plus 组件暗色变量覆写（用户中心页面内）
+   ============================================================ */
+.ginkgo-web.dark .user-center,
+.ginkgo-web.dark .user-profile,
+.ginkgo-web.dark .user-notifications,
+.ginkgo-web.dark .user-notifications-wrapper,
+.ginkgo-web.dark .user-logs {
+  --el-bg-color: #161b22;
+  --el-bg-color-overlay: #1c2128;
+  --el-bg-color-page: #0d1117;
+  --el-fill-color-blank: #161b22;
+  --el-fill-color-light: #1c2128;
+  --el-fill-color: #21262d;
+  --el-fill-color-darker: #30363d;
+  --el-text-color-primary: #f0f6fc;
+  --el-text-color-regular: #c9d1d9;
+  --el-text-color-secondary: #8b949e;
+  --el-text-color-placeholder: #6e7681;
+  --el-border-color: #30363d;
+  --el-border-color-light: #21262d;
+  --el-border-color-lighter: #21262d;
+  --el-border-color-extra-light: #161b22;
+  --el-disabled-bg-color: #21262d;
+  --el-disabled-text-color: #484f58;
+  --el-disabled-border-color: #30363d;
+  --el-color-info-light-9: rgba(107,114,128,0.1);
+  --el-color-info-light-8: rgba(107,114,128,0.2);
+}
+
+/* ============================================================
+   § 1  WebUserSidebar 侧边栏
+   ============================================================ */
+.ginkgo-web.dark .sidebar {
+  background: #161b22;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.ginkgo-web.dark .sidebar-nav {
+  border-color: #30363d;
+}
+
+.ginkgo-web.dark .nav-item {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .nav-item:hover {
+  background: #21262d;
+  color: #c9d1d9;
+}
+
+.ginkgo-web.dark .nav-item.router-link-active {
+  background: linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.06) 100%);
+  color: #58a6ff;
+  border-left-color: #58a6ff;
+}
+
+/* 图标浅底色 → 暗色半透明 */
+.ginkgo-web.dark .nav-icon-home {
+  background: rgba(59,130,246,0.15);
+  color: #58a6ff;
+}
+.ginkgo-web.dark .nav-item.router-link-active .nav-icon-home,
+.ginkgo-web.dark .nav-item:hover .nav-icon-home {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.ginkgo-web.dark .nav-icon-profile {
+  background: rgba(34,197,94,0.15);
+  color: #3fb950;
+}
+.ginkgo-web.dark .nav-item.router-link-active .nav-icon-profile,
+.ginkgo-web.dark .nav-item:hover .nav-icon-profile {
+  background: #22c55e;
+  color: #fff;
+}
+
+.ginkgo-web.dark .nav-icon-notification {
+  background: rgba(245,158,11,0.15);
+  color: #d29922;
+}
+.ginkgo-web.dark .nav-item.router-link-active .nav-icon-notification,
+.ginkgo-web.dark .nav-item:hover .nav-icon-notification {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.ginkgo-web.dark .nav-icon-logs {
+  background: rgba(6,182,212,0.15);
+  color: #39d2c0;
+}
+.ginkgo-web.dark .nav-item.router-link-active .nav-icon-logs,
+.ginkgo-web.dark .nav-item:hover .nav-icon-logs {
+  background: #06b6d4;
+  color: #fff;
+}
+
+.ginkgo-web.dark .nav-icon-plugin {
+  background: rgba(168,85,247,0.15);
+  color: #bc8cff;
+}
+.ginkgo-web.dark .nav-item.router-link-active .nav-icon-plugin,
+.ginkgo-web.dark .nav-item:hover .nav-icon-plugin {
+  background: #a855f7;
+  color: #fff;
+}
+
+.ginkgo-web.dark .nav-icon-logout {
+  background: rgba(239,68,68,0.15);
+  color: #f85149;
+}
+
+.ginkgo-web.dark .logout-item {
+  color: #f85149;
+  border-top-color: #30363d;
+}
+
+.ginkgo-web.dark .logout-item:hover {
+  background: rgba(239,68,68,0.1);
+  color: #ff7b72;
+}
+
+.ginkgo-web.dark .logout-item:hover .nav-icon-logout {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* ============================================================
+   § 2  公共页面容器 & 主内容区域
+   ============================================================ */
+.ginkgo-web.dark .user-center,
+.ginkgo-web.dark .user-profile,
+.ginkgo-web.dark .user-notifications,
+.ginkgo-web.dark .user-logs {
+  background: var(--gw-bg-body, #0d1117);
+}
+
+.ginkgo-web.dark .user-center .main-content,
+.ginkgo-web.dark .user-profile .main-content,
+.ginkgo-web.dark .user-notifications .main-content,
+.ginkgo-web.dark .user-logs .main-content {
+  background: #161b22;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.ginkgo-web.dark .content-header h1 {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .content-header p {
+  color: #8b949e;
+}
+
+/* ============================================================
+   § 3  UserCenter.vue — 统计卡片
+   ============================================================ */
+.ginkgo-web.dark .stat-card {
+  border-color: #30363d;
+}
+
+.ginkgo-web.dark .stat-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+}
+
+.ginkgo-web.dark .stat-card-blue {
+  background: linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(37,99,235,0.08) 100%);
+  border-color: rgba(59,130,246,0.25);
+}
+
+.ginkgo-web.dark .stat-card-green {
+  background: linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(22,163,74,0.08) 100%);
+  border-color: rgba(34,197,94,0.25);
+}
+
+.ginkgo-web.dark .stat-card-orange {
+  background: linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(234,88,12,0.08) 100%);
+  border-color: rgba(249,115,22,0.25);
+}
+
+.ginkgo-web.dark .stat-card-purple {
+  background: linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(147,51,234,0.08) 100%);
+  border-color: rgba(168,85,247,0.25);
+}
+
+.ginkgo-web.dark .stat-content h3 {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .stat-content p {
+  color: #8b949e;
+}
+
+/* ============================================================
+   § 4  UserCenter.vue — 快速操作
+   ============================================================ */
+.ginkgo-web.dark .quick-actions h2,
+.ginkgo-web.dark .recent-activity h2 {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .action-card {
+  background: #1c2128;
+  border-color: #30363d;
+}
+
+.ginkgo-web.dark .action-card:hover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  border-color: transparent;
+}
+
+.ginkgo-web.dark .action-card-blue:hover {
+  background: linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(37,99,235,0.08) 100%);
+}
+
+.ginkgo-web.dark .action-card-cyan:hover {
+  background: linear-gradient(135deg, rgba(6,182,212,0.12) 0%, rgba(8,145,178,0.08) 100%);
+}
+
+.ginkgo-web.dark .action-card-purple:hover {
+  background: linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(147,51,234,0.08) 100%);
+}
+
+.ginkgo-web.dark .action-card-green:hover {
+  background: linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(22,163,74,0.08) 100%);
+}
+
+.ginkgo-web.dark .action-content h3 {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .action-content p {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .action-arrow {
+  color: #484f58;
+}
+
+.ginkgo-web.dark .action-card:hover .action-arrow {
+  color: #8b949e;
+}
+
+/* ============================================================
+   § 5  UserCenter.vue — 最近活动时间线
+   ============================================================ */
+.ginkgo-web.dark .timeline-line {
+  background: #30363d;
+}
+
+.ginkgo-web.dark .activity-text {
+  color: #c9d1d9;
+}
+
+.ginkgo-web.dark .activity-time {
+  color: #8b949e;
+}
+
+/* ============================================================
+   § 6  UserProfile.vue — 表单区域
+   ============================================================ */
+.ginkgo-web.dark .profile-form-section,
+.ginkgo-web.dark .password-section {
+  border-top-color: #30363d;
+}
+
+.ginkgo-web.dark .section-header h2 {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .section-header p {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .current-avatar {
+  background: #21262d;
+  border-color: #30363d;
+}
+
+.ginkgo-web.dark .current-avatar:hover {
+  border-color: #58a6ff;
+}
+
+.ginkgo-web.dark .current-avatar .avatar-placeholder {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .upload-tip {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .profile-form .el-form-item__label,
+.ginkgo-web.dark .password-form .el-form-item__label {
+  color: #c9d1d9;
+}
+
+.ginkgo-web.dark .disabled-input .el-input__wrapper {
+  background: #0d1117;
+}
+
+/* 验证码行（邮箱/手机变更时动态显示） */
+.ginkgo-web.dark .verify-code-item .el-input__wrapper {
+  background: #0d1117;
+  border-color: #30363d;
+  box-shadow: 0 0 0 1px #30363d inset;
+}
+
+.ginkgo-web.dark .verify-code-item .el-input__wrapper:focus-within {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 1px #58a6ff inset;
+}
+
+.ginkgo-web.dark .verify-code-item .el-input__inner {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .verify-code-item .el-input__inner::placeholder {
+  color: #6e7681;
+}
+
+.ginkgo-web.dark .verify-code-btn {
+  background: #21262d;
+  border-color: #30363d;
+  color: #c9d1d9;
+}
+
+.ginkgo-web.dark .verify-code-btn:hover:not(:disabled) {
+  background: #30363d;
+  border-color: #58a6ff;
+  color: #58a6ff;
+}
+
+.ginkgo-web.dark .verify-code-btn:disabled {
+  background: #161b22;
+  border-color: #30363d;
+  color: #6e7681;
+}
+
+.ginkgo-web.dark .verify-tip {
+  color: #d29922;
+}
+
+/* ============================================================
+   § 7  UserNotifications.vue — 筛选 & 列表
+   ============================================================ */
+.ginkgo-web.dark .notification-filters {
+  border-bottom-color: #30363d;
+}
+
+.ginkgo-web.dark .notification-wrapper {
+  background: #161b22;
+  border-color: #30363d;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ginkgo-web.dark .notification-wrapper:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  border-color: #484f58;
+}
+
+.ginkgo-web.dark .notification-wrapper.expanded {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border-color: #58a6ff;
+}
+
+.ginkgo-web.dark .notification-item {
+  background: #161b22;
+}
+
+.ginkgo-web.dark .notification-item:hover {
+  background: #1c2128;
+}
+
+.ginkgo-web.dark .notification-item.unread {
+  background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.05) 100%);
+}
+
+.ginkgo-web.dark .notification-item.unread::before {
+  background: linear-gradient(135deg, #58a6ff 0%, #388bfd 100%);
+}
+
+.ginkgo-web.dark .notification-item.unread:hover {
+  background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%);
+}
+
+.ginkgo-web.dark .notification-item.active {
+  background: #21262d;
+}
+
+.ginkgo-web.dark .notification-title {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .notification-text {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .notification-time {
+  color: #6e7681;
+}
+
+.ginkgo-web.dark .expand-icon {
+  color: #8b949e;
+  background: rgba(139,148,158,0.1);
+}
+
+.ginkgo-web.dark .expand-icon:hover {
+  background: rgba(88,166,255,0.15);
+  color: #58a6ff;
+}
+
+.ginkgo-web.dark .expand-icon.expanded {
+  color: #58a6ff;
+  background: rgba(88,166,255,0.2);
+}
+
+/* 通知详情展开区域 */
+.ginkgo-web.dark .notification-detail {
+  background: #0d1117;
+  border-top-color: #30363d;
+}
+
+.ginkgo-web.dark .loading-text {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .detail-section {
+  background: #1c2128;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ginkgo-web.dark .detail-title {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .content-html {
+  color: #c9d1d9;
+}
+
+.ginkgo-web.dark .content-text {
+  color: #c9d1d9;
+}
+
+/* 附件区域 */
+.ginkgo-web.dark .attachments-section {
+  background: linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(22,27,34,0.95) 100%);
+  border-color: rgba(59,130,246,0.15);
+}
+
+.ginkgo-web.dark .attachment-item {
+  background: #161b22;
+  border-color: #30363d;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.ginkgo-web.dark .attachment-item:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  border-color: rgba(88,166,255,0.3);
+}
+
+.ginkgo-web.dark .attachment-name {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .attachment-size {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .attachment-type {
+  background: linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0.1) 100%);
+  color: #58a6ff;
+}
+
+.ginkgo-web.dark .attachment-info {
+  background: linear-gradient(135deg, #161b22 0%, #1c2128 100%);
+}
+
+.ginkgo-web.dark .attachment-item.image-type .attachment-info,
+.ginkgo-web.dark .attachment-item.video-type .attachment-info,
+.ginkgo-web.dark .attachment-item.audio-type .attachment-info {
+  background: transparent;
+}
+
+.ginkgo-web.dark .image-preview {
+  background: linear-gradient(135deg, #1c2128 0%, #21262d 100%);
+}
+
+.ginkgo-web.dark .image-error {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .file-preview {
+  background: linear-gradient(135deg, #1c2128 0%, #21262d 100%);
+  border-color: #30363d;
+}
+
+.ginkgo-web.dark .file-preview:hover {
+  border-color: #58a6ff;
+}
+
+.ginkgo-web.dark .file-icon {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .file-type {
+  color: #c9d1d9;
+  background: rgba(22,27,34,0.9);
+}
+
+/* ============================================================
+   § 8  UserLogs.vue — 筛选 & 日志列表
+   ============================================================ */
+.ginkgo-web.dark .filter-toolbar {
+  background: #0d1117;
+  border-color: #30363d;
+}
+
+.ginkgo-web.dark .log-item {
+  border-bottom-color: #21262d;
+}
+
+.ginkgo-web.dark .log-item:hover {
+  background: #1c2128;
+}
+
+.ginkgo-web.dark .log-title {
+  color: #f0f6fc;
+}
+
+.ginkgo-web.dark .log-time {
+  color: #6e7681;
+}
+
+.ginkgo-web.dark .log-description {
+  color: #8b949e;
+}
+
+.ginkgo-web.dark .log-meta {
+  color: #6e7681;
+}
+
+/* 日志图标暗色适配 */
+.ginkgo-web.dark .icon-primary {
+  background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.1) 100%);
+  color: #58a6ff;
+}
+
+.ginkgo-web.dark .icon-success {
+  background: linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.1) 100%);
+  color: #3fb950;
+}
+
+.ginkgo-web.dark .icon-info {
+  background: linear-gradient(135deg, rgba(6,182,212,0.15) 0%, rgba(8,145,178,0.1) 100%);
+  color: #39d2c0;
+}
+
+.ginkgo-web.dark .icon-warning {
+  background: linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.1) 100%);
+  color: #d29922;
+}
+
+.ginkgo-web.dark .icon-default {
+  background: #21262d;
+  color: #8b949e;
+}
+
+/* 日志类型标签暗色适配 */
+.ginkgo-web.dark .badge-login {
+  background: rgba(59,130,246,0.15);
+  color: #58a6ff;
+}
+
+.ginkgo-web.dark .badge-operation {
+  background: rgba(34,197,94,0.15);
+  color: #3fb950;
+}
+
+.ginkgo-web.dark .badge-setting {
+  background: rgba(6,182,212,0.15);
+  color: #39d2c0;
+}
+
+.ginkgo-web.dark .badge-security {
+  background: rgba(249,115,22,0.15);
+  color: #d29922;
+}
+
+/* 分页区分隔线 */
+.ginkgo-web.dark .pagination-container {
+  border-top-color: #30363d;
+}
+
+/* ============================================================
+   § 9  Element Plus 组件精细覆写（用户中心页面内）
+   ============================================================ */
+
+/* 输入框 */
+.ginkgo-web.dark .user-center .el-input__wrapper,
+.ginkgo-web.dark .user-profile .el-input__wrapper,
+.ginkgo-web.dark .user-notifications .el-input__wrapper,
+.ginkgo-web.dark .user-logs .el-input__wrapper {
+  background-color: #0d1117;
+  box-shadow: 0 0 0 1px #30363d inset;
+}
+
+.ginkgo-web.dark .user-center .el-input__wrapper:hover,
+.ginkgo-web.dark .user-profile .el-input__wrapper:hover,
+.ginkgo-web.dark .user-notifications .el-input__wrapper:hover,
+.ginkgo-web.dark .user-logs .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px #484f58 inset;
+}
+
+.ginkgo-web.dark .user-center .el-input__wrapper.is-focus,
+.ginkgo-web.dark .user-profile .el-input__wrapper.is-focus,
+.ginkgo-web.dark .user-notifications .el-input__wrapper.is-focus,
+.ginkgo-web.dark .user-logs .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #58a6ff inset;
+}
+
+.ginkgo-web.dark .user-center .el-input__inner,
+.ginkgo-web.dark .user-profile .el-input__inner,
+.ginkgo-web.dark .user-notifications .el-input__inner,
+.ginkgo-web.dark .user-logs .el-input__inner {
+  color: #f0f6fc;
+}
+
+/* 文本域 */
+.ginkgo-web.dark .user-profile .el-textarea__inner {
+  background-color: #0d1117;
+  color: #f0f6fc;
+  box-shadow: 0 0 0 1px #30363d inset;
+}
+
+.ginkgo-web.dark .user-profile .el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px #484f58 inset;
+}
+
+.ginkgo-web.dark .user-profile .el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px #58a6ff inset;
+}
+
+/* 下拉选择 */
+.ginkgo-web.dark .user-logs .el-select .el-input__wrapper {
+  background-color: #0d1117;
+}
+
+/* 日期选择器 */
+.ginkgo-web.dark .user-logs .el-date-editor .el-input__wrapper {
+  background-color: #0d1117;
+}
+
+/* 按钮 */
+.ginkgo-web.dark .user-center .el-button--default,
+.ginkgo-web.dark .user-profile .el-button--default,
+.ginkgo-web.dark .user-notifications .el-button--default,
+.ginkgo-web.dark .user-logs .el-button--default {
+  background-color: #21262d;
+  border-color: #30363d;
+  color: #c9d1d9;
+}
+
+.ginkgo-web.dark .user-center .el-button--default:hover,
+.ginkgo-web.dark .user-profile .el-button--default:hover,
+.ginkgo-web.dark .user-notifications .el-button--default:hover,
+.ginkgo-web.dark .user-logs .el-button--default:hover {
+  background-color: #30363d;
+  border-color: #484f58;
+  color: #f0f6fc;
+}
+
+/* 骨架屏 */
+.ginkgo-web.dark .el-skeleton__item {
+  background: linear-gradient(90deg, #21262d 25%, #30363d 50%, #21262d 75%);
+}
+
+/* 空状态 */
+.ginkgo-web.dark .el-empty__description p {
+  color: #8b949e;
+}
+
+/* 分页 */
+.ginkgo-web.dark .user-logs .el-pagination button,
+.ginkgo-web.dark .user-logs .el-pagination .el-pager li {
+  background-color: #161b22;
+  color: #c9d1d9;
+}
+
+.ginkgo-web.dark .user-logs .el-pagination .el-pager li:hover {
+  color: #58a6ff;
+}
+
+.ginkgo-web.dark .user-logs .el-pagination .el-pager li.is-active {
+  background-color: #58a6ff;
+  color: #fff;
+}
+
+/* Tag 标签 */
+.ginkgo-web.dark .el-tag--light {
+  background-color: rgba(88,166,255,0.1);
+  border-color: rgba(88,166,255,0.2);
+  color: #58a6ff;
+}
+
+.ginkgo-web.dark .el-tag--light.el-tag--success {
+  background-color: rgba(63,185,80,0.1);
+  border-color: rgba(63,185,80,0.2);
+  color: #3fb950;
+}
+
+.ginkgo-web.dark .el-tag--light.el-tag--warning {
+  background-color: rgba(210,153,34,0.1);
+  border-color: rgba(210,153,34,0.2);
+  color: #d29922;
+}
+
+.ginkgo-web.dark .el-tag--light.el-tag--danger {
+  background-color: rgba(248,81,73,0.1);
+  border-color: rgba(248,81,73,0.2);
+  color: #f85149;
+}
+
+.ginkgo-web.dark .el-tag--light.el-tag--info {
+  background-color: rgba(139,148,158,0.1);
+  border-color: rgba(139,148,158,0.2);
+  color: #8b949e;
+}
+
+/* 按钮组 */
+.ginkgo-web.dark .notification-filters .el-button-group .el-button {
+  background-color: #21262d;
+  border-color: #30363d;
+  color: #c9d1d9;
+}
+
+.ginkgo-web.dark .notification-filters .el-button-group .el-button:hover {
+  color: #58a6ff;
+}
+
+.ginkgo-web.dark .notification-filters .el-button-group .el-button--primary {
+  background-color: #1f6feb;
+  border-color: #1f6feb;
+  color: #fff;
+}
+
+/* Tooltip */
+.ginkgo-web.dark .el-tooltip__trigger .el-icon {
+  color: #8b949e;
+}
+
+/* ============================================================
+   § 10  MyPurchases.vue — 已买插件页面
+   暗色样式已迁移至组件自身的非 scoped <style> 块中，
+   确保插件动态加载时样式跟随组件一同生效。
+   ============================================================ */

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>商城登录中继</title>
+<style>
+  body { display:flex; align-items:center; justify-content:center; height:100vh; margin:0;
+         font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+         background:#f5f7fa; color:#606266; }
+  .card { text-align:center; padding:40px; background:#fff; border-radius:12px;
+          box-shadow:0 2px 12px rgba(0,0,0,.08); max-width:360px; }
+  .spinner { display:inline-block; width:28px; height:28px; border:3px solid #e4e7ed;
+             border-top-color:#409eff; border-radius:50%; animation:spin .8s linear infinite; margin-bottom:12px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  p { margin:8px 0 0; font-size:14px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="spinner" id="spinner"></div>
+  <p id="msg">正在处理登录回调…</p>
+</div>
+<script>
+// 商城跨站登录中继页
+// 当远端弹窗的 window.opener 被浏览器 COOP 策略阻断时，
+// 远端登录页会重定向到本页（同源），由本页通过 localStorage + postMessage 回传令牌。
+(function () {
+  var msgEl = document.getElementById('msg')
+  var spinnerEl = document.getElementById('spinner')
+
+  function fail(text) {
+    msgEl.textContent = text
+    spinnerEl.style.display = 'none'
+  }
+
+  try {
+    var params = new URLSearchParams(window.location.search)
+    var token = params.get('token')
+    if (!token) { fail('缺少登录凭证参数，请关闭此窗口后重试'); return }
+
+    // 1. 写入 localStorage —— 触发 opener 的 storage 事件（同源跨窗口广播）
+    localStorage.setItem('ginkgo_store_token', token)
+    localStorage.setItem('ginkgo_store_login_ts', String(Date.now()))
+
+    var userStr = params.get('user')
+    if (userStr) localStorage.setItem('ginkgo_store_user', userStr)
+
+    var state = params.get('state')
+    if (state) localStorage.setItem('ginkgo_store_login_state', state)
+
+    // 2. 尝试 postMessage（现在与 opener 同源，一定成功）
+    if (window.opener) {
+      var user = null
+      try { user = userStr ? JSON.parse(userStr) : null } catch (e) { /* ignore */ }
+      window.opener.postMessage({
+        type: 'ginkgo-store-login',
+        token: token,
+        user: user,
+        state: state || '',
+        ts: Date.now(),
+        fromRelay: true
+      }, window.location.origin)
+    }
+
+    // 3. 通过 BroadcastChannel 多通道广播（同源任意 tab/iframe 都能收到，避免 storage 事件节流丢失）
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        var bc = new BroadcastChannel('ginkgo-store-login')
+        var userObj = null
+        try { userObj = userStr ? JSON.parse(userStr) : null } catch (e) { /* ignore */ }
+        bc.postMessage({
+          type: 'ginkgo-store-login',
+          token: token,
+          user: userObj,
+          state: state || '',
+          ts: Date.now(),
+          fromRelay: true
+        })
+        setTimeout(function () { try { bc.close() } catch (e) { /* ignore */ } }, 200)
+      }
+    } catch (e) { /* ignore */ }
+
+    msgEl.textContent = '登录成功，正在关闭…'
+    setTimeout(function () {
+      try { window.close() } catch (e) { /* ignore */ }
+      // 部分浏览器不允许脚本关闭非脚本打开的窗口，停留并提示
+      setTimeout(function () { fail('登录已完成，请手动关闭此窗口') }, 500)
+    }, 300)
+  } catch (e) {
+    fail('处理失败（' + (e.message || e) + '），请手动关闭此窗口')
+  }
+})()
+</script>
+</body>
+</html>

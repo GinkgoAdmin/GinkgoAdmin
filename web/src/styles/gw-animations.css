@@ -1,0 +1,115 @@
+/* ============================================================
+   GinkgoAdmin 官网滚动入场动画
+   用法：在元素上添加 data-animate="up|down|left|right|scale|fade"
+   当 IntersectionObserver 触发时添加 .is-visible 类
+   ============================================================ */
+
+/* 基础状态：隐藏 + 偏移 */
+[data-animate] {
+  opacity: 0;
+  will-change: transform, opacity;
+  transition:
+    opacity var(--gw-duration, 0.6s) var(--gw-ease, cubic-bezier(0.16,1,0.3,1)),
+    transform var(--gw-duration, 0.6s) var(--gw-ease, cubic-bezier(0.16,1,0.3,1)),
+    filter var(--gw-duration, 0.6s) var(--gw-ease, cubic-bezier(0.16,1,0.3,1));
+}
+
+/* 方向变体 */
+[data-animate="up"]    { transform: translateY(40px); }
+[data-animate="down"]  { transform: translateY(-40px); }
+[data-animate="left"]  { transform: translateX(-40px); }
+[data-animate="right"] { transform: translateX(40px); }
+[data-animate="scale"] { transform: scale(0.92); }
+[data-animate="fade"]  { transform: none; }
+[data-animate="blur"]  { transform: translateY(20px); filter: blur(6px); }
+
+/* 可见状态 */
+[data-animate].is-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* 延迟阶梯 */
+[data-animate-delay="1"] { transition-delay: 80ms; }
+[data-animate-delay="2"] { transition-delay: 160ms; }
+[data-animate-delay="3"] { transition-delay: 240ms; }
+[data-animate-delay="4"] { transition-delay: 320ms; }
+[data-animate-delay="5"] { transition-delay: 400ms; }
+[data-animate-delay="6"] { transition-delay: 480ms; }
+[data-animate-delay="7"] { transition-delay: 560ms; }
+[data-animate-delay="8"] { transition-delay: 640ms; }
+
+/* ---- 无限滚动 marquee ---- */
+@keyframes gw-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.gw-marquee {
+  display: flex;
+  width: max-content;
+  animation: gw-marquee 30s linear infinite;
+}
+
+.gw-marquee:hover { animation-play-state: paused; }
+
+/* ---- 数字计数器脉冲 ---- */
+@keyframes gw-count-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.gw-count-done {
+  animation: gw-count-pop 0.4s var(--gw-ease, ease-out);
+}
+
+/* ---- 浮动装饰球 ---- */
+@keyframes gw-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-18px) rotate(2deg); }
+  75%      { transform: translateY(12px) rotate(-1deg); }
+}
+
+.gw-float { animation: gw-float 8s ease-in-out infinite; }
+.gw-float-slow { animation: gw-float 12s ease-in-out infinite; }
+
+/* ---- 打字光标 ---- */
+@keyframes gw-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+
+.gw-cursor { animation: gw-blink 1s step-end infinite; }
+
+/* ---- 微光扫描 ---- */
+@keyframes gw-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.gw-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.08) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: gw-shimmer 2.5s ease-in-out infinite;
+}
+
+/* ---- 进度条填充 ---- */
+@keyframes gw-fill-bar {
+  from { width: 0; }
+}
+
+.gw-bar-anim { animation: gw-fill-bar 1.5s var(--gw-ease, cubic-bezier(0.16,1,0.3,1)) forwards; }
+
+/* ---- 减少动效偏好 ---- */
+@media (prefers-reduced-motion: reduce) {
+  [data-animate] {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .gw-marquee { animation: none; }
+  .gw-float, .gw-float-slow { animation: none; }
+}

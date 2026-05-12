@@ -1,0 +1,383 @@
+<svg width="1500" height="1080" viewBox="0 0 1500 1080" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="archTitle archDesc">
+  <title id="archTitle">GinkgoAdmin 系统完整架构图</title>
+  <desc id="archDesc">从客户端、接入层、统一鉴权、业务模块（ALC 隔离）、AI 引擎、到 DDD 框架核心到数据存储层的完整分层架构，以及右侧的 CI/CD 交付链路。</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#0B1428"/>
+      <stop offset="1" stop-color="#0A1024"/>
+    </linearGradient>
+    <linearGradient id="gClient"  x1="0" y1="0" x2="1" y2="1"><stop stop-color="#22D3EE"/><stop offset="1" stop-color="#3B82F6"/></linearGradient>
+    <linearGradient id="gGate"    x1="0" y1="0" x2="1" y2="1"><stop stop-color="#38BDF8"/><stop offset="1" stop-color="#6366F1"/></linearGradient>
+    <linearGradient id="gAuth"    x1="0" y1="0" x2="1" y2="1"><stop stop-color="#A78BFA"/><stop offset="1" stop-color="#6366F1"/></linearGradient>
+    <linearGradient id="gMod"     x1="0" y1="0" x2="1" y2="1"><stop stop-color="#34D399"/><stop offset="1" stop-color="#10B981"/></linearGradient>
+    <linearGradient id="gAi"      x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F472B6"/><stop offset="1" stop-color="#A855F7"/></linearGradient>
+    <linearGradient id="gCore"    x1="0" y1="0" x2="1" y2="1"><stop stop-color="#60A5FA"/><stop offset="1" stop-color="#7C3AED"/></linearGradient>
+    <linearGradient id="gData"    x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FB923C"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>
+    <linearGradient id="gOps"     x1="0" y1="0" x2="0" y2="1"><stop stop-color="#10B981"/><stop offset="1" stop-color="#0EA5E9"/></linearGradient>
+
+    <linearGradient id="layerBand" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#1E293B" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#0F172A" stop-opacity="0.55"/>
+    </linearGradient>
+
+    <radialGradient id="glowCyan" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#22D3EE" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowPink" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#F472B6" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#F472B6" stop-opacity="0"/>
+    </radialGradient>
+
+    <marker id="arrCyan"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#67E8F9"/></marker>
+    <marker id="arrPink"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#F472B6"/></marker>
+    <marker id="arrAmber"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#FBBF24"/></marker>
+    <marker id="arrGreen"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#34D399"/></marker>
+
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="8"/></filter>
+
+    <style>
+      .layer-tag    { font: 600 14px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #94A3B8; letter-spacing: 2px; }
+      .card-title   { font: 700 17px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #F8FAFC; }
+      .card-sub     { font: 400 13px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #CBD5E1; }
+      .pill-text    { font: 600 13px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #F1F5F9; }
+      .core-title   { font: 800 19px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #FFFFFF; }
+      .core-sub     { font: 500 13px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #DBEAFE; }
+      .data-title   { font: 700 16px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #FFF7ED; }
+      .figure-title { font: 800 22px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #E2E8F0; letter-spacing: 1px; }
+      .figure-sub   { font: 400 13px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #94A3B8; }
+      .ops-title    { font: 700 14px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #ECFEFF; }
+      .ops-sub      { font: 500 11px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #BAE6FD; }
+    </style>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="1500" height="1080" rx="24" fill="url(#bg)"/>
+
+  <!-- ============ 装饰：浮动光斑（轻动） ============ -->
+  <g>
+    <circle cx="180"  cy="120"  r="200" fill="url(#glowCyan)" filter="url(#soft)">
+      <animate attributeName="cy" values="120;180;120" dur="9s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1340" cy="940"  r="220" fill="url(#glowPink)" filter="url(#soft)">
+      <animate attributeName="cy" values="940;880;940" dur="11s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="700"  cy="540"  r="260" fill="#6366F1" fill-opacity="0.06" filter="url(#soft)">
+      <animate attributeName="r" values="240;300;240" dur="12s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- 标题 -->
+  <text class="figure-title" x="60" y="56">GinkgoAdmin · 系统完整架构</text>
+  <text class="figure-sub"   x="60" y="80">多端接入 · 分层底座 · AI 智能服务 · CI/CD 交付链路</text>
+
+  <!-- ============ Layer 1: 客户端 ============ -->
+  <text class="layer-tag" x="60" y="120">CLIENT  ·  多端入口</text>
+  <rect x="60" y="130" width="1200" height="100" rx="16" fill="url(#layerBand)" stroke="#22D3EE" stroke-opacity="0.25"/>
+
+  <g>
+    <rect x="84"  y="148" width="220" height="64" rx="12" fill="url(#gClient)" fill-opacity="0.18" stroke="url(#gClient)" stroke-opacity="0.7"/>
+    <text class="card-title" x="112" y="178">Web 管理后台</text>
+    <text class="card-sub"   x="112" y="198">Vue 3 · Element Plus</text>
+
+    <rect x="320" y="148" width="220" height="64" rx="12" fill="url(#gClient)" fill-opacity="0.18" stroke="url(#gClient)" stroke-opacity="0.7"/>
+    <text class="card-title" x="348" y="178">前台门户</text>
+    <text class="card-sub"   x="348" y="198">官网 · 用户中心</text>
+
+    <rect x="556" y="148" width="220" height="64" rx="12" fill="url(#gClient)" fill-opacity="0.18" stroke="url(#gClient)" stroke-opacity="0.7"/>
+    <text class="card-title" x="584" y="178">UniApp 移动端</text>
+    <text class="card-sub"   x="584" y="198">App · H5 · 小程序</text>
+
+    <rect x="792" y="148" width="220" height="64" rx="12" fill="url(#gClient)" fill-opacity="0.18" stroke="url(#gClient)" stroke-opacity="0.7"/>
+    <text class="card-title" x="820" y="178">WPF 桌面客户端</text>
+    <text class="card-sub"   x="820" y="198">Windows · MVVM</text>
+
+    <rect x="1028" y="148" width="220" height="64" rx="12" fill="url(#gClient)" fill-opacity="0.18" stroke="url(#gClient)" stroke-opacity="0.7"/>
+    <text class="card-title" x="1056" y="178">OpenAPI · 第三方</text>
+    <text class="card-sub"   x="1056" y="198">外部系统对接</text>
+  </g>
+
+  <!-- ============ Layer 2: 接入层 ============ -->
+  <text class="layer-tag" x="60" y="262">GATEWAY  ·  接入与协议</text>
+  <rect x="60" y="272" width="1200" height="78" rx="16" fill="url(#layerBand)" stroke="#6366F1" stroke-opacity="0.3"/>
+
+  <g>
+    <rect x="100" y="288" width="260" height="46" rx="10" fill="url(#gGate)" fill-opacity="0.18" stroke="url(#gGate)" stroke-opacity="0.75"/>
+    <text class="pill-text" x="230" y="316" text-anchor="middle">Nginx · 反向代理 / 静态分发</text>
+
+    <rect x="400" y="288" width="260" height="46" rx="10" fill="url(#gGate)" fill-opacity="0.18" stroke="url(#gGate)" stroke-opacity="0.75"/>
+    <text class="pill-text" x="530" y="316" text-anchor="middle">API Gateway · REST / Swagger</text>
+
+    <rect x="700" y="288" width="240" height="46" rx="10" fill="url(#gGate)" fill-opacity="0.18" stroke="url(#gGate)" stroke-opacity="0.75"/>
+    <text class="pill-text" x="820" y="316" text-anchor="middle">SignalR · 实时推送</text>
+
+    <rect x="980" y="288" width="240" height="46" rx="10" fill="url(#gGate)" fill-opacity="0.18" stroke="url(#gGate)" stroke-opacity="0.75"/>
+    <text class="pill-text" x="1100" y="316" text-anchor="middle">SSE · 流式响应</text>
+  </g>
+
+  <!-- ============ Layer 3: 统一鉴权 ============ -->
+  <text class="layer-tag" x="60" y="382">SECURITY  ·  统一鉴权与中间件</text>
+  <rect x="60" y="392" width="1200" height="86" rx="16" fill="url(#layerBand)" stroke="#A78BFA" stroke-opacity="0.3"/>
+
+  <g>
+    <rect x="84"   y="412" width="200" height="48" rx="10" fill="url(#gAuth)" fill-opacity="0.2" stroke="url(#gAuth)" stroke-opacity="0.8"/>
+    <text class="pill-text" x="184" y="442" text-anchor="middle">JWT 认证</text>
+
+    <rect x="304"  y="412" width="200" height="48" rx="10" fill="url(#gAuth)" fill-opacity="0.2" stroke="url(#gAuth)" stroke-opacity="0.8"/>
+    <text class="pill-text" x="404" y="442" text-anchor="middle">RBAC 权限</text>
+
+    <rect x="524"  y="412" width="200" height="48" rx="10" fill="url(#gAuth)" fill-opacity="0.2" stroke="url(#gAuth)" stroke-opacity="0.8"/>
+    <text class="pill-text" x="624" y="442" text-anchor="middle">多租户隔离</text>
+
+    <rect x="744"  y="412" width="200" height="48" rx="10" fill="url(#gAuth)" fill-opacity="0.2" stroke="url(#gAuth)" stroke-opacity="0.8"/>
+    <text class="pill-text" x="844" y="442" text-anchor="middle">数据范围 / 限流</text>
+
+    <rect x="964"  y="412" width="280" height="48" rx="10" fill="url(#gAuth)" fill-opacity="0.2" stroke="url(#gAuth)" stroke-opacity="0.8"/>
+    <text class="pill-text" x="1104" y="442" text-anchor="middle">操作审计 · 接口日志 · 异常拦截</text>
+  </g>
+
+  <!-- ============ Layer 4: 业务模块 + AI 引擎 ============ -->
+  <text class="layer-tag" x="60" y="510">MODULES  ·  ALC 插件隔离 + AI 引擎</text>
+
+  <!-- 业务模块 -->
+  <rect x="60" y="520" width="820" height="200" rx="18" fill="url(#layerBand)" stroke="#34D399" stroke-opacity="0.3"/>
+  <text class="card-title" x="84" y="546">业务插件模块（独立 ALC · Contracts 契约通信）</text>
+
+  <g>
+    <rect x="84"   y="560" width="186" height="60" rx="10" fill="url(#gMod)" fill-opacity="0.2" stroke="url(#gMod)" stroke-opacity="0.75"/>
+    <text class="pill-text" x="177" y="586" text-anchor="middle">CRM 客户管理</text>
+    <text class="card-sub"   x="177" y="606" text-anchor="middle">客户 · 联系人 · 商机</text>
+
+    <rect x="290"  y="560" width="186" height="60" rx="10" fill="url(#gMod)" fill-opacity="0.2" stroke="url(#gMod)" stroke-opacity="0.75"/>
+    <text class="pill-text" x="383" y="586" text-anchor="middle">OA 协同办公</text>
+    <text class="card-sub"   x="383" y="606" text-anchor="middle">公告 · 任务 · 日志</text>
+
+    <rect x="496"  y="560" width="186" height="60" rx="10" fill="url(#gMod)" fill-opacity="0.2" stroke="url(#gMod)" stroke-opacity="0.75"/>
+    <text class="pill-text" x="589" y="586" text-anchor="middle">工作流引擎</text>
+    <text class="card-sub"   x="589" y="606" text-anchor="middle">流程 · 审批 · 表单</text>
+
+    <rect x="702"  y="560" width="158" height="60" rx="10" fill="url(#gMod)" fill-opacity="0.2" stroke="url(#gMod)" stroke-opacity="0.75"/>
+    <text class="pill-text" x="781" y="586" text-anchor="middle">行业自定义</text>
+    <text class="card-sub"   x="781" y="606" text-anchor="middle">私有扩展插件</text>
+
+    <!-- Contracts 契约总线 -->
+    <rect x="84"  y="638" width="776" height="62" rx="10" fill="#0E1A36" fill-opacity="0.7" stroke="#34D399" stroke-opacity="0.5" stroke-dasharray="6 5">
+      <animate attributeName="stroke-dashoffset" from="0" to="-22" dur="1.4s" repeatCount="indefinite"/>
+    </rect>
+    <text class="pill-text" x="472" y="666" text-anchor="middle" fill="#A7F3D0">Contracts 契约总线</text>
+    <text class="card-sub"   x="472" y="686" text-anchor="middle" fill="#A7F3D0">DTO · Interface · 跨模块零依赖共享</text>
+  </g>
+
+  <!-- AI 引擎（基于 Microsoft.Extensions.AI 抽象 + 框架自研编排管道） -->
+  <rect x="900" y="520" width="360" height="200" rx="18" fill="url(#layerBand)" stroke="#F472B6" stroke-opacity="0.4"/>
+  <text class="card-title" x="924" y="546">AI 引擎 · 智能服务</text>
+
+  <g>
+    <rect x="924" y="560" width="312" height="34" rx="8" fill="url(#gAi)" fill-opacity="0.2" stroke="url(#gAi)" stroke-opacity="0.7"/>
+    <text class="pill-text" x="1080" y="582" text-anchor="middle">Microsoft.Extensions.AI · IChatClient</text>
+
+    <rect x="924" y="602" width="312" height="34" rx="8" fill="url(#gAi)" fill-opacity="0.2" stroke="url(#gAi)" stroke-opacity="0.7"/>
+    <text class="pill-text" x="1080" y="624" text-anchor="middle">AIFunctionFactory · Tool Calling</text>
+
+    <rect x="924" y="644" width="312" height="34" rx="8" fill="url(#gAi)" fill-opacity="0.2" stroke="url(#gAi)" stroke-opacity="0.7"/>
+    <text class="pill-text" x="1080" y="666" text-anchor="middle">OpenAI 兼容协议 · 多模型适配</text>
+
+    <rect x="924" y="686" width="150" height="28" rx="8" fill="url(#gAi)" fill-opacity="0.2" stroke="url(#gAi)" stroke-opacity="0.7"/>
+    <text class="pill-text" x="999" y="705" text-anchor="middle">MetaDesigner</text>
+
+    <rect x="1086" y="686" width="150" height="28" rx="8" fill="url(#gAi)" fill-opacity="0.2" stroke="url(#gAi)" stroke-opacity="0.7"/>
+    <text class="pill-text" x="1161" y="705" text-anchor="middle">CodeDesigner</text>
+  </g>
+
+  <!-- ============ Layer 5: DDD 框架核心 ============ -->
+  <text class="layer-tag" x="60" y="750">CORE  ·  DDD 分层底座（Api · Application · Domain · Infrastructure）</text>
+  <rect x="60" y="760" width="1200" height="120" rx="18" fill="url(#layerBand)" stroke="url(#gCore)" stroke-opacity="0.45"/>
+
+  <g>
+    <rect x="84"   y="780" width="278" height="80" rx="12" fill="url(#gCore)" fill-opacity="0.18" stroke="url(#gCore)" stroke-opacity="0.7"/>
+    <text class="core-title" x="223" y="810" text-anchor="middle">鉴权与组织</text>
+    <text class="core-sub"   x="223" y="832" text-anchor="middle">用户 · 角色 · 部门</text>
+    <text class="core-sub"   x="223" y="850" text-anchor="middle">RBAC · 数据范围 · 多租户</text>
+
+    <rect x="378"  y="780" width="278" height="80" rx="12" fill="url(#gCore)" fill-opacity="0.18" stroke="url(#gCore)" stroke-opacity="0.7"/>
+    <text class="core-title" x="517" y="810" text-anchor="middle">数据与配置</text>
+    <text class="core-sub"   x="517" y="832" text-anchor="middle">SqlSugar 多库 · 数据字典</text>
+    <text class="core-sub"   x="517" y="850" text-anchor="middle">配置中心 · 站点参数</text>
+
+    <rect x="672"  y="780" width="278" height="80" rx="12" fill="url(#gCore)" fill-opacity="0.18" stroke="url(#gCore)" stroke-opacity="0.7"/>
+    <text class="core-title" x="811" y="810" text-anchor="middle">审计与日志</text>
+    <text class="core-sub"   x="811" y="832" text-anchor="middle">操作日志 · 登录日志</text>
+    <text class="core-sub"   x="811" y="850" text-anchor="middle">接口日志 · 异常追踪</text>
+
+    <rect x="966"  y="780" width="278" height="80" rx="12" fill="url(#gCore)" fill-opacity="0.18" stroke="url(#gCore)" stroke-opacity="0.7"/>
+    <text class="core-title" x="1105" y="810" text-anchor="middle">实时与文件</text>
+    <text class="core-sub"   x="1105" y="832" text-anchor="middle">SignalR 推送 · 在线状态</text>
+    <text class="core-sub"   x="1105" y="850" text-anchor="middle">附件 OSS · 通知中心</text>
+  </g>
+
+  <!-- ============ Layer 6: 数据存储 ============ -->
+  <text class="layer-tag" x="60" y="912">STORAGE  ·  数据持久化</text>
+  <rect x="60" y="922" width="1200" height="78" rx="16" fill="url(#layerBand)" stroke="url(#gData)" stroke-opacity="0.45"/>
+
+  <g>
+    <rect x="100"  y="938" width="260" height="46" rx="10" fill="url(#gData)" fill-opacity="0.18" stroke="url(#gData)" stroke-opacity="0.8"/>
+    <text class="data-title" x="230" y="962" text-anchor="middle">MySQL · 主业务库</text>
+
+    <rect x="390"  y="938" width="260" height="46" rx="10" fill="url(#gData)" fill-opacity="0.18" stroke="url(#gData)" stroke-opacity="0.8"/>
+    <text class="data-title" x="520" y="962" text-anchor="middle">Redis · 缓存与会话</text>
+
+    <rect x="680"  y="938" width="260" height="46" rx="10" fill="url(#gData)" fill-opacity="0.18" stroke="url(#gData)" stroke-opacity="0.8"/>
+    <text class="data-title" x="810" y="962" text-anchor="middle">OSS · 附件与导出</text>
+
+    <rect x="970"  y="938" width="270" height="46" rx="10" fill="url(#gData)" fill-opacity="0.18" stroke="url(#gData)" stroke-opacity="0.8"/>
+    <text class="data-title" x="1105" y="962" text-anchor="middle">日志 / 向量 / 第三方</text>
+  </g>
+
+  <!-- ============ 主干连接线 ============ -->
+  <g fill="none" stroke-width="2.4">
+    <path id="flowA" d="M660 215 L660 270" stroke="#67E8F9" stroke-opacity="0.75" marker-end="url(#arrCyan)"/>
+    <path id="flowB" d="M660 336 L660 390" stroke="#A78BFA" stroke-opacity="0.75" marker-end="url(#arrCyan)"/>
+    <path id="flowC" d="M470 462 L470 518" stroke="#34D399" stroke-opacity="0.75" marker-end="url(#arrCyan)"/>
+    <path id="flowD" d="M1080 462 L1080 518" stroke="#F472B6" stroke-opacity="0.8" marker-end="url(#arrPink)"/>
+    <!-- 业务 ↔ AI 双向 -->
+    <path id="flowE1" d="M880 620 L900 620" stroke="#F472B6" stroke-opacity="0.8" marker-end="url(#arrPink)"/>
+    <path id="flowE2" d="M900 660 L880 660" stroke="#F472B6" stroke-opacity="0.8" marker-end="url(#arrPink)"/>
+    <!-- 业务 / AI → 核心 -->
+    <path id="flowF" d="M470 722 L470 758" stroke="#60A5FA" stroke-opacity="0.75" marker-end="url(#arrCyan)"/>
+    <path id="flowG" d="M1080 722 L1080 758" stroke="#60A5FA" stroke-opacity="0.75" marker-end="url(#arrCyan)"/>
+    <!-- 核心 → 数据 -->
+    <path id="flowH" d="M360 882 L360 920" stroke="#FBBF24" stroke-opacity="0.8" marker-end="url(#arrAmber)"/>
+    <path id="flowI" d="M660 882 L660 920" stroke="#FBBF24" stroke-opacity="0.8" marker-end="url(#arrAmber)"/>
+    <path id="flowJ" d="M960 882 L960 920" stroke="#FBBF24" stroke-opacity="0.8" marker-end="url(#arrAmber)"/>
+  </g>
+
+  <!-- ============ 流光小球 ============ -->
+  <g>
+    <circle r="6" fill="#67E8F9"><animateMotion dur="1.4s" repeatCount="indefinite"><mpath href="#flowA"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="1.4s" repeatCount="indefinite"/></circle>
+    <circle r="6" fill="#A78BFA"><animateMotion dur="1.4s" begin="0.25s" repeatCount="indefinite"><mpath href="#flowB"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="1.4s" begin="0.25s" repeatCount="indefinite"/></circle>
+    <circle r="6" fill="#34D399"><animateMotion dur="1.4s" begin="0.5s"  repeatCount="indefinite"><mpath href="#flowC"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="1.4s" begin="0.5s" repeatCount="indefinite"/></circle>
+    <circle r="6" fill="#F472B6"><animateMotion dur="1.4s" begin="0.75s" repeatCount="indefinite"><mpath href="#flowD"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="1.4s" begin="0.75s" repeatCount="indefinite"/></circle>
+    <circle r="5" fill="#F472B6"><animateMotion dur="0.9s" repeatCount="indefinite"><mpath href="#flowE1"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="0.9s" repeatCount="indefinite"/></circle>
+    <circle r="5" fill="#F472B6"><animateMotion dur="0.9s" begin="0.45s" repeatCount="indefinite"><mpath href="#flowE2"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="0.9s" begin="0.45s" repeatCount="indefinite"/></circle>
+    <circle r="6" fill="#60A5FA"><animateMotion dur="1.4s" begin="1s"   repeatCount="indefinite"><mpath href="#flowF"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="1.4s" begin="1s" repeatCount="indefinite"/></circle>
+    <circle r="6" fill="#60A5FA"><animateMotion dur="1.4s" begin="1s"   repeatCount="indefinite"><mpath href="#flowG"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="1.4s" begin="1s" repeatCount="indefinite"/></circle>
+    <circle r="6" fill="#FBBF24"><animateMotion dur="1.2s" begin="1.3s" repeatCount="indefinite"><mpath href="#flowH"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="1.2s" begin="1.3s" repeatCount="indefinite"/></circle>
+    <circle r="6" fill="#FBBF24"><animateMotion dur="1.2s" begin="1.4s" repeatCount="indefinite"><mpath href="#flowI"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="1.2s" begin="1.4s" repeatCount="indefinite"/></circle>
+    <circle r="6" fill="#FBBF24"><animateMotion dur="1.2s" begin="1.5s" repeatCount="indefinite"><mpath href="#flowJ"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="1.2s" begin="1.5s" repeatCount="indefinite"/></circle>
+  </g>
+
+  <!-- ============ 各层卡片"扫光"高亮 ============ -->
+  <g fill="none" pointer-events="none">
+    <rect x="60"  y="520" width="820"  height="200" rx="18" stroke="#34D399" stroke-width="1.6">
+      <animate attributeName="stroke-opacity" values="0.15;0.7;0.15" dur="2.6s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="900" y="520" width="360"  height="200" rx="18" stroke="#F472B6" stroke-width="1.6">
+      <animate attributeName="stroke-opacity" values="0.2;0.85;0.2"  dur="2.4s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="60"  y="760" width="1200" height="120" rx="18" stroke="#60A5FA" stroke-width="1.6">
+      <animate attributeName="stroke-opacity" values="0.2;0.7;0.2"   dur="3s"   repeatCount="indefinite"/>
+    </rect>
+    <rect x="60"  y="922" width="1200" height="78"  rx="16" stroke="#FB923C" stroke-width="1.6">
+      <animate attributeName="stroke-opacity" values="0.2;0.7;0.2"   dur="3.2s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- ============ AI 引擎内部 token-stream 动画（强化 AI 视觉） ============ -->
+  <g>
+    <rect x="924" y="560" width="312" height="34" rx="8" fill="none" stroke="#F472B6" stroke-width="2" stroke-dasharray="6 8" opacity="0.7">
+      <animate attributeName="stroke-dashoffset" from="0" to="-28" dur="1.2s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- ============ 右侧 CI/CD DevOps 列 ============ -->
+  <g>
+    <text class="layer-tag" x="1290" y="120">DEVOPS</text>
+    <rect x="1290" y="130" width="180" height="870" rx="20" fill="url(#layerBand)" stroke="url(#gOps)" stroke-opacity="0.45"/>
+    <text class="card-title" x="1380" y="166" text-anchor="middle" fill="#ECFEFF">CI / CD 交付链</text>
+    <text class="card-sub"   x="1380" y="186" text-anchor="middle" fill="#A5F3FC">从源码到上线的自动化</text>
+
+    <!-- 6 个阶段卡 -->
+    <g>
+      <rect x="1310" y="208" width="140" height="70" rx="12" fill="url(#gOps)" fill-opacity="0.18" stroke="url(#gOps)" stroke-opacity="0.75"/>
+      <text class="ops-title" x="1380" y="234" text-anchor="middle">① 源码</text>
+      <text class="ops-sub"   x="1380" y="254" text-anchor="middle">Git · 分支策略</text>
+      <text class="ops-sub"   x="1380" y="270" text-anchor="middle">Code Review</text>
+
+      <rect x="1310" y="298" width="140" height="70" rx="12" fill="url(#gOps)" fill-opacity="0.18" stroke="url(#gOps)" stroke-opacity="0.75"/>
+      <text class="ops-title" x="1380" y="324" text-anchor="middle">② 构建</text>
+      <text class="ops-sub"   x="1380" y="344" text-anchor="middle">dotnet build · pnpm</text>
+      <text class="ops-sub"   x="1380" y="360" text-anchor="middle">SBOM / 依赖扫描</text>
+
+      <rect x="1310" y="388" width="140" height="70" rx="12" fill="url(#gOps)" fill-opacity="0.18" stroke="url(#gOps)" stroke-opacity="0.75"/>
+      <text class="ops-title" x="1380" y="414" text-anchor="middle">③ 测试</text>
+      <text class="ops-sub"   x="1380" y="434" text-anchor="middle">单元 · 集成 · E2E</text>
+      <text class="ops-sub"   x="1380" y="450" text-anchor="middle">质量门禁</text>
+
+      <rect x="1310" y="478" width="140" height="70" rx="12" fill="url(#gOps)" fill-opacity="0.18" stroke="url(#gOps)" stroke-opacity="0.75"/>
+      <text class="ops-title" x="1380" y="504" text-anchor="middle">④ 镜像</text>
+      <text class="ops-sub"   x="1380" y="524" text-anchor="middle">Docker · Registry</text>
+      <text class="ops-sub"   x="1380" y="540" text-anchor="middle">版本 / 签名</text>
+
+      <rect x="1310" y="568" width="140" height="70" rx="12" fill="url(#gOps)" fill-opacity="0.18" stroke="url(#gOps)" stroke-opacity="0.75"/>
+      <text class="ops-title" x="1380" y="594" text-anchor="middle">⑤ 发布</text>
+      <text class="ops-sub"   x="1380" y="614" text-anchor="middle">蓝绿 · 灰度</text>
+      <text class="ops-sub"   x="1380" y="630" text-anchor="middle">脚本回滚</text>
+
+      <rect x="1310" y="658" width="140" height="70" rx="12" fill="url(#gOps)" fill-opacity="0.18" stroke="url(#gOps)" stroke-opacity="0.75"/>
+      <text class="ops-title" x="1380" y="684" text-anchor="middle">⑥ 监控</text>
+      <text class="ops-sub"   x="1380" y="704" text-anchor="middle">日志 · 指标 · 告警</text>
+      <text class="ops-sub"   x="1380" y="720" text-anchor="middle">链路追踪</text>
+
+      <rect x="1310" y="748" width="140" height="70" rx="12" fill="url(#gOps)" fill-opacity="0.18" stroke="url(#gOps)" stroke-opacity="0.75"/>
+      <text class="ops-title" x="1380" y="774" text-anchor="middle">⑦ 反馈</text>
+      <text class="ops-sub"   x="1380" y="794" text-anchor="middle">Issue · 数据回流</text>
+      <text class="ops-sub"   x="1380" y="810" text-anchor="middle">闭环改进</text>
+    </g>
+
+    <!-- 阶段间连线 -->
+    <g fill="none" stroke="#34D399" stroke-width="2" stroke-opacity="0.55">
+      <path id="opsP1" d="M1380 278 L1380 298" marker-end="url(#arrGreen)"/>
+      <path id="opsP2" d="M1380 368 L1380 388" marker-end="url(#arrGreen)"/>
+      <path id="opsP3" d="M1380 458 L1380 478" marker-end="url(#arrGreen)"/>
+      <path id="opsP4" d="M1380 548 L1380 568" marker-end="url(#arrGreen)"/>
+      <path id="opsP5" d="M1380 638 L1380 658" marker-end="url(#arrGreen)"/>
+      <path id="opsP6" d="M1380 728 L1380 748" marker-end="url(#arrGreen)"/>
+    </g>
+
+    <!-- 单个流光小球依次贯穿 7 段（用累计 begin） -->
+    <circle r="5" fill="#6EE7B7">
+      <animateMotion dur="0.6s" begin="0s" fill="freeze" repeatCount="1"><mpath href="#opsP1"/></animateMotion>
+      <animate attributeName="opacity" values="0;1" dur="0.1s" begin="0s" fill="freeze"/>
+    </circle>
+    <!-- 简化：每个段独立循环流光 -->
+    <g>
+      <circle r="4.5" fill="#6EE7B7"><animateMotion dur="3.5s" begin="0s"   repeatCount="indefinite"><mpath href="#opsP1"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="3.5s" begin="0s"   repeatCount="indefinite"/></circle>
+      <circle r="4.5" fill="#6EE7B7"><animateMotion dur="3.5s" begin="0.5s" repeatCount="indefinite"><mpath href="#opsP2"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="3.5s" begin="0.5s" repeatCount="indefinite"/></circle>
+      <circle r="4.5" fill="#6EE7B7"><animateMotion dur="3.5s" begin="1.0s" repeatCount="indefinite"><mpath href="#opsP3"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="3.5s" begin="1.0s" repeatCount="indefinite"/></circle>
+      <circle r="4.5" fill="#6EE7B7"><animateMotion dur="3.5s" begin="1.5s" repeatCount="indefinite"><mpath href="#opsP4"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="3.5s" begin="1.5s" repeatCount="indefinite"/></circle>
+      <circle r="4.5" fill="#6EE7B7"><animateMotion dur="3.5s" begin="2.0s" repeatCount="indefinite"><mpath href="#opsP5"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="3.5s" begin="2.0s" repeatCount="indefinite"/></circle>
+      <circle r="4.5" fill="#6EE7B7"><animateMotion dur="3.5s" begin="2.5s" repeatCount="indefinite"><mpath href="#opsP6"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="3.5s" begin="2.5s" repeatCount="indefinite"/></circle>
+    </g>
+
+    <!-- DevOps → 主架构反向反馈虚线 -->
+    <path d="M1300 480 C 1240 480 1240 600 1265 620"
+          stroke="#34D399" stroke-opacity="0.45" stroke-width="1.6" stroke-dasharray="4 6" fill="none">
+      <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="1.6s" repeatCount="indefinite"/>
+    </path>
+    <text class="card-sub" x="1230" y="475" text-anchor="end" fill="#A7F3D0">部署到运行时</text>
+
+    <!-- 边框脉冲 -->
+    <rect x="1290" y="130" width="180" height="870" rx="20" fill="none" stroke="#34D399" stroke-width="1.6">
+      <animate attributeName="stroke-opacity" values="0.15;0.6;0.15" dur="3.4s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- ============ 全局环境光"扫描线"（顶部到底部缓慢移动） ============ -->
+  <g opacity="0.18">
+    <rect x="0" y="-40" width="1500" height="60" fill="url(#gClient)">
+      <animate attributeName="y" from="-40" to="1080" dur="14s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;0.18;0" dur="14s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+</svg>

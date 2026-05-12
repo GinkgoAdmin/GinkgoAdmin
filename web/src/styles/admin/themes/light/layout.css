@@ -1,0 +1,146 @@
+/* ==================== 侧边栏（浅色） ==================== */
+.ginkgo-sidebar { background: var(--admin-sidebar-bg); border-right:1px solid var(--admin-sidebar-border); box-shadow: 2px 0 12px rgba(0,0,0,.08); }
+.ginkgo-brand-header { background: var(--admin-header-bg); border-bottom:1px solid var(--admin-divider); }
+.brand-title { color: var(--admin-text-primary); }
+.brand-subtitle { color: var(--admin-text-secondary); }
+.ginkgo-collapse-btn { background: var(--admin-surface-3); border:1px solid var(--admin-border-strong); border-radius:8px; color: var(--admin-menu-child-text); }
+.ginkgo-collapse-btn:hover { background: var(--admin-menu-hover-bg); color: var(--admin-text-hover-emphasis); border-color: var(--admin-border-soft); box-shadow:0 2px 4px rgba(0,0,0,.05); }
+
+/* 菜单搜索（浅色） */
+.ginkgo-menu-search { border-bottom:1px solid var(--admin-divider); background:transparent; backdrop-filter: blur(6px); }
+.ginkgo-menu-search .el-input__wrapper { background: var(--admin-surface-3); border:1px solid var(--admin-border-strong); box-shadow:0 1px 2px rgba(0,0,0,.05); }
+.ginkgo-menu-search .el-input__wrapper:hover { border-color: var(--admin-border-soft); background: var(--admin-menu-hover-bg); box-shadow:0 2px 6px rgba(0,0,0,.08); }
+.ginkgo-menu-search .el-input__wrapper.is-focus { border-color: var(--admin-primary-500); background: var(--admin-surface); box-shadow: 0 0 0 4px rgba(59,130,246,.12), 0 2px 8px rgba(0,0,0,.08); }
+.ginkgo-menu-search .el-input__inner { color: var(--admin-text-primary); }
+.ginkgo-menu-search .el-input__inner::placeholder { color: var(--admin-text-muted); }
+.ginkgo-menu-search .el-input__prefix, .ginkgo-menu-search .el-input__suffix { color: var(--admin-text-secondary); }
+
+/* 菜单与子菜单（浅色） */
+.ginkgo-sidebar-menu { border:none !important; background:transparent !important; }
+.ginkgo-sidebar-menu .el-menu-item { color: var(--admin-menu-text); }
+.ginkgo-sidebar-menu .el-menu-item:hover { background: var(--admin-menu-hover-bg) !important; color: var(--admin-menu-hover-text) !important; }
+.ginkgo-sidebar-menu .el-menu-item.is-active { background: linear-gradient(135deg, var(--admin-primary-500) 0%, var(--admin-primary-600) 100%) !important; color: var(--admin-on-primary) !important; box-shadow: 0 4px 12px rgba(59,130,246,.3); }
+.ginkgo-sidebar-menu .el-menu-item.is-active::before { background: var(--admin-on-primary); }
+.ginkgo-sidebar-menu .el-sub-menu__title { color: var(--admin-menu-text); }
+.ginkgo-sidebar-menu .el-sub-menu__title:hover { background: var(--admin-menu-hover-bg) !important; color: var(--admin-menu-hover-text) !important; }
+.ginkgo-sidebar-menu .el-menu-item-child { color: var(--admin-menu-child-text); }
+.ginkgo-sidebar-menu .el-menu-item-child:hover { background: var(--admin-menu-child-hover-bg) !important; color: var(--admin-menu-child-hover-text) !important; }
+.ginkgo-sidebar-menu .el-menu-item-child.is-active { background: linear-gradient(135deg, var(--admin-primary-500) 0%, var(--admin-primary-600) 100%) !important; color: var(--admin-on-primary) !important; }
+.ginkgo-sidebar-menu .el-menu-item-child.is-active::before { background: var(--admin-on-primary); }
+
+/* ==================== 顶部导航与标签页（浅色） ==================== */
+.header-container { background: var(--admin-header-bg); border-bottom: none !important; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+.header-admin-tabs .el-tabs__header { border-bottom: none; }
+.header-admin-tabs .el-tabs__nav { border: none; }
+.header-admin-tabs .el-tabs__nav-prev,
+.header-admin-tabs .el-tabs__nav-next {
+  background: var(--admin-tab-arrow-bg);
+  border: 1px solid var(--admin-tab-arrow-border);
+  color: var(--admin-text-secondary);
+  height: 32px;
+  line-height: 32px;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.header-admin-tabs .el-tabs__nav-prev:hover,
+.header-admin-tabs .el-tabs__nav-next:hover { background: var(--admin-tab-arrow-hover-bg); border-color: var(--admin-tab-arrow-hover-border); color: var(--admin-tab-arrow-text); }
+/* 标签页项：移除边框，用内阴影替代轮廓，添加抗锯齿优化 */
+.header-admin-tabs .el-tabs__item {
+  color: var(--admin-text-secondary);
+  background: var(--admin-tab-bg);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 1px rgba(226, 232, 240, 0.5);
+  border: none !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  backface-visibility: hidden;
+  height: 32px;
+  line-height: 32px;
+  padding: 0 16px;
+}
+/* 标签页导航容器垂直居中 */
+.header-admin-tabs .el-tabs__nav-wrap {
+  display: flex;
+  align-items: center;
+}
+.header-admin-tabs .el-tabs__header {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+.header-admin-tabs .el-tabs__item::before {
+  background: linear-gradient(135deg, rgba(59,130,246,.1), rgba(37,99,235,.05));
+  border-radius: 12px;
+}
+.header-admin-tabs .el-tabs__item:hover {
+  color: var(--admin-tab-hover-text);
+  background: var(--admin-tab-hover-bg);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.3), 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+.header-admin-tabs .el-tabs__item.is-active {
+  color: var(--admin-on-primary);
+  background: linear-gradient(135deg, var(--admin-primary-500) 0%, var(--admin-primary-600) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+/* 移除顶部标签栏背后的底线（Element Plus 默认 nav-wrap::after） */
+.header-admin-tabs .el-tabs__nav-wrap::after { display: none !important; }
+/* 覆盖 Element Plus 卡片型 Tabs 导航容器边框（去除白色边线） */
+.header-admin-tabs.el-tabs--card > .el-tabs__header .el-tabs__nav { border: none !important; }
+.header-admin-tabs .el-tabs__nav.is-top { border: none !important; }
+
+
+.header-admin-tabs .el-tabs__item.is-active::before { background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.05)); }
+.header-admin-tabs .el-tabs__item .el-icon-close:hover { background: rgba(239,68,68,.9); color: var(--admin-on-primary); box-shadow:none; }
+.header-admin-tabs .el-tabs__item.is-active .el-icon-close { opacity: .8; }
+.header-admin-tabs .el-tabs__item.is-active .el-icon-close:hover { background: rgba(255,255,255,.2); color: var(--admin-on-primary); }
+
+/* 顶部操作按钮（浅色） */
+.header-tabs-actions .el-button { background: rgba(248,250,252,.9); border:1px solid rgba(226,232,240,.8); color: var(--admin-text-secondary); backdrop-filter: blur(12px); }
+.header-tabs-actions .el-button:hover { background: rgba(241,245,249,.95); color: var(--admin-tab-arrow-text); border-color: rgba(203,213,225,.8); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+.notification-badge .el-badge__content { background: var(--admin-danger-500); border: 2px solid var(--admin-on-primary); }
+.notification-btn { background: var(--admin-surface-2); border:1px solid var(--admin-border); color: var(--admin-text-secondary); }
+
+/* 右侧操作按钮：统一高度为 40px 实现垂直对齐，确保为正圆形 */
+.notification-btn, .theme-btn, .fullscreen-btn {
+  width: 40px !important; height: 40px !important; min-width: 40px !important; padding: 0 !important;
+  border-radius: 50% !important;
+  margin: 0 !important;
+}
+
+.notification-btn:hover { background: var(--admin-control-hover-bg); color: var(--admin-menu-text); }
+.theme-btn, .fullscreen-btn { background: var(--admin-surface-2); border:1px solid var(--admin-border); color: var(--admin-text-secondary); }
+.theme-btn:hover, .fullscreen-btn:hover { background: var(--admin-control-hover-bg); color: var(--admin-menu-text); }
+
+/* 用户信息（浅色） */
+.user-info:hover { background: var(--admin-surface-2); }
+.user-avatar { background: linear-gradient(135deg, var(--admin-primary-500) 0%, var(--admin-primary-600) 100%); color: var(--admin-on-primary); }
+.user-name { color: var(--admin-text-primary); }
+.user-role { color: var(--admin-text-secondary); }
+.dropdown-icon { color: var(--admin-text-muted); }
+
+/* 主内容区域（浅色） */
+.main-content { background: var(--admin-surface-2); }
+
+/* 下拉菜单（浅色） */
+.user-dropdown .el-dropdown-menu { border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.1); border:1px solid var(--admin-popper-border); background: var(--admin-popper-bg); }
+.user-dropdown .el-dropdown-menu__item { color: var(--admin-menu-text); }
+.user-dropdown .el-dropdown-menu__item:hover { background: var(--admin-menu-hover-bg); color: var(--admin-menu-hover-text); }
+
+/* 移动端菜单切换按钮（浅色） */
+.mobile-menu-toggle .el-button {
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-secondary);
+}
+.mobile-menu-toggle .el-button:hover {
+  background: var(--admin-control-hover-bg);
+  color: var(--admin-menu-text);
+  border-color: var(--admin-border-soft);
+}
+

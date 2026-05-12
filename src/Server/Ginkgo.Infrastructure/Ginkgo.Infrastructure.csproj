@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ginkgo.Domain\Ginkgo.Domain.csproj" />
+    <ProjectReference Include="..\Ginkgo.Shared\Ginkgo.Shared.csproj" />
+    <!-- Add ICurrentUser abstractions -->
+    <ProjectReference Include="..\Ginkgo.ServerToolkit.Abstractions\Ginkgo.ServerToolkit.Abstractions.csproj" />
+
+    <!-- 模块扩展点接口 -->
+    <ProjectReference Include="..\Ginkgo.Plugin.Abstractions\Ginkgo.Plugin.Abstractions.csproj" />
+
+    <!-- 数据库方言抽象（IDatabaseDialect / IDialectRegistry） -->
+    <ProjectReference Include="..\Ginkgo.Infrastructure.Abstractions\Ginkgo.Infrastructure.Abstractions.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 允许单元测试程序集访问 internal 类型/方法（如 ServiceCollectionExtensions.ApplyReadWriteSplit / ApplySecondLevelCache） -->
+    <InternalsVisibleTo Include="Ginkgo.Tests.Unit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SqlSugar 与配置抽象包 -->
+    <PackageReference Include="SqlSugarCore" Version="5.1.4.200" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.4" />
+    <!-- 补充 Caching 版本以解决与 AICore MAF 运行时的加载冲突 -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.0" />
+    <!-- IHostedService / BackgroundService 抽象（用于慢查询异步落 OpLog 的后台消费者） -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
+    <PackageReference Include="System.Text.Json" Version="10.0.4" />
+    <!-- 轻量 Cron 表达式解析器，用于定时任务调度 -->
+    <PackageReference Include="Cronos" Version="0.8.4" />
+    <!-- SMTP 邮件发送（原 ServerToolkit.Email.Smtp 内容已内嵌至此） -->
+    <PackageReference Include="MailKit" Version="4.16.0" />
+    <!-- PostgreSQL ADO.NET 驱动（供 PostgreSqlDialect 使用） -->
+    <PackageReference Include="Npgsql" Version="8.0.4" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ginkgo.Domain\Ginkgo.Domain.csproj" />
+    <ProjectReference Include="..\Ginkgo.Plugin.Abstractions\Ginkgo.Plugin.Abstractions.csproj" />
+    <ProjectReference Include="..\Ginkgo.Shared\Ginkgo.Shared.csproj" />
+    <ProjectReference Include="..\Ginkgo.Infrastructure\Ginkgo.Infrastructure.csproj" />
+    <ProjectReference Include="..\Ginkgo.Realtime\Ginkgo.Realtime.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlSanitizer" Version="9.0.892" />
+    <PackageReference Include="SkiaSharp" Version="2.88.*" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.*" Condition="'$(OS)' != 'Windows_NT'" />
+  </ItemGroup>
+
+</Project>

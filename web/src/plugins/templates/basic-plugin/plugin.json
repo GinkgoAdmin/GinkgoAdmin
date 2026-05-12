@@ -1,0 +1,17 @@
+{
+  "name": "my-plugin",
+  "version": "1.0.0",
+  "description": "A basic plugin template",
+  "author": "Your Name",
+  "main": "index.ts",
+  "enabled": true,
+  "hooks": [],
+  "cdnDependencies": [],
+  "npmDependencies": [],
+  "assets": [],
+  "permissions": [],
+  "compatibility": {
+    "minVersion": "1.0.0",
+    "maxVersion": "2.0.0"
+  }
+}

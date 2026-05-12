@@ -1,0 +1,295 @@
+﻿/* Dark theme page-level styles (login, dashboard, system config, etc.). */
+
+/* ========================================
+   页面标题样式 - 增强对比度
+   ======================================== */
+
+/* 页面标题 - 确保在暗色模式下清晰可读 */
+.admin-dark .page-header h1,
+.admin-dark .page-header h2,
+.admin-dark .page-header h3,
+.admin-dark .page-container h1,
+.admin-dark .page-container h2,
+.admin-dark .page-container h3,
+.admin-dark h1:not(.el-dialog__title),
+.admin-dark h2:not(.el-dialog__title),
+.admin-dark h3:not(.el-dialog__title) {
+  color: #f9fafb !important;
+}
+
+/* ========================================
+   通用页面容器样式
+   ======================================== */
+
+/* 页面主容器 */
+.admin-dark .page-container,
+.admin-dark .system-config-page {
+  background: transparent;
+}
+
+/* 页面标题 */
+.admin-dark .page-title {
+  color: var(--el-text-color-primary);
+}
+
+/* 页面描述文本 */
+.admin-dark .page-description {
+  color: var(--el-text-color-secondary);
+}
+
+/* ========================================
+   图片预览区域 - 可选用增强对比度
+   ======================================== */
+
+.admin-dark .image-preview,
+.admin-dark .logo-preview,
+.admin-dark .background-preview,
+.admin-dark .file-preview {
+  background: var(--el-fill-color-dark);
+  border-color: var(--el-border-color-darker);
+}
+
+.admin-dark .image-preview img,
+.admin-dark .logo-preview img,
+.admin-dark .background-preview img {
+  /* 图片在暗黑主题下稍微降低亮度 */
+  filter: brightness(0.9);
+}
+
+/* ========================================
+   表单容器 - 可选用
+   ======================================== */
+
+.admin-dark .form-container {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+.admin-dark .form-section {
+  background: var(--admin-surface-2);
+  border-color: var(--admin-border);
+}
+
+.admin-dark .form-tip,
+.admin-dark .form-hint {
+  color: var(--el-text-color-secondary);
+}
+
+/* ========================================
+   内容卡片 - 可选用
+   ======================================== */
+
+.admin-dark .content-card {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+.admin-dark .content-card .card-header {
+  background: var(--admin-surface-2);
+  border-bottom-color: var(--admin-border);
+  color: var(--el-text-color-primary);
+}
+
+.admin-dark .content-card .card-body {
+  background: var(--admin-surface);
+  color: var(--el-text-color-regular);
+}
+
+/* ========================================
+   颜色选择器 - 可选用
+   ======================================== */
+
+/* Element Plus 颜色选择器下拉面板 */
+.admin-dark .el-color-picker__panel {
+  background: var(--admin-surface) !important;
+  border-color: var(--admin-border) !important;
+}
+
+.admin-dark .el-color-dropdown__main-wrapper {
+  background: var(--admin-surface) !important;
+}
+
+.admin-dark .el-color-svpanel {
+  background: var(--admin-surface-2) !important;
+}
+
+.admin-dark .el-color-hue-slider {
+  background: var(--admin-surface-2) !important;
+}
+
+.admin-dark .el-color-alpha-slider {
+  background: var(--admin-surface-2) !important;
+}
+
+.admin-dark .el-color-predefine {
+  background: var(--admin-surface) !important;
+  border-top-color: var(--admin-border) !important;
+}
+
+.admin-dark .el-color-predefine__color-selector {
+  border-color: var(--admin-border) !important;
+}
+
+/* 颜色预览框 */
+.admin-dark .color-preview {
+  border-color: var(--el-border-color-darker);
+}
+
+/* ========================================
+   上传组件 - 可选用
+   ======================================== */
+
+.admin-dark .upload-container {
+  background: var(--admin-surface-2);
+  border-color: var(--admin-border);
+}
+
+.admin-dark .upload-container:hover {
+  background: var(--admin-surface-3);
+  border-color: var(--admin-border-strong);
+}
+
+.admin-dark .upload-tip {
+  color: var(--el-text-color-secondary);
+}
+
+/* ========================================
+   标签页 - 可选用
+   ======================================== */
+
+.admin-dark .config-tabs .el-tabs__header {
+  background: transparent;
+}
+
+.admin-dark .config-tabs .el-tabs__nav {
+  background: transparent;
+}
+
+.admin-dark .config-tabs .el-tabs__item {
+  color: var(--el-text-color-regular);
+}
+
+.admin-dark .config-tabs .el-tabs__item:hover {
+  color: var(--el-text-color-primary);
+}
+
+.admin-dark .config-tabs .el-tabs__item.is-active {
+  color: var(--el-color-primary);
+}
+
+/* ========================================
+   系统配置页面特定样式
+   ======================================== */
+
+/* 配置卡片 */
+.admin-dark .config-card {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+.admin-dark .config-card .el-card__header {
+  background: var(--admin-surface-2);
+  border-bottom-color: var(--admin-border);
+  color: var(--el-text-color-primary);
+}
+
+.admin-dark .config-card .el-card__body {
+  background: var(--admin-surface);
+}
+
+/* ========================================
+   输入框和表单控件增强
+   ======================================== */
+
+/* Element Plus 输入框在暗黑主题下的增强 */
+.admin-dark .el-input__wrapper {
+  background-color: var(--el-fill-color-dark);
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+}
+
+.admin-dark .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-border-color-hover) inset;
+}
+
+.admin-dark .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+/* Element Plus 文本域 */
+.admin-dark .el-textarea__inner {
+  background-color: var(--el-fill-color-dark);
+  border-color: var(--el-border-color);
+  color: var(--el-text-color-primary);
+}
+
+.admin-dark .el-textarea__inner:hover {
+  border-color: var(--el-border-color-hover);
+}
+
+.admin-dark .el-textarea__inner:focus {
+  border-color: var(--el-color-primary);
+}
+
+/* Element Plus 下拉选择框 */
+.admin-dark .el-select__wrapper {
+  background-color: var(--el-fill-color-dark);
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+}
+
+.admin-dark .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-border-color-hover) inset;
+}
+
+.admin-dark .el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+/* ========================================
+   下拉菜单和弹出层
+   ======================================== */
+
+.admin-dark .el-select-dropdown {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+.admin-dark .el-select-dropdown__item {
+  color: var(--el-text-color-regular);
+}
+
+.admin-dark .el-select-dropdown__item:hover {
+  background: var(--admin-menu-hover-bg);
+  color: var(--el-text-color-primary);
+}
+
+.admin-dark .el-select-dropdown__item.is-selected {
+  color: var(--el-color-primary);
+  background: var(--admin-menu-hover-bg);
+}
+
+/* ========================================
+   开关和单选框
+   ======================================== */
+
+.admin-dark .el-switch__core {
+  background-color: var(--el-fill-color-darker);
+  border-color: var(--el-border-color);
+}
+
+.admin-dark .el-switch.is-checked .el-switch__core {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+}
+
+.admin-dark .el-radio__input.is-checked .el-radio__inner {
+  background: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+}
+
+.admin-dark .el-radio__label {
+  color: var(--el-text-color-regular);
+}
+
+.admin-dark .el-radio__input.is-checked + .el-radio__label {
+  color: var(--el-color-primary);
+}

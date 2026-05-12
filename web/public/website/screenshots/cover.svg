@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" font-family="'PingFang SC','Microsoft YaHei','Segoe UI',Arial,sans-serif">
+  <defs>
+    <linearGradient id="cvBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a1628"/>
+      <stop offset="100%" stop-color="#111a2e"/>
+    </linearGradient>
+    <linearGradient id="cvTitle" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#86efac"/>
+      <stop offset="50%" stop-color="#7dd3fc"/>
+      <stop offset="100%" stop-color="#a5b4fc"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="1280" height="400" fill="url(#cvBg)"/>
+
+  <!-- 装饰光晕 -->
+  <circle cx="1120" cy="80" r="160" fill="#3b82f6" opacity="0.08"/>
+  <circle cx="160" cy="340" r="200" fill="#22c55e" opacity="0.07"/>
+
+  <!-- 主标题（居中） -->
+  <text x="640" y="116" text-anchor="middle" font-size="56" font-weight="800" fill="url(#cvTitle)" letter-spacing="1.5">GinkgoAdmin</text>
+  <text x="640" y="148" text-anchor="middle" font-size="15" font-weight="500" fill="#94a3b8" letter-spacing="2">模块化 · 多端协同 · 可持续二次开发的企业业务底座</text>
+
+  <!-- 中部核心标语 -->
+  <text x="640" y="232" text-anchor="middle" font-size="28" font-weight="700" fill="#e2e8f0" letter-spacing="3">一次构建 · 长期演进</text>
+  <text x="640" y="262" text-anchor="middle" font-size="13" fill="#64748b" letter-spacing="1.5">.NET 8 · Vue 3 · UniApp · WPF · 默认 MySQL</text>
+
+  <!-- 5 个核心能力小标签（DDD / ALC / Contracts / 多端协同 / AI 引擎） -->
+  <g font-size="13" font-weight="600" fill="#cbd5e1">
+    <g transform="translate(168, 318)">
+      <rect width="176" height="40" rx="20" fill="#0f1d36" stroke="#22c55e" stroke-width="1.4"/>
+      <circle cx="22" cy="20" r="4" fill="#22c55e"/>
+      <text x="38" y="25">DDD 分层架构</text>
+    </g>
+    <g transform="translate(360, 318)">
+      <rect width="176" height="40" rx="20" fill="#0f1d36" stroke="#0ea5e9" stroke-width="1.4"/>
+      <circle cx="22" cy="20" r="4" fill="#0ea5e9"/>
+      <text x="38" y="25">ALC 插件隔离</text>
+    </g>
+    <g transform="translate(552, 318)">
+      <rect width="176" height="40" rx="20" fill="#0f1d36" stroke="#6366f1" stroke-width="1.4"/>
+      <circle cx="22" cy="20" r="4" fill="#6366f1"/>
+      <text x="38" y="25">Contracts 契约</text>
+    </g>
+    <g transform="translate(744, 318)">
+      <rect width="176" height="40" rx="20" fill="#0f1d36" stroke="#ec4899" stroke-width="1.4"/>
+      <circle cx="22" cy="20" r="4" fill="#ec4899"/>
+      <text x="38" y="25">多端协同</text>
+    </g>
+    <g transform="translate(936, 318)">
+      <rect width="176" height="40" rx="20" fill="#0f1d36" stroke="#a855f7" stroke-width="1.4"/>
+      <circle cx="22" cy="20" r="4" fill="#a855f7"/>
+      <text x="38" y="25">内建 AI 引擎</text>
+    </g>
+  </g>
+</svg>

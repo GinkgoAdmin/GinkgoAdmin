@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      数据库方言抽象层：仅承载 IDatabaseDialect / IDialectRegistry / 描述类型与能力 flag。
+      引用 SqlSugarCore 是为了在接口签名中使用 SqlSugar.DbType 与 ISqlSugarClient，
+      与 Ginkgo.Plugin.Abstractions 内已有的 ISqlSugarConfigurator 保持一致。
+      不引入任何具体数据库驱动（驱动由 Ginkgo.Infrastructure 与各 Dialect 实现按需引用）。
+    -->
+    <PackageReference Include="SqlSugarCore" Version="5.1.4.200" />
+  </ItemGroup>
+
+</Project>

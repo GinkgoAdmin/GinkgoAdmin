@@ -1,0 +1,131 @@
+{
+  // ============================================================
+  // Ginkgo 运行时数据库与 SqlSugar 高级能力配置
+  // ============================================================
+  // 优先于 appsettings.json；支持 // 与 /* */ 注释、尾随逗号。
+  // 修改后下个请求即生效（reloadOnChange），SaasMultiDb.Connections 除外（需重启）。
+  // 说明文档：document/SqlSugar 性能优化建议.md
+
+  "Jwt": {
+    // 签名密钥（Base64），生产环境必须保密，请替换为自己的随机串。
+    "SigningKey": "donARE3jgeS0jrmQegeIsV80ybtcjyWqZUK//urqXF18TU2CF53eINmEmWxTbYSN",
+    // 令牌签发者标识。
+    "Issuer": "ginkgo",
+    // 令牌受众标识。
+    "Audience": "ginkgo-clients",
+    // 令牌过期分钟数。
+    "ExpiresMinutes": 120
+  },
+
+  "Database": {
+    // 数据库驱动：开源版仅 MySql；商业版可选 SqlServer / PostgreSql / 后续方言。
+    "Provider": "MySql",
+    // 启动时是否自动检查/创建数据库与表（仅开发环境建议开启）。
+    "AutoCreate": false,
+
+    // ========== SqlSugar 高级能力 ==========
+    // 按需启用。未设置或 Enabled=false 时完全不挂载，零开销。
+    "Features": {
+
+      // ────── 读写分离（主库写、从库读） ──────
+      // 启用条件：读 QPS 显著高于写，读写比 ≥ 5:1 或单库读压力 > 60% CPU。
+      // 启用后 SqlSugar 按 HitRate 权重随机分发读请求到从库，写和事务始终走主库。
+      "ReadWriteSplit": {
+        "Enabled": false,
+        // 从库列表；HitRate 为相对权重，数字越大被选中概率越高（建议 1-10 之间）。
+        // ⚠️ 以下为示例占位，请替换为真实从库地址。
+        "Slaves": [
+          {
+            "ConnectionString": "Server=10.0.0.11;Port=3306;User ID=GinkgoAdmin;Password=GinkgoAdmin;Database=GinkgoAdmin;Character Set=utf8mb4",
+            "HitRate": 7
+          },
+          {
+            "ConnectionString": "Server=10.0.0.12;Port=3306;User ID=GinkgoAdmin;Password=GinkgoAdmin;Database=GinkgoAdmin;Character Set=utf8mb4",
+            "HitRate": 3
+          }
+        ]
+      },
+
+      // ────── 二级缓存 ──────
+      // 适用于大量重复查询的字典/配置/权限元数据，预期命中率 > 70%。
+      // 写入后必须调用 .RemoveDataCache() 避免脏读。
+      "SecondLevelCache": {
+        "Enabled": false,
+        // 缓存提供者：Memory（默认、单节点）/ Redis（后续版本支持）。
+        "Provider": "Memory",
+        // 默认缓存过期秒数；查询调用 .WithCache() 未指定秒数时使用此值。
+        "DefaultSeconds": 300
+      },
+
+      // ────── 自动分表（SplitTable） ──────
+      // 适用于单表预期 > 5000 万行、按时间天然可分的场景（日志/审计/流水/订单）。
+      // 实体需配合 [SplitTable(SplitType.Month)] + [SplitField] 特性。
+      // 业务侧通过 ISplitTableContext 统一 CRUD，框架自动附加 .SplitTable() 链式调用。
+      "SplitTable": {
+        "Enabled": false,
+        // 分表策略说明（实际策略由实体特性决定）：Year / Month / Day / Custom。
+        "Strategy": "Month"
+      },
+
+      // ────── SaaS 多库分库 ──────
+      // 适用于单租户数据量 > 1000 万行，或合规要求租户物理隔离；租户数 < 100。
+      // 启用后框架在初始化时注册租户库连接，业务侧通过 ITenantDbRouter.ChangeDatabase(configId) 切库。
+      // ⚠️ 修改 Connections 列表需重启应用（连接池重建）。
+      "SaasMultiDb": {
+        "Enabled": false,
+        // 租户库连接列表；ConfigId 必须唯一，与业务侧调用 ChangeDatabase 时传入的值一致。
+        // ⚠️ 以下为示例占位，请替换为真实租户库地址。
+        "Connections": [
+          {
+            "ConfigId": "tenant_company_a",
+            "ConnectionString": "Server=10.0.1.1;Port=3306;User ID=GinkgoAdmin;Password=GinkgoAdmin;Database=GinkgoAdmin;Character Set=utf8mb4",
+            "Description": "租户 A - 示例公司（华东区）"
+          },
+          {
+            "ConfigId": "tenant_company_b",
+            "ConnectionString": "Server=10.0.1.2;Port=3306;User ID=GinkgoAdmin;Password=GinkgoAdmin;Database=GinkgoAdmin;Character Set=utf8mb4",
+            "Description": "租户 B - 示例公司（华南区）"
+          }
+        ]
+      },
+
+      // ────── 大数据写入（BulkCopy / BulkUpdate） ──────
+      // Enabled=false 时 IBulkInsertService 退化为 Insertable 逐批写入。
+      "BulkOps": {
+        "Enabled": false,
+        // 默认批量大小；IBulkInsertService 未显式传入时使用。
+        "DefaultBatchSize": 5000
+      },
+
+      // ────── 慢查询日志 ──────
+      // Enabled=true 后超过阈值的 SQL 输出 Warning 日志；可选异步落 OpLog。
+      "SlowQuery": {
+        "Enabled": false,
+        // 慢查询阈值（毫秒）。
+        "ThresholdMs": 1000,
+        // 是否将慢 SQL 异步写入操作日志（后台 Channel，不阻塞 SQL 链路）。
+        "WriteToOpLog": false
+      },
+
+      // ────── BI 报表查询入口（Reportable） ──────
+      // Enabled=false 时调用 IReportableQueryFactory.Create() 抛 NotSupportedException。
+      "Reportable": {
+        "Enabled": false
+      },
+
+      // ────── 多客户端并发执行 ──────
+      // Enabled=false 时 IConcurrentDbExecutor 退化为串行执行。
+      "Concurrency": {
+        "Enabled": false,
+        // 最大并发度；建议不超过连接池上限的 1/3。
+        "MaxDegreeOfParallelism": 4
+      }
+    }
+  },
+
+  "ConnectionStrings": {
+    // 主连接串（主库），由方言驱动解析（MySql.Data / Microsoft.Data.SqlClient / Npgsql）。
+    // ⚠️ 读写分离的从库在上方 ReadWriteSplit.Slaves 中配置，此处仅主库。
+    "Default": "Server=127.0.0.1;Port=3306;User ID=GinkgoAdmin;Password=GinkgoAdmin;Database=GinkgoAdmin;Character Set=utf8mb4"
+  }
+}

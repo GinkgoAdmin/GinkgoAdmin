@@ -1,0 +1,1695 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Ginkgo.Application</name>
+    </assembly>
+    <members>
+        <member name="T:Ginkgo.Application.IAppService">
+            <summary>
+            应用服务标记接口。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.IReadOnlyService`1">
+            <summary>
+            只读应用服务接口。
+            </summary>
+            <typeparam name="TDto">返回的 DTO 类型。</typeparam>
+        </member>
+        <member name="M:Ginkgo.Application.IReadOnlyService`1.GetAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            根据主键获取单项数据。
+            </summary>
+            <param name="id">主键。</param>
+            <param name="ct">取消令牌。</param>
+        </member>
+        <member name="T:Ginkgo.Application.ICrudService`3">
+            <summary>
+            标准 CRUD 应用服务接口。
+            </summary>
+            <typeparam name="TDto">查询与返回的 DTO 类型。</typeparam>
+            <typeparam name="TCreate">创建输入类型。</typeparam>
+            <typeparam name="TUpdate">更新输入类型。</typeparam>
+        </member>
+        <member name="M:Ginkgo.Application.ICrudService`3.CreateAsync(`1,System.Threading.CancellationToken)">
+            <summary>
+            新建数据。
+            </summary>
+            <param name="input">创建输入。</param>
+            <param name="ct">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.ICrudService`3.UpdateAsync(System.Guid,`2,System.Threading.CancellationToken)">
+            <summary>
+            更新数据。
+            </summary>
+            <param name="id">主键。</param>
+            <param name="input">更新输入。</param>
+            <param name="ct">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.ICrudService`3.DeleteAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            删除数据。
+            </summary>
+            <param name="id">主键。</param>
+            <param name="ct">取消令牌。</param>
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.DictionaryAppService">
+            <summary>
+            字典应用服务实现（占位）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.#ctor(Ginkgo.Domain.IRepository{Ginkgo.Domain.Dictionaries.DictionaryCategory},Ginkgo.Domain.IRepository{Ginkgo.Domain.Dictionaries.DictionaryItem},Microsoft.Extensions.Caching.Memory.IMemoryCache)">
+            <summary>
+            构造函数。
+            </summary>
+            <param name="categoryRepository">分类仓储。</param>
+            <param name="itemRepository">条目仓储。</param>
+            <param name="cache">内存缓存。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.GetCategoryPagedAsync(Ginkgo.Shared.PageRequest,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.GetItemPagedAsync(Ginkgo.Shared.PageRequest,System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.CreateCategoryAsync(Ginkgo.Application.Dictionaries.CreateDictionaryCategoryInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.UpdateCategoryAsync(System.Int64,Ginkgo.Application.Dictionaries.UpdateDictionaryCategoryInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.DeleteCategoryAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.CreateItemAsync(Ginkgo.Application.Dictionaries.CreateDictionaryItemInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.UpdateItemAsync(System.Int64,Ginkgo.Application.Dictionaries.UpdateDictionaryItemInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.DeleteItemAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.DictionaryAppService.GetItemsByCodesAsync(System.String[],System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.DictionaryCategoryListItemDto">
+            <summary>
+            字典分类列表项。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryCategoryListItemDto.Id">
+            <summary>
+            主键（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryCategoryListItemDto.Code">
+            <summary>
+            编码。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryCategoryListItemDto.Name">
+            <summary>
+            名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryCategoryListItemDto.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryCategoryListItemDto.Category">
+            <summary>
+            字典类型。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.CreateDictionaryCategoryInput">
+            <summary>
+            字典分类创建输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.CreateDictionaryCategoryInput.Code">
+            <summary>
+            编码。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.CreateDictionaryCategoryInput.Name">
+            <summary>
+            名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.CreateDictionaryCategoryInput.Category">
+            <summary>
+            字典类型。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.UpdateDictionaryCategoryInput">
+            <summary>
+            字典分类更新输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.UpdateDictionaryCategoryInput.Name">
+            <summary>
+            名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.UpdateDictionaryCategoryInput.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.UpdateDictionaryCategoryInput.Category">
+            <summary>
+            字典类型。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.DictionaryItemListItemDto">
+            <summary>
+            字典条目列表项。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryItemListItemDto.Id">
+            <summary>
+            主键（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryItemListItemDto.CategoryId">
+            <summary>
+            分类 Id（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryItemListItemDto.ItemKey">
+            <summary>
+            键。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryItemListItemDto.ItemValue">
+            <summary>
+            值。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.DictionaryItemListItemDto.ParentId">
+            <summary>
+            上级条目 Id（层级型使用，Snowflake ID）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.DictionaryCategoryDetailDto">
+            <summary>
+            字典分类详情。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.DictionaryItemDetailDto">
+            <summary>
+            字典条目详情。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.CreateDictionaryItemInput">
+            <summary>
+            字典条目创建输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.CreateDictionaryItemInput.CategoryId">
+            <summary>
+            分类 Id（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.CreateDictionaryItemInput.ItemKey">
+            <summary>
+            键。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.CreateDictionaryItemInput.ItemValue">
+            <summary>
+            值。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.CreateDictionaryItemInput.ParentId">
+            <summary>
+            上级条目 Id（层级型可选，Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.CreateDictionaryItemInput.ExtraJson">
+            <summary>
+            扩展配置。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.UpdateDictionaryItemInput">
+            <summary>
+            字典条目更新输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.UpdateDictionaryItemInput.ItemKey">
+            <summary>
+            键。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.UpdateDictionaryItemInput.ItemValue">
+            <summary>
+            值。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.UpdateDictionaryItemInput.Order">
+            <summary>
+            排序。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.UpdateDictionaryItemInput.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.UpdateDictionaryItemInput.ParentId">
+            <summary>
+            上级条目 Id（层级型可选，Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Dictionaries.UpdateDictionaryItemInput.ExtraJson">
+            <summary>
+            扩展配置。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Dictionaries.IDictionaryAppService">
+            <summary>
+            字典应用服务接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.GetCategoryPagedAsync(Ginkgo.Shared.PageRequest,System.String,System.Threading.CancellationToken)">
+            <summary>
+            分页查询字典分类。
+            </summary>
+            <param name="request">分页参数。</param>
+            <param name="keyword">关键字（可选）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.GetItemPagedAsync(Ginkgo.Shared.PageRequest,System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            分页查询字典条目。
+            </summary>
+            <param name="request">分页参数。</param>
+            <param name="categoryId">分类 Id（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.CreateCategoryAsync(Ginkgo.Application.Dictionaries.CreateDictionaryCategoryInput,System.Threading.CancellationToken)">
+            <summary>
+            创建分类。
+            </summary>
+            <param name="input">创建输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.UpdateCategoryAsync(System.Int64,Ginkgo.Application.Dictionaries.UpdateDictionaryCategoryInput,System.Threading.CancellationToken)">
+            <summary>
+            更新分类。
+            </summary>
+            <param name="id">分类 Id（Snowflake ID）。</param>
+            <param name="input">更新输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.DeleteCategoryAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            删除分类。
+            </summary>
+            <param name="id">分类 Id（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.GetCategoryAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取分类详情。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.GetItemAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取条目详情。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.CreateItemAsync(Ginkgo.Application.Dictionaries.CreateDictionaryItemInput,System.Threading.CancellationToken)">
+            <summary>
+            创建条目。
+            </summary>
+            <param name="input">创建输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.UpdateItemAsync(System.Int64,Ginkgo.Application.Dictionaries.UpdateDictionaryItemInput,System.Threading.CancellationToken)">
+            <summary>
+            更新条目。
+            </summary>
+            <param name="id">条目 Id（Snowflake ID）。</param>
+            <param name="input">更新输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.DeleteItemAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            删除条目。
+            </summary>
+            <param name="id">条目 Id（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Dictionaries.IDictionaryAppService.GetItemsByCodesAsync(System.String[],System.Threading.CancellationToken)">
+            <summary>
+            根据分类编码批量获取字典条目，常用于前端获取枚举数据。
+            </summary>
+            <param name="codes">分类编码集合。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Files.FileAppService.IsCompressibleImage(System.String,System.String)">
+            <summary>
+            判断是否为可压缩的图片类型（排除 GIF/SVG 等不适合有损压缩的格式）
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Files.FileAppService.CompressImage(System.IO.Stream,System.Int32,System.String)">
+            <summary>
+            使用 SkiaSharp 压缩图片，返回压缩后的 MemoryStream（调用方负责释放）
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Files.IFileAppService.BatchMoveAsync(System.Collections.Generic.List{System.Int64},System.String,System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <summary>
+            批量迁移文件到目标存储提供者。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Files.IFileAppService.BatchDeleteAsync(System.Collections.Generic.List{System.Int64},System.Nullable{System.Int64},System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            批量删除文件。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Logs.Handlers.OpLogAppendedHandler">
+            <summary>
+            操作日志追加事件（OpLogAppended）的订阅示例处理器。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Logs.Handlers.UserLoggedInHandler">
+            <summary>
+            认证相关领域事件处理：将用户登录/登出事件转换为操作日志。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Logs.LogAppService">
+            <summary>
+            操作日志应用服务（CQRS：命令 Append + 查询 Get/List）。
+            说明：保持与现有 LogsController 兼容，不强制替换 Controller；后续可逐步切换为调用本服务。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Logs.LogAppService.AppendAsync(Ginkgo.Application.Logs.AppendOpLogInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Logs.LogAppService.GetPagedAsync(Ginkgo.Application.Logs.ListOpLogsInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Logs.LogAppService.GetAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Ginkgo.Application.Menus.IMenuAppService">
+            <summary>
+            菜单应用服务接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuAppService.GetPagedAsync(Ginkgo.Shared.PageRequest,System.String,System.Threading.CancellationToken)">
+            <summary>
+            分页查询菜单。
+            </summary>
+            <param name="request">分页参数。</param>
+            <param name="keyword">关键字（可选）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuAppService.GetAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取菜单详情。
+            </summary>
+            <param name="id">菜单 Id（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuAppService.CreateAsync(Ginkgo.Application.Menus.CreateMenuInput,System.Threading.CancellationToken)">
+            <summary>
+            创建菜单。
+            </summary>
+            <param name="input">创建输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuAppService.UpdateAsync(System.Int64,Ginkgo.Application.Menus.UpdateMenuInput,System.Threading.CancellationToken)">
+            <summary>
+            更新菜单。
+            </summary>
+            <param name="id">菜单 Id（Snowflake ID）。</param>
+            <param name="input">更新输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuAppService.DeleteAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            删除菜单。
+            </summary>
+            <param name="id">菜单 Id（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.IMenuGroupAppService">
+            <summary>
+            菜单组应用服务接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.GetGroupListAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取菜单组列表（含每组的菜单项数量）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.GetGroupAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取菜单组详情。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.CreateGroupAsync(Ginkgo.Application.Menus.CreateMenuGroupInput,System.Threading.CancellationToken)">
+            <summary>
+            创建菜单组。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.UpdateGroupAsync(System.Int64,Ginkgo.Application.Menus.UpdateMenuGroupInput,System.Threading.CancellationToken)">
+            <summary>
+            更新菜单组。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.DeleteGroupAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            删除菜单组（系统内置不可删除）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.GetItemTreeAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取指定菜单组下的菜单项树。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.GetItemAsync(System.Int64,System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取单个菜单组项详情。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.CreateItemAsync(System.Int64,Ginkgo.Application.Menus.CreateMenuGroupItemInput,System.Threading.CancellationToken)">
+            <summary>
+            创建菜单组项。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.UpdateItemAsync(System.Int64,System.Int64,Ginkgo.Application.Menus.UpdateMenuGroupItemInput,System.Threading.CancellationToken)">
+            <summary>
+            更新菜单组项。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.DeleteItemAsync(System.Int64,System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            删除菜单组项。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.BatchDeleteItemsAsync(System.Int64,System.Int64[],System.Threading.CancellationToken)">
+            <summary>
+            批量删除菜单组项。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.SortItemsAsync(System.Int64,System.Collections.Generic.List{Ginkgo.Application.Menus.MenuGroupItemSortInput},System.Threading.CancellationToken)">
+            <summary>
+            批量更新排序（拖拽排序）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.ImportFromSystemMenuAsync(System.Int64,System.Int64[],System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <summary>
+            从系统菜单导入到菜单组。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.GetNavigationAsync(System.String,System.Nullable{System.Int64},System.Threading.CancellationToken)">
+            <summary>
+            按 Slug 获取导航菜单（含权限过滤）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.GetRoleMenuGroupIdsAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取角色已授权的菜单组 Id 列表。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.IMenuGroupAppService.SetRoleMenuGroupsAsync(Ginkgo.Application.Menus.SetRoleMenuGroupsInput,System.Threading.CancellationToken)">
+            <summary>
+            设置角色的菜单组权限。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.MenuAppService">
+            <summary>
+            菜单应用服务实现。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.MenuAppService.#ctor(Ginkgo.Domain.IRepository{Ginkgo.Domain.Menus.Menu},Ginkgo.Domain.IRepository{Ginkgo.Domain.Roles.RolePermission})">
+            <summary>
+            构造函数。
+            </summary>
+            <param name="menuRepository">菜单仓储。</param>
+            <param name="rolePermRepository">角色-菜单授权关系仓储。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.MenuAppService.GetPagedAsync(Ginkgo.Shared.PageRequest,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Menus.MenuAppService.GetAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Menus.MenuAppService.CreateAsync(Ginkgo.Application.Menus.CreateMenuInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Menus.MenuAppService.UpdateAsync(System.Int64,Ginkgo.Application.Menus.UpdateMenuInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Menus.MenuAppService.DeleteAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Ginkgo.Application.Menus.MenuListItemDto">
+            <summary>
+            菜单列表项输出。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuListItemDto.Id">
+            <summary>
+            主键（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuListItemDto.Name">
+            <summary>
+            名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuListItemDto.Route">
+            <summary>
+            路由。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuListItemDto.Type">
+            <summary>
+            类型。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuListItemDto.Icon">
+            <summary>
+            图标。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.MenuDetailDto">
+            <summary>
+            菜单详情输出。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.Id">
+            <summary>
+            主键（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.Name">
+            <summary>
+            名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.Route">
+            <summary>
+            路由。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.Type">
+            <summary>
+            类型 (Directory/Item/Button)。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.ItemMode">
+            <summary>
+            打开方式(Tab/Link)。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.Icon">
+            <summary>
+            图标。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.Url">
+            <summary>
+            外部链接。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.ParentId">
+            <summary>
+            父级 Id（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.Order">
+            <summary>
+            排序。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuDetailDto.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.CreateMenuInput">
+            <summary>
+            菜单创建输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.CreateMenuInput.Name">
+            <summary>
+            名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.CreateMenuInput.Route">
+            <summary>
+            路由。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.CreateMenuInput.Type">
+            <summary>
+            类型。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.CreateMenuInput.ItemMode">
+            <summary>
+            打开方式（可空，仅 Type=Item 有效）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.CreateMenuInput.Icon">
+            <summary>
+            图标（可空）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.CreateMenuInput.Url">
+            <summary>
+            外部链接（可空，仅 Link 有效）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.CreateMenuInput.ParentId">
+            <summary>
+            父级 Id（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.UpdateMenuInput">
+            <summary>
+            菜单更新输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.UpdateMenuInput.Name">
+            <summary>
+            名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.UpdateMenuInput.Route">
+            <summary>
+            路由。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.UpdateMenuInput.Type">
+            <summary>
+            类型。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.UpdateMenuInput.ItemMode">
+            <summary>
+            打开方式。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.UpdateMenuInput.Icon">
+            <summary>
+            图标。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.UpdateMenuInput.Url">
+            <summary>
+            外部链接。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.UpdateMenuInput.Order">
+            <summary>
+            排序。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.UpdateMenuInput.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.MenuGroupAppService">
+            <summary>
+            菜单组应用服务实现。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Menus.MenuGroupAppService.BuildTree(System.Collections.Generic.List{Ginkgo.Application.Menus.MenuGroupItemDto})">
+            <summary>
+            平铺列表构建树形结构。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.MenuGroupListItemDto">
+            <summary>
+            菜单组列表项输出。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuGroupListItemDto.ItemCount">
+            <summary>
+            菜单组下菜单项数量。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.MenuGroupDetailDto">
+            <summary>
+            菜单组详情输出。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.CreateMenuGroupInput">
+            <summary>
+            创建菜单组输入。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.UpdateMenuGroupInput">
+            <summary>
+            更新菜单组输入。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.MenuGroupItemDto">
+            <summary>
+            菜单组项列表/树节点输出。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuGroupItemDto.RefMenuName">
+            <summary>
+            关联系统菜单名称（RefMenuId 非空时填充）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Menus.MenuGroupItemDto.Children">
+            <summary>
+            子菜单项列表（树形）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.CreateMenuGroupItemInput">
+            <summary>
+            创建菜单组项输入。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.UpdateMenuGroupItemInput">
+            <summary>
+            更新菜单组项输入。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.MenuGroupItemSortInput">
+            <summary>
+            批量排序输入项。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.NavigationMenuDto">
+            <summary>
+            导航菜单公开查询输出（按 Slug 查询，前端渲染用）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.NavigationItemDto">
+            <summary>
+            导航菜单项（前端渲染用，只包含展示所需字段）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Menus.SetRoleMenuGroupsInput">
+            <summary>
+            角色菜单组权限设置输入。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Messages.MessageAppService">
+            <summary>
+            消息通知应用服务。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.GetPagedListAsync(System.Int64,System.Int32,System.Int32,System.Nullable{System.Boolean},System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.GetDetailAsync(System.Int64,System.Int64,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.MarkAsReadAsync(System.Int64,System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.MarkAllAsReadAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.GetUnreadCountAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.CreateAsync(Ginkgo.Application.Messages.CreateMessageInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.ResolveRecipientIds(Ginkgo.Application.Messages.RecipientGroupInput,System.Threading.CancellationToken)">
+            <summary>
+            根据接收对象组的 Mode 解析实际用户 ID 列表。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.CreateMessagesForGroup(Ginkgo.Application.Messages.CreateMessageInput,System.Collections.Generic.List{System.Int64},System.String,System.Threading.CancellationToken)">
+            <summary>
+            为一组接收人批量创建消息及其附件和链接。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.GetAdminPagedListAsync(System.Int32,System.Int32,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.GetAdminStatsAsync(System.String,System.DateTime,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.GetAdminDetailAsync(System.String,System.DateTime,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Messages.MessageAppService.DeleteBatchAsync(System.String,System.DateTime,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Ginkgo.Application.Messages.PluginMessageService">
+            <summary>
+            IPluginMessageService 的实现，供插件模块发送系统消息。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Messages.RecipientGroupValidator">
+            <summary>
+            接收对象组校验器。
+            校验消息创建输入中主送和知会接收对象的合法性。
+            </summary>
+        </member>
+        <member name="F:Ginkgo.Application.Messages.RecipientGroupValidator.ValidModes">
+            <summary>
+            有效的接收方式集合。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Messages.RecipientGroupValidator.Validate(Ginkgo.Application.Messages.CreateMessageInput)">
+            <summary>
+            校验消息创建输入的接收对象规则。
+            <para>规则：</para>
+            <list type="number">
+              <item>Primary 必填且 Mode 必须是四种有效值之一</item>
+              <item>Cc 可选，若提供则 Mode 也必须是四种有效值之一</item>
+              <item>每组只能选一种 Mode（结构上已保证）</item>
+              <item>当 Mode 不是 all 时，Ids 不能为空</item>
+            </list>
+            </summary>
+            <param name="input">消息创建输入。</param>
+            <returns>校验结果元组，IsValid 为 true 表示通过，否则 Error 包含错误信息。</returns>
+        </member>
+        <member name="M:Ginkgo.Application.Messages.RecipientGroupValidator.ValidateGroup(Ginkgo.Application.Messages.RecipientGroupInput,System.String)">
+            <summary>
+            校验单个接收对象组的 Mode 和 Ids 规则。
+            </summary>
+            <param name="group">接收对象组输入。</param>
+            <param name="label">组标签（主送/知会），用于错误提示。</param>
+            <returns>校验结果元组。</returns>
+        </member>
+        <member name="T:Ginkgo.Application.Modules.IModuleRuntimeQuery">
+            <summary>
+            运行时模块查询端口（Application 层接口，避免直接依赖 API 层具体实现）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Modules.IModuleRuntimeQuery.IsLoaded(System.String)">
+            <summary>
+            判断模块在当前进程中是否已加载（依据运行时管理器）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Notifications.Converters.ContentTypeFlexibleConverter">
+            <summary>
+            兼容旧/新枚举与字符串：
+            - 数字 0(旧:Text)->1(新:Text)
+            - 数字 1(旧:Html)->2(新:Html)
+            - 数字 2(Markdown/Html)->2
+            - 字符串 "text"->1, "html"->2 (大小写不敏感)
+            - 其余数字/字符串将抛出格式异常
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Notifications.DefaultAudienceResolver">
+            <summary>
+            受众解析器（默认实现，扩展支持）：
+            - 支持 TargetType=0（用户ID列表）、1（角色ID列表）、2（部门ID列表）、3（表达式：ALL/* 表示所有用户）
+            - 解析为具体用户去重返回；快照字段（UserName/DeptId/RoleId）按需后续补全
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Roles.IRoleAppService">
+            <summary>
+            角色应用服务接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.GetPagedAsync(Ginkgo.Shared.PageRequest,System.String,System.Threading.CancellationToken)">
+            <summary>
+            分页查询角色。
+            </summary>
+            <param name="request">分页参数。</param>
+            <param name="keyword">关键字（可选）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.CreateAsync(Ginkgo.Application.Roles.CreateRoleInput,System.Threading.CancellationToken)">
+            <summary>
+            创建角色。
+            </summary>
+            <param name="input">创建输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.UpdateAsync(System.Int64,Ginkgo.Application.Roles.UpdateRoleInput,System.Threading.CancellationToken)">
+            <summary>
+            更新角色。
+            </summary>
+            <param name="id">角色 Id（Snowflake ID）。</param>
+            <param name="input">更新输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.DeleteAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            删除角色。
+            </summary>
+            <param name="id">角色 Id（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.GetAllPermissionsAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取全部权限（用于分配）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.GetRolePermissionIdsAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取某角色的权限 Id 列表。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.SaveRolePermissionsAsync(System.Int64,System.Collections.Generic.IEnumerable{System.Int64},System.Threading.CancellationToken)">
+            <summary>
+            保存角色权限。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.GetPermissionTreeAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取基于菜单的权限树（目录/菜单项/按钮）。
+            叶子节点（或带权限码的节点）会携带 PermissionId 以供分配。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.GetRoleTreeAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取角色树（支持上/下级）。
+            简化实现：以 Code 或 Name 的层级约定构造树；若数据库后续新增 ParentId，可改为真实父子关系。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.GetAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            根据 Id 获取角色详情（用于编辑对话框回显）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.GetDataScopeAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取角色数据范围设置（策略 + 指定部门列表）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.IRoleAppService.SetDataScopeAsync(System.Int64,Ginkgo.Application.Roles.SetRoleDataScopeInput,System.Threading.CancellationToken)">
+            <summary>
+            设置角色数据范围（当策略为 SpecifiedDepartments 时需要提供部门列表）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Roles.RoleAppService">
+            <summary>
+            角色应用服务实现（占位）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.#ctor(Ginkgo.Domain.IRepository{Ginkgo.Domain.Roles.Role},Ginkgo.Domain.IRepository{Ginkgo.Domain.Permissions.Permission},Ginkgo.Domain.IRepository{Ginkgo.Domain.Roles.RolePermission},Ginkgo.Domain.IRepository{Ginkgo.Domain.Menus.Menu},Ginkgo.Domain.Roles.IRoleDataScopeService,Ginkgo.Domain.Roles.IRoleRepository,Ginkgo.Domain.Roles.IRolePermissionRepository,Ginkgo.Domain.Menus.IMenuRepository,Ginkgo.Domain.Permissions.IPermissionRepository)">
+            <summary>
+            构造函数。
+            </summary>
+            <param name="roleRepository">角色仓储。</param>
+            <param name="permissionRepository">权限仓储。</param>
+            <param name="rolePermissionRepository">角色-权限关系仓储。</param>
+            <param name="menuRepository">菜单仓储。</param>
+            <param name="roleDataScopeService">角色数据范围领域服务。</param>
+            <param name="roleRepoEx">角色仓储（查询/分页专用）。</param>
+            <param name="rolePermRepoEx">角色-权限关系仓储（替换式保存）。</param>
+            <param name="menuRepoEx">菜单仓储（用于权限树构建）。</param>
+            <param name="permRepoEx">权限仓储（用于权限列表）。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.GetPagedAsync(Ginkgo.Shared.PageRequest,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.CreateAsync(Ginkgo.Application.Roles.CreateRoleInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.UpdateAsync(System.Int64,Ginkgo.Application.Roles.UpdateRoleInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.DeleteAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.GetAllPermissionsAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.GetRolePermissionIdsAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.SaveRolePermissionsAsync(System.Int64,System.Collections.Generic.IEnumerable{System.Int64},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.GetPermissionTreeAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.GetRoleTreeAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.GetAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.GetDataScopeAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取角色数据范围设置（策略 + 指定部门列表）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Roles.RoleAppService.SetDataScopeAsync(System.Int64,Ginkgo.Application.Roles.SetRoleDataScopeInput,System.Threading.CancellationToken)">
+            <summary>
+            设置角色数据范围（当策略为 SpecifiedDepartments 时需要提供部门列表）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Roles.RoleListItemDto">
+            <summary>
+            角色列表项输出。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.RoleListItemDto.Id">
+            <summary>主键（Snowflake ID）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.RoleListItemDto.Name">
+            <summary>名称。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.RoleListItemDto.Code">
+            <summary>编码。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.RoleListItemDto.Enabled">
+            <summary>是否启用。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.RoleListItemDto.DataScope">
+            <summary>数据范围策略（枚举名：All/OwnOnly/DepartmentOnly/DepartmentAndChildren/SpecifiedDepartments/Custom）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.RoleListItemDto.AllowedClients">
+            <summary>允许登录的客户端列表（逗号分隔），NULL=不限制。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.RoleListItemDto.IsSuperAdmin">
+            <summary>是否为超级管理员角色。</summary>
+        </member>
+        <member name="T:Ginkgo.Application.Roles.RoleDetailDto">
+            <summary>
+            角色详情输出（用于编辑回显）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Roles.CreateRoleInput">
+            <summary>
+            角色创建输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.CreateRoleInput.Name">
+            <summary>名称。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.CreateRoleInput.Code">
+            <summary>编码。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.CreateRoleInput.Enabled">
+            <summary>是否启用。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.CreateRoleInput.ParentId">
+            <summary>上级角色 Id（可空；不选即顶级）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.CreateRoleInput.DataScope">
+            <summary>数据范围策略。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.CreateRoleInput.AllowedClients">
+            <summary>允许登录的客户端列表（逗号分隔），NULL=不限制。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.CreateRoleInput.IsSuperAdmin">
+            <summary>是否为超级管理员角色。</summary>
+        </member>
+        <member name="T:Ginkgo.Application.Roles.UpdateRoleInput">
+            <summary>
+            角色更新输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.UpdateRoleInput.Name">
+            <summary>名称。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.UpdateRoleInput.Code">
+            <summary>编码。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.UpdateRoleInput.Enabled">
+            <summary>是否启用。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.UpdateRoleInput.ParentId">
+            <summary>上级角色 Id（可空；不选即顶级）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.UpdateRoleInput.DataScope">
+            <summary>数据范围策略。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.UpdateRoleInput.AllowedClients">
+            <summary>允许登录的客户端列表（逗号分隔），NULL=不限制。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.UpdateRoleInput.IsSuperAdmin">
+            <summary>是否为超级管理员角色。</summary>
+        </member>
+        <member name="T:Ginkgo.Application.Roles.RoleDataScopeDto">
+            <summary>
+            角色数据范围详情输出。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.RoleDataScopeDto.DataScope">
+            <summary>数据范围策略（枚举名：All/OwnOnly/DepartmentOnly/DepartmentAndChildren/SpecifiedDepartments/Custom）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.RoleDataScopeDto.DepartmentIds">
+            <summary>指定部门 Id 列表（当 DataScope=SpecifiedDepartments 时有效）。</summary>
+        </member>
+        <member name="T:Ginkgo.Application.Roles.SetRoleDataScopeInput">
+            <summary>
+            设置角色数据范围输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.SetRoleDataScopeInput.DataScope">
+            <summary>数据范围策略（与 DataScopeType 枚举名一致）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Roles.SetRoleDataScopeInput.DepartmentIds">
+            <summary>指定部门 Id 列表（当 DataScope=SpecifiedDepartments 时必填）。</summary>
+        </member>
+        <member name="T:Ginkgo.Application.Scheduling.IScheduledTaskAppService">
+            <summary>
+            定时任务应用服务接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.GetAllTasksAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取所有任务列表。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.GetTaskByKeyAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            获取单个任务详情。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.UpdateTaskAsync(System.String,Ginkgo.Application.Scheduling.UpdateScheduledTaskInput,System.Threading.CancellationToken)">
+            <summary>
+            更新任务配置（启禁用/Cron/描述）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.TriggerTaskAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            手动触发任务执行。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.GetTaskLogsAsync(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            分页查询指定任务的执行日志。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.CreateDynamicTaskAsync(Ginkgo.Application.Scheduling.CreateDynamicTaskInput,System.Threading.CancellationToken)">
+            <summary>
+            创建动态任务。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.DeleteDynamicTaskAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            删除动态任务。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.GetExecutionProviders">
+            <summary>
+            获取所有执行提供器列表（前端新增弹窗使用）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.GetInvocableActions">
+            <summary>
+            获取所有可调用动作列表（前端能力选择器使用）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Scheduling.IScheduledTaskAppService.TestExecuteAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            测试执行（不保存任务，仅验证并试运行）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Scheduling.ScheduledTaskAppService">
+            <summary>
+            定时任务应用服务实现。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Scheduling.ScheduledTaskItemDto">
+            <summary>
+            定时任务列表项。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Scheduling.UpdateScheduledTaskInput">
+            <summary>
+            更新任务配置输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.UpdateScheduledTaskInput.IsEnabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.UpdateScheduledTaskInput.CronExpression">
+            <summary>
+            Cron 表达式。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.UpdateScheduledTaskInput.Description">
+            <summary>
+            任务描述。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Scheduling.ScheduledTaskLogItemDto">
+            <summary>
+            任务执行日志列表项。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Scheduling.CreateDynamicTaskInput">
+            <summary>
+            创建动态任务输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.CreateDynamicTaskInput.DisplayName">
+            <summary>
+            任务显示名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.CreateDynamicTaskInput.Group">
+            <summary>
+            分组。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.CreateDynamicTaskInput.CronExpression">
+            <summary>
+            Cron 表达式。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.CreateDynamicTaskInput.Description">
+            <summary>
+            描述。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.CreateDynamicTaskInput.IsEnabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.CreateDynamicTaskInput.ExecutionSource">
+            <summary>
+            执行源标识（对应 ITaskExecutionProvider.SourceKey，如 Action/Http/Sql）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Scheduling.CreateDynamicTaskInput.ConfigJson">
+            <summary>
+            执行配置 JSON。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Scheduling.ExecutionProviderDto">
+            <summary>
+            执行提供器信息（返回给前端用于渲染新增弹窗）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Scheduling.InvocableActionDto">
+            <summary>
+            可调用动作信息（返回给前端用于能力选择器）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Scheduling.ActionExecutionResultDto">
+            <summary>
+            执行结果 DTO（测试执行返回）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Settings.SettingDto">
+            <summary>
+            
+            系统配置 DTO。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Settings.SettingsAppService">
+            <summary>
+            
+              (DDD)
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.IUserAppService">
+            <summary>
+            用户应用服务接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.GetPagedAsync(Ginkgo.Shared.PageRequest,System.String,System.Threading.CancellationToken)">
+            <summary>
+            分页查询用户。
+            </summary>
+            <param name="request">分页参数。</param>
+            <param name="keyword">关键字（可选）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.SearchPagedAsync(Ginkgo.Shared.PageRequest,System.Collections.Generic.IDictionary{System.String,System.Object},System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            分页查询（统一过滤器 + 关联条件）。
+            </summary>
+            <param name="request">分页参数。</param>
+            <param name="filters">筛选条件（包含 relations）。</param>
+            <param name="sortField">排序字段。</param>
+            <param name="sortOrder">排序方向（ascending/descending）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.GetAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取用户详情。
+            </summary>
+            <param name="id">用户 Id（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.CreateAsync(Ginkgo.Application.Users.CreateUserInput,System.Threading.CancellationToken)">
+            <summary>
+            创建用户。
+            </summary>
+            <param name="input">创建输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.RegisterAsync(Ginkgo.Application.Users.RegisterInput,System.Threading.CancellationToken)">
+            <summary>
+            前台注册（公开入口）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.CheckAccountContactAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            检查账户的联系方式（邮箱/手机），用于找回密码前判断可用渠道。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.ForgotPasswordStartAsync(Ginkgo.Application.Users.ForgotPasswordStartInput,System.Threading.CancellationToken)">
+            <summary>
+            发起找回密码（发送6位验证码）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.ForgotPasswordResetAsync(Ginkgo.Application.Users.ForgotPasswordResetInput,System.Threading.CancellationToken)">
+            <summary>
+            完成找回密码（持验证码设置新密码）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.UpdateAsync(System.Int64,Ginkgo.Application.Users.UpdateUserInput,System.Threading.CancellationToken)">
+            <summary>
+            更新用户。
+            </summary>
+            <param name="id">用户 Id（Snowflake ID）。</param>
+            <param name="input">更新输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.DeleteAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            删除用户。
+            </summary>
+            <param name="id">用户 Id（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Application.Users.IUserAppService.ChangePasswordAsync(System.Int64,Ginkgo.Application.Users.ChangePasswordInput,System.Threading.CancellationToken,System.Boolean)">
+            <summary>
+            修改密码。
+            </summary>
+            <param name="id">用户 Id（Snowflake ID）。</param>
+            <param name="input">修改密码输入。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="T:Ginkgo.Application.Users.UserAppService">
+            <summary>
+            用户应用服务实现（占位）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.#ctor(Ginkgo.Domain.IRepository{Ginkgo.Domain.Users.User},Ginkgo.Domain.Users.IUserRepository,Ginkgo.Domain.Users.IUserRoleRepository,Ginkgo.Domain.Users.IUserDepartmentRepository,Ginkgo.Domain.Users.IPasswordHasher,Ginkgo.Domain.IRepository{Ginkgo.Domain.Roles.Role},Ginkgo.Domain.IRepository{Ginkgo.Domain.Departments.Department},Ginkgo.ServerToolkit.ICurrentUser,Ginkgo.ServerToolkit.ISecondaryVerificationService,Ginkgo.Domain.Events.IDomainEventPublisher)">
+            <summary>
+            构造函数。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.GetPagedAsync(Ginkgo.Shared.PageRequest,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.SearchPagedAsync(Ginkgo.Shared.PageRequest,System.Collections.Generic.IDictionary{System.String,System.Object},System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.GetAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.CreateAsync(Ginkgo.Application.Users.CreateUserInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.UpdateAsync(System.Int64,Ginkgo.Application.Users.UpdateUserInput,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.DeleteAsync(System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.ChangePasswordAsync(System.Int64,Ginkgo.Application.Users.ChangePasswordInput,System.Threading.CancellationToken,System.Boolean)">
+            <summary>
+            修改密码：验证旧密码后设置新密码。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.RegisterAsync(Ginkgo.Application.Users.RegisterInput,System.Threading.CancellationToken)">
+            <summary>
+            前台注册（公开入口）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.CheckAccountContactAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            检查账户的联系方式，返回脱敏后的邮箱/手机信息。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.ForgotPasswordStartAsync(Ginkgo.Application.Users.ForgotPasswordStartInput,System.Threading.CancellationToken)">
+            <summary>
+            发起找回密码：通过统一验证码服务向邮箱/手机发送6位数字验证码。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.ForgotPasswordResetAsync(Ginkgo.Application.Users.ForgotPasswordResetInput,System.Threading.CancellationToken)">
+            <summary>
+            完成找回密码：通过统一验证码服务校验验证码并设置新密码。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.GenerateNumericCode(System.Int32)">
+            <summary>
+            生成指定位数的纯数字验证码。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.MaskEmail(System.String)">
+            <summary>
+            邮箱脱敏：e***@g***.com
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Application.Users.UserAppService.MaskPhone(System.String)">
+            <summary>
+            手机号脱敏：138****5678
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.UserListItemDto">
+            <summary>
+            用户列表项输出。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserListItemDto.Id">
+            <summary>
+            主键（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserListItemDto.UserName">
+            <summary>
+            用户名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserListItemDto.DisplayName">
+            <summary>
+            显示名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserListItemDto.Email">
+            <summary>
+            邮箱。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserListItemDto.Phone">
+            <summary>
+            手机号。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserListItemDto.DepartmentNames">
+            <summary>
+            部门名称集合（列表展示用）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserListItemDto.RoleNames">
+            <summary>
+            角色名称集合（列表展示用）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserListItemDto.CreatedAt">
+            <summary>
+            创建时间（UTC）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserListItemDto.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.UserDetailDto">
+            <summary>
+            用户详情输出。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserDetailDto.Id">
+            <summary>
+            主键（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserDetailDto.UserName">
+            <summary>
+            用户名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserDetailDto.DisplayName">
+            <summary>
+            显示名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserDetailDto.Avatar">
+            <summary>
+            头像（文件路径或URL）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserDetailDto.Introduction">
+            <summary>
+            个人介绍。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserDetailDto.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserDetailDto.Email">
+            <summary>
+            邮箱。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UserDetailDto.Phone">
+            <summary>
+            手机号。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.CreateUserInput">
+            <summary>
+            用户创建输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CreateUserInput.UserName">
+            <summary>
+            用户名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CreateUserInput.DisplayName">
+            <summary>
+            显示名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CreateUserInput.Password">
+            <summary>
+            密码。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CreateUserInput.Email">
+            <summary>
+            邮箱。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CreateUserInput.Phone">
+            <summary>
+            手机号。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.UpdateUserInput">
+            <summary>
+            用户更新输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UpdateUserInput.DisplayName">
+            <summary>
+            显示名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UpdateUserInput.Avatar">
+            <summary>
+            头像（文件路径或URL）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UpdateUserInput.Introduction">
+            <summary>
+            个人介绍。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UpdateUserInput.Email">
+            <summary>
+            邮箱。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UpdateUserInput.Phone">
+            <summary>
+            手机号。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.UpdateUserInput.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.ChangePasswordInput">
+            <summary>
+            修改密码输入。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.ResetPasswordInput">
+            <summary>
+            管理员重置密码输入。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.RegisterInput">
+            <summary>
+            用户注册输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.RegisterInput.UserName">
+            <summary>用户名（邮箱/手机注册模式下可为空，后端自动用邮箱或手机号填充）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.RegisterInput.DisplayName">
+            <summary>显示名（可为空，后端自动用 UserName 填充）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.RegisterInput.EmailCode">
+            <summary>邮箱验证码（邮箱+验证码模式时必填）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.RegisterInput.PhoneCode">
+            <summary>手机验证码（手机+验证码模式时必填）。</summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.CheckAccountContactOutput">
+            <summary>
+            检查账户联系方式输出。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CheckAccountContactOutput.Found">
+            <summary>是否找到该账户。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CheckAccountContactOutput.HasEmail">
+            <summary>是否有绑定邮箱。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CheckAccountContactOutput.HasPhone">
+            <summary>是否有绑定手机。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CheckAccountContactOutput.MaskedEmail">
+            <summary>脱敏后的邮箱（如 e***@g***.com）。</summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.CheckAccountContactOutput.MaskedPhone">
+            <summary>脱敏后的手机号（如 138****5678）。</summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.ForgotPasswordStartInput">
+            <summary>
+            发起找回密码输入。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.ForgotPasswordStartInput.Account">
+            <summary>
+            邮箱（优先）或用户名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.ForgotPasswordStartInput.Channel">
+            <summary>
+            发送渠道：email / phone。默认 email。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Application.Users.ForgotPasswordResetInput">
+            <summary>
+            完成找回密码输入（使用6位验证码）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.ForgotPasswordResetInput.Account">
+            <summary>
+            发起找回密码时使用的账号（邮箱或用户名）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Application.Users.ForgotPasswordResetInput.Token">
+            <summary>
+            用户输入的6位验证码。
+            </summary>
+        </member>
+    </members>
+</doc>
