@@ -1570,7 +1570,7 @@ VALUES ('FeatureFlags.ConfigCenter', 'true', 'Bool', '启用系统配置中心�
 
 -- Registration 注册配置
 INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Registration.Enabled', 'false', 'Bool', '启用用户注册', 1, '2025-08-10 08:45:05.787186', NULL, NULL, 500000000000024);
+VALUES ('Registration.Enabled', 'true', 'Bool', '启用用户注册', 1, '2025-08-10 08:45:05.787186', NULL, NULL, 500000000000024);
 
 INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
 VALUES ('Registration.RequireCaptcha', 'true', 'Bool', '注册需要验证码', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 500000000000025);

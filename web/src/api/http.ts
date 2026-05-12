@@ -177,9 +177,14 @@ http.interceptors.response.use((resp) => {
       if (isPluginStoreProxyRequest(resp.config)) {
         return Promise.reject(new Error(appMessage || '插件商店操作未获授权'))
       }
-      if (shouldStartUnauthorizedFlow()) {
-        handleUnauthorized(appMessage || '未登录或没有权限')
+      if (appCode === 401 && shouldStartUnauthorizedFlow()) {
+        handleUnauthorized(appMessage || '未登录或登录已过期')
         return createUnauthorizedPendingPromise()
+      }
+      // 403 只提示无权限，不清 token 也不跳登录页
+      if (appCode === 403) {
+        try { ElMessage.error(appMessage || '没有权限执行此操作') } catch { }
+        return Promise.reject(new Error(appMessage || '没有权限执行此操作'))
       }
       return Promise.reject(new Error(appMessage || '未登录或没有权限'))
     }
@@ -220,11 +225,10 @@ http.interceptors.response.use((resp) => {
     }
     return Promise.reject(error)
   } else if (resp?.status === 403) {
-    if (shouldStartUnauthorizedFlow()) {
-      handleUnauthorized(extractErrorMessage(resp?.data) || '没有权限访问该资源')
-      return createUnauthorizedPendingPromise()
-    }
-    return Promise.reject(error)
+    // 403 只提示无权限，不清 token 也不跳登录页
+    const bizMsg = extractErrorMessage(resp?.data) || '没有权限执行此操作'
+    try { ElMessage.error(bizMsg) } catch { }
+    return Promise.reject(new Error(bizMsg))
   }
 
   // 非 401/403：提取后端 message 作为错误信息

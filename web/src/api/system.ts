@@ -61,8 +61,9 @@ export async function getPublicConfig(): Promise<PublicSystemConfig> {
 		favicon: resolveResourcePath(map.get('Site.Branding.Favicon') || ''),
 		welcomeText: map.get('Site.Login.WelcomeText') || '',
 		footerText: map.get('Site.Footer.Text') || '',
-		registrationEnabled: (map.get('Registration.Enabled') || 'true').toLowerCase() === 'true',
+		// registrationEnabled 直接从 registrationMode 推导，避免两个字段初始值不一致导致的逻辑冲突
 		registrationMode: map.get('Registration.Mode') || 'free',
+		registrationEnabled: (map.get('Registration.Mode') || 'free') !== 'disabled',
 		loginMethods: (() => { try { return JSON.parse(map.get('Registration.LoginMethods') || '["password"]') } catch { return ['password'] } })(),
 		loginCaptchaEnabled: (map.get('Registration.LoginCaptcha') || 'true').toLowerCase() === 'true',
 		// 通知音频配置

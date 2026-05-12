@@ -62,10 +62,9 @@ public sealed class CreateRoleInput
     [MaxLength(64)]
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>编码。</summary>
-    [Required]
+    /// <summary>编码（可选）。</summary>
     [MaxLength(64)]
-    public string Code { get; set; } = string.Empty;
+    public string? Code { get; set; }
 
     /// <summary>是否启用。</summary>
     public bool Enabled { get; set; } = true;
@@ -95,10 +94,9 @@ public sealed class UpdateRoleInput
     [MaxLength(64)]
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>编码。</summary>
-    [Required]
+    /// <summary>编码（可选）。</summary>
     [MaxLength(64)]
-    public string Code { get; set; } = string.Empty;
+    public string? Code { get; set; }
 
     /// <summary>是否启用。</summary>
     public bool Enabled { get; set; }

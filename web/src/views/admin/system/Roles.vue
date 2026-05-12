@@ -160,11 +160,13 @@
                 :data="permissionTree"
                 node-key="id"
                 show-checkbox
+                check-strictly
                 default-expand-all
                 :default-checked-keys="checkedPermIds"
                 :filter-node-method="filterPermissionNode"
                 :props="{ label: 'name', children: 'children' }"
                 class="perm-tree"
+                @check="onPermCheck"
               >
                 <template #default="{ data }">
                   <div class="perm-node-content">
@@ -359,6 +361,47 @@ async function loadPermissions(roleId: string) {
 
 function filterPermissionNode(keyword: string, data: PermissionTreeNode) {
   return matchesSearchableTreeNodeDeep(data, keyword)
+}
+
+/**
+ * 权限树勾选联动：
+ * - 勾选节点时，自动向上勾选所有祖先（保证一级菜单/目录在有子权限时必选）
+ * - 取消节点时，自动向下取消所有后代（避免子节点已选但父节点未选的矛盾状态）
+ * - 父节点可以独立勾选（不依赖子节点）
+ */
+function onPermCheck(
+  data: PermissionTreeNode,
+  { checkedKeys }: { checkedKeys: string[]; checkedNodes: PermissionTreeNode[]; halfCheckedKeys: string[]; halfCheckedNodes: PermissionTreeNode[] }
+) {
+  const checkedSet = new Set<string>(checkedKeys)
+  if (checkedSet.has(data.id)) {
+    // 勾选：向上自动勾选所有祖先节点
+    permCheckAncestors(permissionTree.value, data.id, checkedSet)
+  } else {
+    // 取消：向下自动取消所有后代节点
+    permUncheckDescendants(data, checkedSet)
+  }
+  permTreeRef.value?.setCheckedKeys([...checkedSet])
+}
+
+/** 找到 targetId 的所有祖先链并全部加入 checkedSet；返回是否在当前层找到 targetId */
+function permCheckAncestors(nodes: PermissionTreeNode[], targetId: string, checkedSet: Set<string>): boolean {
+  for (const node of nodes) {
+    if (node.id === targetId) return true
+    if (node.children?.length && permCheckAncestors(node.children, targetId, checkedSet)) {
+      checkedSet.add(node.id)
+      return true
+    }
+  }
+  return false
+}
+
+/** 递归取消 node 下所有后代节点 */
+function permUncheckDescendants(node: PermissionTreeNode, checkedSet: Set<string>) {
+  node.children?.forEach(child => {
+    checkedSet.delete(child.id)
+    permUncheckDescendants(child, checkedSet)
+  })
 }
 
 watch(permissionKeyword, value => {

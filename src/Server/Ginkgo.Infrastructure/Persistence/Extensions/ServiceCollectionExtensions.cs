@@ -61,9 +61,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SlowQueryReporter>();
         services.AddHostedService<SlowQueryHostedService>();
 
-        // ISqlSugarClient 改为 Singleton：SqlSugar 内部线程安全（IsAutoCloseConnection=true 保证连接自动释放）。
-        // 原 Scoped 注册会导致 TenantDbRouter（Singleton）无法在构造函数注入，触发 DI scope validation 错误。
-        services.AddSingleton<ISqlSugarClient>(sp =>
+        // TenantConnectionStore（Singleton）：跨请求持久化动态注册的多库连接配置。
+        // TenantDbRouter（Scoped）在 RegisterConnection 时写入；ISqlSugarClient（Scoped）工厂在创建时读取并附加。
+        services.AddSingleton<Ginkgo.Infrastructure.Persistence.Features.TenantConnectionStore>();
+
+        // ISqlSugarClient 恢复为 Scoped：每请求独立实例，ISqlSugarConfigurator（含 TenantSqlSugarConfigurator）
+        // 可在 Scoped 工厂中正常解析；后台服务须通过 IServiceScopeFactory.CreateScope() 使用。
+        services.AddScoped<ISqlSugarClient>(sp =>
         {
             var cfg = sp.GetRequiredService<IConfiguration>();
             var logger = sp.GetService<ILogger<SqlSugarClient>>();
@@ -144,6 +148,18 @@ public static class ServiceCollectionExtensions
             ApplySaasMultiDb(client, features.SaasMultiDb, dbType, logger);          // P2.2 ✅ Stage C
             ApplySplitTable(client, features.SplitTable, logger);                  // P2.1 ✅ Stage C
             ApplyReportable(features.Reportable, logger);                          // P2.3（C 阶段填充：纯文档语义）
+
+            // ===== 动态连接恢复：从 TenantConnectionStore 附加跨请求持久化的租户连接 =====
+            // 模块 OnLoadAsync 调用 RegisterConnection 时会同时写 Store 和当前 Scoped 客户端；
+            // 后续新建的 Scoped 客户端在这里读取 Store 快照，确保动态连接跨请求可用。
+            var connStore = sp.GetService<Ginkgo.Infrastructure.Persistence.Features.TenantConnectionStore>();
+            if (connStore != null)
+            {
+                foreach (var extraConn in connStore.GetAllConfigs())
+                {
+                    client.AsTenant().AddConnection(extraConn);
+                }
+            }
 
             // ===== 模块扩展点：ISqlSugarConfigurator =====
             // 收集所有模块注册的 SqlSugar 配置器，按 Order 排序后依次调用。
@@ -446,9 +462,9 @@ public static class ServiceCollectionExtensions
             Ginkgo.Infrastructure.Persistence.Features.SplitTableContext>();
 
         // SaaS 多库路由器（由 Database.Features.SaasMultiDb 控制；P2.2 Stage C）
-        // 注意：TenantDbRouter 需要在运行时动态注入租户连接，必须按 Singleton 注册，
-        // 否则每个 Scope 都会重建并丢失已经注册过的连接列表。
-        services.AddSingleton<Ginkgo.Infrastructure.Abstractions.ITenantDbRouter,
+        // 注册为 Scoped：每请求独立实例，安全注入 Scoped 的 ISqlSugarClient。
+        // 动态注册连接由单例 TenantConnectionStore 跨请求持久化，ISqlSugarClient 工厂会自动从 Store 恢复。
+        services.AddScoped<Ginkgo.Infrastructure.Abstractions.ITenantDbRouter,
             Ginkgo.Infrastructure.Persistence.Features.TenantDbRouter>();
 
         // 敏感字段保护器（AES-256-GCM）。租户连接串、第三方密钥等需要密文落库的场景统一使用。

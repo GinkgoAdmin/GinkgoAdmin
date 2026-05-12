@@ -99,7 +99,7 @@ public sealed class RoleAppService : IRoleAppService
         var entity = new Role
         {
             Name = input.Name.Trim(),
-            Code = input.Code.Trim(),
+            Code = string.IsNullOrWhiteSpace(input.Code) ? string.Empty : input.Code.Trim(),
             Enabled = input.Enabled,
             ParentId = input.ParentId,
             AllowedClients = string.IsNullOrWhiteSpace(input.AllowedClients) ? null : input.AllowedClients.Trim(),
@@ -116,7 +116,7 @@ public sealed class RoleAppService : IRoleAppService
         var entity = await _roleRepository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return;
         entity.Name = input.Name.Trim();
-        entity.Code = string.IsNullOrWhiteSpace(input.Code) ? entity.Code : input.Code.Trim();
+        entity.Code = string.IsNullOrWhiteSpace(input.Code) ? string.Empty : input.Code.Trim();
         entity.Enabled = input.Enabled;
         entity.ParentId = input.ParentId;
         entity.AllowedClients = string.IsNullOrWhiteSpace(input.AllowedClients) ? null : input.AllowedClients.Trim();
