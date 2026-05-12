@@ -61,7 +61,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SlowQueryReporter>();
         services.AddHostedService<SlowQueryHostedService>();
 
-        services.AddScoped<ISqlSugarClient>(sp =>
+        // ISqlSugarClient 改为 Singleton：SqlSugar 内部线程安全（IsAutoCloseConnection=true 保证连接自动释放）。
+        // 原 Scoped 注册会导致 TenantDbRouter（Singleton）无法在构造函数注入，触发 DI scope validation 错误。
+        services.AddSingleton<ISqlSugarClient>(sp =>
         {
             var cfg = sp.GetRequiredService<IConfiguration>();
             var logger = sp.GetService<ILogger<SqlSugarClient>>();
