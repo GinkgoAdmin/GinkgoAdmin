@@ -839,12 +839,31 @@ public sealed class ModulePackageService
             }
         }
 
-        // 2. 回退：基于模块名称查找（去掉 Ginkgo.Module. 前缀后转小写）
-        var shortName = moduleId.Replace("Ginkgo.Module.", "", StringComparison.OrdinalIgnoreCase).ToLowerInvariant();
+        // 2. 回退：基于模块名称查找（去掉 Ginkgo.Module. 前缀后转小写，例如 ResourceMonitor → resourcemonitor）
+        var rawShortName = moduleId.Replace("Ginkgo.Module.", "", StringComparison.OrdinalIgnoreCase);
+        var shortName = rawShortName.ToLowerInvariant();
         var fallbackDir = Path.Combine(pluginsBase, shortName);
         if (Directory.Exists(fallbackDir)) return fallbackDir;
 
+        // 3. 回退：PascalCase → kebab-case（例如 ResourceMonitor → resource-monitor）
+        //    注意：必须用未转小写的 rawShortName 进行转换，才能识别大写边界
+        var kebabName = PascalToKebab(rawShortName);
+        if (!string.Equals(kebabName, shortName, StringComparison.Ordinal))
+        {
+            var kebabDir = Path.Combine(pluginsBase, kebabName);
+            if (Directory.Exists(kebabDir)) return kebabDir;
+        }
+
         return null;
+    }
+
+    /// <summary>
+    /// 将 PascalCase 字符串转换为 kebab-case（例如 ResourceMonitor → resource-monitor）
+    /// </summary>
+    private static string PascalToKebab(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return input;
+        return System.Text.RegularExpressions.Regex.Replace(input, @"([a-z])([A-Z])", "$1-$2").ToLowerInvariant();
     }
 
     /// <summary>

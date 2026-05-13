@@ -2826,15 +2826,24 @@ const handleSaveConfig = async () => {
       return
     }
     ElMessage.success(result.message || '保存成功')
+    showConfigDialog.value = false
 
-    // 开发模式：关闭配置弹窗，进入「重启服务」全屏进度流程，配置变更需要重启才能被后端重新读取
-    if (envInfo.value?.isDevelopment) {
-      showConfigDialog.value = false
+    // 询问用户是否立即重启服务使配置生效
+    try {
+      await ElMessageBox.confirm(
+        '配置已保存。修改的配置需要重启后端服务才能完全生效，是否立即重启？',
+        '需要重启服务',
+        {
+          type: 'warning',
+          confirmButtonText: '立即重启',
+          cancelButtonText: '稍后重启',
+          dangerouslyUseHTMLString: false
+        }
+      )
+      // 用户选择立即重启
       await executeRestartProcess()
-    } else {
-      // 生产模式：提示用户需要手动重启服务
-      showConfigDialog.value = false
-      await showRestartRequiredNotice('配置更新')
+    } catch {
+      // 用户选择稍后重启，不做任何操作
     }
   } catch (error: unknown) {
     ElMessage.error(`保存配置失败: ${error instanceof Error ? error.message : '保存失败'}`)
@@ -2857,14 +2866,24 @@ const handleResetConfig = async () => {
     }
     ElMessage.success(result.message || '已恢复默认')
     await loadConfigData()
+    showConfigDialog.value = false
 
-    // 与 handleSaveConfig 保持一致：开发模式走重启流程，生产模式提示
-    if (envInfo.value?.isDevelopment) {
-      showConfigDialog.value = false
+    // 询问用户是否立即重启服务使配置生效
+    try {
+      await ElMessageBox.confirm(
+        '配置已恢复为默认值。修改的配置需要重启后端服务才能完全生效，是否立即重启？',
+        '需要重启服务',
+        {
+          type: 'warning',
+          confirmButtonText: '立即重启',
+          cancelButtonText: '稍后重启',
+          dangerouslyUseHTMLString: false
+        }
+      )
+      // 用户选择立即重启
       await executeRestartProcess()
-    } else {
-      showConfigDialog.value = false
-      await showRestartRequiredNotice('配置恢复默认')
+    } catch {
+      // 用户选择稍后重启，不做任何操作
     }
   } catch (error: unknown) {
     ElMessage.error(`恢复默认失败: ${error instanceof Error ? error.message : '操作失败'}`)

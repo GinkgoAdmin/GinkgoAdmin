@@ -100,14 +100,15 @@ function main() {
     return
   }
 
-  // 安装缺失的依赖（使用 --no-save 不污染主框架 package.json）
+  // 安装缺失的依赖
+  // 注意：pnpm 和 yarn 均不支持 --no-save，只有 npm 原生支持。
+  // 在 CI 环境中对 package.json 的临时修改不会被提交，因此对 pnpm/yarn 直接执行 add 即可。
   const pm = detectPackageManager()
   const specs = missingDeps.join(' ')
-  // pnpm / yarn / npm 均支持 --no-save（或等价写法）以避免修改 package.json
   const installCmd = pm === 'pnpm'
-    ? `pnpm add ${specs} --no-save`
+    ? `pnpm add ${specs}`
     : pm === 'yarn'
-      ? `yarn add ${specs} --no-save`
+      ? `yarn add ${specs}`
       : `npm install ${specs} --no-save`
 
   console.log(`[install-plugin-deps] 使用 ${pm} 安装 ${missingDeps.length} 个插件依赖: ${specs}`)

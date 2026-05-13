@@ -628,16 +628,11 @@ public sealed class ModulesController : ControllerBase
             return BadRequest(new { ok = false, message = $"保存失败: {ex.Message}" });
         }
 
-        // 触发热重载
-        var disabled = await _hot.DisableAsync(req.ModuleId, ct);
-        var enabled = await _hot.EnableAsync(req.ModuleId, ct);
-        var ok = disabled && enabled;
+        // 配置已写入文件，需要重启后端服务才能完全生效（不在此处做 Disable/Enable，避免热重载失败导致插件被禁用）
         return Ok(new
         {
-            ok,
-            message = ok
-                ? "保存成功并已热重载，请重启后端服务确保配置完全生效"
-                : "保存成功，但热重载失败，请重启后端服务使配置生效"
+            ok = true,
+            message = "配置保存成功，重启后端服务后将完全生效"
         });
     }
 

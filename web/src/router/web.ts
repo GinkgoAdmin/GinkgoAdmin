@@ -57,6 +57,7 @@ const ginkgowebChildRoutes: RouteRecordRaw[] = hasGinkgoweb
       { path: 'donate', name: 'web-donate', component: gw('DonatePage') },
       { path: 'about', name: 'web-about', component: gw('AboutPage') },
       { path: 'license', name: 'web-license', component: gw('LicensePage') },
+      { path: 'plugin-license-agreement', name: 'web-plugin-license-agreement', component: gw('PluginLicenseAgreementPage') },
       { path: 'privacy', name: 'web-privacy', component: gw('PrivacyPolicyPage') },
       { path: 'terms', name: 'web-terms', component: gw('TermsPage') },
       { path: 'security', name: 'web-security', component: gw('SecurityPage') },
