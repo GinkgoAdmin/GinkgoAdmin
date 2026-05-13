@@ -11,8 +11,12 @@
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-blueviolet.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Vue 3](https://img.shields.io/badge/Vue-3.x-brightgreen.svg)](https://vuejs.org/)
 [![MySQL](https://img.shields.io/badge/MySQL-5.7%2B-orange.svg)](https://www.mysql.com/)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Commercial](https://img.shields.io/badge/Commercial-另行授权-red.svg)](LICENSE_COMMERCIAL)
+[![ALC 插件隔离](https://img.shields.io/badge/插件-ALC%20热插拔隔离-informational.svg)](#)
+[![DDD 分层架构](https://img.shields.io/badge/架构-DDD%20分层-blueviolet.svg)](#)
+[![内置 AI 引擎](https://img.shields.io/badge/AI-内置引擎-ff69b4.svg)](#)
+[![多租户](https://img.shields.io/badge/多租户-原生支持-teal.svg)](#)
+[![Contracts 契约边界](https://img.shields.io/badge/模块通信-Contracts%20契约-blue.svg)](#)
+[![动态路由](https://img.shields.io/badge/前端-Vue3%20动态路由-brightgreen.svg)](#)
 
 [官方网站](http://www.ginkgoadmin.com) · [在线文档](http://www.ginkgoadmin.com/zh/web/docs-home) · [GitHub](https://github.com/GinkgoAdmin/GinkgoAdmin) · [Gitee 镜像](https://gitee.com/ginkgoadmin/Ginkgoadmin)
 
