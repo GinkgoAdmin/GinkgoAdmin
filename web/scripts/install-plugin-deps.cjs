@@ -69,9 +69,9 @@ function main() {
     // 优先读取 module.json，否则读 plugin.json
     const moduleJson = path.join(dir, 'module.json')
     const pluginJson = path.join(dir, 'plugin.json')
-    const jsonFile = fs.existsSync(moduleJson) ? moduleJson : (fs.existsSync(pluginJson) ? pluginJson : null)
-    
-    if (jsonFile) {
+    // module.json 和 plugin.json 都可能声明 npmDependencies，两个文件都要扫描并合并
+    const filesToScan = [moduleJson, pluginJson].filter(f => fs.existsSync(f))
+    for (const jsonFile of filesToScan) {
       for (const dep of parseNpmDeps(jsonFile)) {
         if (!depsMap.has(dep.name)) {
           depsMap.set(dep.name, dep.version)
