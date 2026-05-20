@@ -248,11 +248,12 @@ import {
   isImageFile,
   isVideoFile,
   isAudioFile,
+  buildFileContentUrl,
   type FileListItemDto
 } from '../api/files'
 import { useWebAuthStore } from '../stores/webAuth'
 import { API_BASE_URL } from '../config/env'
-import { resolveFileUrl, fetchResourceConfig } from '@/utils/resourceUrl'
+import { fetchResourceConfig } from '@/utils/resourceUrl'
 
 interface Props {
   modelValue: boolean
@@ -455,20 +456,11 @@ const onImageError = (event: Event) => {
   img.style.display = 'none'
 }
 
-/** 根据 storageProvider 构建最优预览 URL */
+/** 根据文件对象构建预览 URL，使用 API 内容代理端点以避免直接依赖 CDN 可达性 */
 const getFilePreviewUrl = (file: FileListItemDto): string => {
-  const resolved = resolveFileUrl({
-    id: file.id,
-    url: file.url,
-    storageProvider: file.storageProvider
-  })
-  // 解析成功：返回绝对 URL 或以 / 开头的有效路径
-  if (resolved && (resolved.startsWith('http') || resolved.startsWith('/'))) {
-    return resolved
-  }
-  // 解析失败，降级到 API 内容端点
-  const base = String(API_BASE_URL).replace(/\/$/, '')
-  return `${base}/v1/files/${file.id}/content`
+  // 使用 API content 端点，后端直接代理内容（本地镜像优先，然后 OSS API）
+  // 避免前端内嵌预览直接依赖 CDN URL 可达性，保证缩略图始终可见
+  return buildFileContentUrl(file.id)
 }
 
 // 上传相关方法

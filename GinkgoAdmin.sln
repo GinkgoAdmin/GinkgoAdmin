@@ -35,6 +35,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ginkgo.Tests.Unit", "src\Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ginkgo.Infrastructure.Abstractions", "src\Server\Ginkgo.Infrastructure.Abstractions\Ginkgo.Infrastructure.Abstractions.csproj", "{EDAC4F36-F3AD-44E7-BA17-3ECFBB966A9C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Module", "Module", "{E8FF970D-4FA3-4534-A2F0-3D548BF24130}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ginkgo.Module.Training", "Ginkgo.Module.Training", "{C86ABF7C-35A5-4F55-AB12-27D886765E1F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ginkgo.Module.Training.Contracts", "src\Module\Ginkgo.Module.Training\contracts\Ginkgo.Module.Training.Contracts.csproj", "{F78E6C83-CA9D-47B7-A6DB-B4EB1E92941E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ginkgo.Module.Training", "src\Module\Ginkgo.Module.Training\server\Ginkgo.Module.Training.csproj", "{87BA7FDA-FA19-46BD-8FEF-CD11D436E24B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +101,14 @@ Global
 		{EDAC4F36-F3AD-44E7-BA17-3ECFBB966A9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EDAC4F36-F3AD-44E7-BA17-3ECFBB966A9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EDAC4F36-F3AD-44E7-BA17-3ECFBB966A9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F78E6C83-CA9D-47B7-A6DB-B4EB1E92941E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F78E6C83-CA9D-47B7-A6DB-B4EB1E92941E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F78E6C83-CA9D-47B7-A6DB-B4EB1E92941E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F78E6C83-CA9D-47B7-A6DB-B4EB1E92941E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87BA7FDA-FA19-46BD-8FEF-CD11D436E24B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87BA7FDA-FA19-46BD-8FEF-CD11D436E24B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87BA7FDA-FA19-46BD-8FEF-CD11D436E24B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87BA7FDA-FA19-46BD-8FEF-CD11D436E24B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -113,5 +129,9 @@ Global
 		{AC95C5E5-AC06-4E93-9E25-E850B9A99346} = {4B3BD197-D9BC-4988-A1DF-DC8075B49DB8}
 		{133A08B6-5956-4839-82DC-34BC0358E384} = {AC95C5E5-AC06-4E93-9E25-E850B9A99346}
 		{EDAC4F36-F3AD-44E7-BA17-3ECFBB966A9C} = {171373E8-F8D4-49CD-9491-CC8ADB52BB06}
+		{E8FF970D-4FA3-4534-A2F0-3D548BF24130} = {4B3BD197-D9BC-4988-A1DF-DC8075B49DB8}
+		{C86ABF7C-35A5-4F55-AB12-27D886765E1F} = {E8FF970D-4FA3-4534-A2F0-3D548BF24130}
+		{F78E6C83-CA9D-47B7-A6DB-B4EB1E92941E} = {C86ABF7C-35A5-4F55-AB12-27D886765E1F}
+		{87BA7FDA-FA19-46BD-8FEF-CD11D436E24B} = {C86ABF7C-35A5-4F55-AB12-27D886765E1F}
 	EndGlobalSection
 EndGlobal

@@ -288,8 +288,9 @@ public sealed class FilesController : ControllerBase
         var isLocal = string.IsNullOrWhiteSpace(file.StorageProvider)
             || file.StorageProvider.Contains("Local", StringComparison.OrdinalIgnoreCase);
 
-        // 非 Local 存储：302 重定向到 CDN/OSS 直链
-        if (!isLocal && !string.IsNullOrWhiteSpace(file.Url))
+        // 仅在下载模式（downloadFileName != null）时，非本地文件做 302 重定向到 CDN/OSS 直链（节省带宽）。
+        // 预览/内容模式（downloadFileName == null）直接代理内容流，保证内嵌预览不依赖 CDN 可达性。
+        if (!isLocal && downloadFileName != null && !string.IsNullOrWhiteSpace(file.Url))
         {
             if (Uri.TryCreate(file.Url, UriKind.Absolute, out var parsedUri))
                 return Redirect(parsedUri.AbsoluteUri);

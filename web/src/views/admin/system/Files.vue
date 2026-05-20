@@ -46,7 +46,7 @@
         <div class="file-preview" :title="'点击在新标签页打开附件完整地址'" @click="openInNewTab(row)" style="cursor: pointer">
           <el-image
             v-if="isImageFile(row.fileName)"
-            :src="getPreviewUrl(row)"
+            :src="buildFileUrl(row.id)"
             fit="cover"
             style="width: 80px; height: 50px; border-radius: 4px; pointer-events: none"
           />
@@ -96,15 +96,15 @@
         <!-- 图片预览 -->
         <div v-if="previewFile && isImageFile(previewFile.fileName)" class="preview-image">
           <el-image
-            :src="getPreviewUrl(previewFile)"
+            :src="buildFileUrl(previewFile.id)"
             fit="contain"
-            :preview-src-list="[getPreviewUrl(previewFile)]"
+            :preview-src-list="[buildFileUrl(previewFile.id)]"
             style="max-width: 100%; max-height: 60vh"
           />
         </div>
         <!-- 视频预览 -->
         <div v-else-if="previewFile && isVideoFile(previewFile.fileName)" class="preview-video">
-          <video controls style="max-width: 100%; max-height: 60vh" :src="getPreviewUrl(previewFile)">
+          <video controls style="max-width: 100%; max-height: 60vh" :src="buildFileUrl(previewFile.id)">
             您的浏览器不支持视频播放
           </video>
         </div>
@@ -112,13 +112,13 @@
         <div v-else-if="previewFile && isAudioFile(previewFile.fileName)" class="preview-audio">
           <div class="audio-icon"><i class="bi bi-music-note-beamed"></i></div>
           <p class="audio-filename">{{ previewFile.fileName }}</p>
-          <audio controls style="width: 100%" :src="getPreviewUrl(previewFile)">
+          <audio controls style="width: 100%" :src="buildFileUrl(previewFile.id)">
             您的浏览器不支持音频播放
           </audio>
         </div>
         <!-- PDF 预览 -->
         <div v-else-if="previewFile && isPdfFile(previewFile.fileName)" class="preview-pdf">
-          <iframe :src="getPreviewUrl(previewFile)" style="width: 100%; height: 60vh; border: none"></iframe>
+          <iframe :src="buildFileUrl(previewFile.id)" style="width: 100%; height: 60vh; border: none"></iframe>
         </div>
         <!-- 其他文件类型 -->
         <div v-else class="preview-unsupported">
