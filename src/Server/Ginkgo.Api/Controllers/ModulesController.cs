@@ -1062,9 +1062,10 @@ public sealed class ModulesController : ControllerBase
         {
             // 1. 删除该模块的所有菜单
             await sqlExecutor.RemoveMenusAsync(spec, ct);
-            // 2. 根据 install.json 重新创建菜单
-            await sqlExecutor.ApplyMenusAsync(spec, spec.ModuleId ?? req.ModuleId, ct);
-            return Ok(new { ok = true, message = $"模块「{spec.ModuleId ?? req.ModuleId}」的菜单已重置" });
+            // 2. 根据 install.json 重新创建菜单（moduleName 用于菜单展示名兜底，moduleId 用于归属隔离）
+            var moduleId = spec.ModuleId ?? req.ModuleId;
+            await sqlExecutor.ApplyMenusAsync(spec, moduleId, moduleId, ct);
+            return Ok(new { ok = true, message = $"模块「{moduleId}」的菜单已重置" });
         }
         catch (Exception ex)
         {
