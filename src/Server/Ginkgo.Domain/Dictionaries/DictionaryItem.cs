@@ -11,8 +11,16 @@ namespace Ginkgo.Domain.Dictionaries;
 [SugarTable("ginkgo_Sys_DictionaryItem", TableDescription = "数据字典项表（支持层级、按分类唯一键，含启用与排序）")]
 [SugarIndex("IX_DictItem_Category_Order", $"{nameof(CategoryId)},{nameof(Order)}", OrderByType.Asc)]
 [SugarIndex("UX_DictItem_Category_Key", $"{nameof(CategoryId)},{nameof(ItemKey)}", OrderByType.Asc, true)]
+[SugarIndex("IX_DictItem_Module", nameof(Module), OrderByType.Asc)]
 public sealed class DictionaryItem : AuditableEntity
 {
+    /// <summary>
+    /// 所属模块标识：sys = 主框架系统级，其他为插件 module.json 中的 id。
+    /// 默认随所属字典分类，便于插件卸载时按模块批量清理。
+    /// </summary>
+    [SugarColumn(Length = 64, IsNullable = false, ColumnDescription = "所属模块标识（sys=系统级，其他为插件ModuleId）", DefaultValue = "sys")]
+    public string Module { get; set; } = "sys";
+
     /// <summary>
     /// 上级条目 Id（用于层级型字典）。
     /// </summary>

@@ -156,6 +156,7 @@ CREATE TABLE `ginkgo_Sys_DepartmentClosure` (
 DROP TABLE IF EXISTS `ginkgo_Sys_Dictionary`;
 CREATE TABLE `ginkgo_Sys_Dictionary` (
   `Id` BIGINT NOT NULL COMMENT '主键(Snowflake ID)',
+  `Module` VARCHAR(64) NOT NULL DEFAULT 'sys' COMMENT '所属模块标识（sys=系统级，其他为插件ModuleId）',
   `Code` VARCHAR(50) NOT NULL COMMENT '字典编码',
   `Name` VARCHAR(100) NOT NULL COMMENT '字典名称',
   `NameI18n` JSON NULL COMMENT '字典名称-多语言',
@@ -173,7 +174,8 @@ CREATE TABLE `ginkgo_Sys_Dictionary` (
   `DeletedAt` DATETIME(6) NULL COMMENT '删除时间',
   `DeletedBy` BIGINT NULL COMMENT '删除人ID',
   `Enabled` TINYINT(1) DEFAULT 1 COMMENT '是否启用',
-  PRIMARY KEY (`Id`)
+  PRIMARY KEY (`Id`),
+  KEY `IX_Dictionary_Module` (`Module`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典类型/分类表';
 
 
@@ -183,6 +185,7 @@ CREATE TABLE `ginkgo_Sys_Dictionary` (
 DROP TABLE IF EXISTS `ginkgo_Sys_DictionaryItem`;
 CREATE TABLE `ginkgo_Sys_DictionaryItem` (
   `Id` BIGINT NOT NULL COMMENT '主键(Snowflake ID)',
+  `Module` VARCHAR(64) NOT NULL DEFAULT 'sys' COMMENT '所属模块标识（sys=系统级，其他为插件ModuleId）',
   `DictId` BIGINT NOT NULL COMMENT '字典ID',
   `ParentId` BIGINT NULL COMMENT '父项ID',
   `Code` VARCHAR(50) NOT NULL COMMENT '项编码',
@@ -198,7 +201,8 @@ CREATE TABLE `ginkgo_Sys_DictionaryItem` (
   `UpdatedBy` BIGINT NULL COMMENT '更新人ID',
   `DeletedAt` DATETIME(6) NULL COMMENT '删除时间',
   `DeletedBy` BIGINT NULL COMMENT '删除人ID',
-  PRIMARY KEY (`Id`)
+  PRIMARY KEY (`Id`),
+  KEY `IX_DictionaryItem_Module` (`Module`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典项表';
 
 
@@ -266,6 +270,7 @@ CREATE TABLE `ginkgo_Sys_LoginLog` (
 DROP TABLE IF EXISTS `ginkgo_Sys_Menu`;
 CREATE TABLE `ginkgo_Sys_Menu` (
   `Id` BIGINT NOT NULL COMMENT '主键(Snowflake ID)',
+  `Module` VARCHAR(64) NOT NULL DEFAULT 'sys' COMMENT '所属模块标识（sys=系统级，其他为插件ModuleId）',
   `ParentId` BIGINT NULL COMMENT '父菜单ID',
   `Name` VARCHAR(128) NOT NULL COMMENT '菜单名称',
   `NameI18n` JSON NULL COMMENT '菜单名称-多语言 {"zh-CN":"系统管理","en":"System"}',
@@ -296,7 +301,8 @@ CREATE TABLE `ginkgo_Sys_Menu` (
   `MobileDisplayMode` VARCHAR(20) NULL COMMENT '移动端显示模式',
   `DeletedAt` DATETIME(6) NULL COMMENT '删除时间',
   `DeletedBy` BIGINT NULL COMMENT '删除人ID',
-  PRIMARY KEY (`Id`)
+  PRIMARY KEY (`Id`),
+  KEY `IX_Menu_Module` (`Module`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='菜单表';
 
 
@@ -780,6 +786,7 @@ CREATE TABLE `ginkgo_Sys_OpLog` (
 DROP TABLE IF EXISTS `ginkgo_Sys_Settings`;
 CREATE TABLE `ginkgo_Sys_Settings` (
   `Key` VARCHAR(200) NOT NULL COMMENT '配置键',
+  `Module` VARCHAR(64) NOT NULL DEFAULT 'sys' COMMENT '所属模块标识（sys=系统级，其他为插件ModuleId）',
   `Value` LONGTEXT NULL COMMENT '配置值',
   `Type` VARCHAR(50) NULL COMMENT '类型',
   `Description` VARCHAR(500) NULL COMMENT '描述',
@@ -790,7 +797,8 @@ CREATE TABLE `ginkgo_Sys_Settings` (
   `class` VARCHAR(255) NULL COMMENT '分类',
   `RowVersion` BIGINT NULL COMMENT '行版本',
   `Id` BIGINT NOT NULL COMMENT 'ID(Snowflake ID)',
-  PRIMARY KEY (`Key`)
+  PRIMARY KEY (`Key`),
+  KEY `IX_Settings_Module` (`Module`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置键值表';
 
 

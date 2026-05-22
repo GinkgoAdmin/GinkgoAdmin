@@ -10,9 +10,17 @@ namespace Ginkgo.Domain.Dictionaries;
 /// </summary>
 [SugarTable("ginkgo_Sys_Dictionary", TableDescription = "数据字典分类表（分类编码唯一，支持启用/系统内置标记）")]
 [SugarIndex("IX_DictionaryCategory_Code", nameof(Code), OrderByType.Asc, true)]
+[SugarIndex("IX_DictCategory_Module", nameof(Module), OrderByType.Asc)]
 [SugarIndex("IX_DictCategory_Enabled_CreatedAt", $"{nameof(Enabled)},{nameof(CreatedAt)}", OrderByType.Asc)]
 public sealed class DictionaryCategory : AuditableEntity
 {
+    /// <summary>
+    /// 所属模块标识：sys = 主框架系统级，其他为插件 module.json 中的 id。
+    /// 用于插件卸载时按模块快速定位并清理字典。
+    /// </summary>
+    [SugarColumn(Length = 64, IsNullable = false, ColumnDescription = "所属模块标识（sys=系统级，其他为插件ModuleId）", DefaultValue = "sys")]
+    public string Module { get; set; } = "sys";
+
     /// <summary>
     /// 分类编码（唯一）。
     /// </summary>

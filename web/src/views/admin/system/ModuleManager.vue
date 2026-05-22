@@ -2053,11 +2053,18 @@ const handleDisable = async (mod: ModuleInfo) => {
 
 const handleModuleAction = async (command: string, mod: ModuleInfo) => {
   switch (command) {
-    case 'test': 
-      if (mod.testRoute) { 
-        const resolved = router.resolve({ name: mod.testRoute })
-        window.open(resolved.href, '_blank') 
-      } 
+    case 'test':
+      if (mod.testRoute) {
+        // 插件路由为懒加载，需先强制注册所有插件路由再解析
+        const { ensureAllAdminPluginRoutes } = await import('@/router')
+        await ensureAllAdminPluginRoutes()
+        try {
+          const resolved = router.resolve({ name: mod.testRoute })
+          window.open(resolved.href, '_blank')
+        } catch {
+          ElMessage.warning('找不到测试页面路由，请确认插件前端已正确安装')
+        }
+      }
       break
     case 'config': await handleOpenConfig(mod); break
     case 'hot-reload': await handleHotReload(mod); break

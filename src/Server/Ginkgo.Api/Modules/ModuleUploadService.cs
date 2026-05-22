@@ -904,7 +904,7 @@ public sealed class ModuleUploadService
                     }
                 };
 
-                await _sqlExecutor.ApplyMenusAsync(sqlSpec, manifest.Name ?? manifest.Id, ct);
+                await _sqlExecutor.ApplyMenusAsync(sqlSpec, manifest.Name ?? manifest.Id, manifest.Id, ct);
                 result.ExecutedSteps.Add("注册菜单");
 
                 // 添加菜单回滚

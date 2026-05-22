@@ -12,9 +12,17 @@ namespace Ginkgo.Domain.Menus;
 [SugarIndex("IX_Menu_ParentId_Order", $"{nameof(ParentId)},{nameof(Order)}", OrderByType.Asc)]
 [SugarIndex("IX_Menu_Type", nameof(Type), OrderByType.Asc)]
 [SugarIndex("IX_Menu_Code", nameof(Code), OrderByType.Asc)]
+[SugarIndex("IX_Menu_Module", nameof(Module), OrderByType.Asc)]
 [SugarIndex("IX_Menu_Enabled_CreatedAt", $"{nameof(Enabled)},{nameof(CreatedAt)}", OrderByType.Asc)]
 public sealed class Menu : AuditableEntity
 {
+    /// <summary>
+    /// 所属模块标识：sys = 主框架系统级，其他为插件 module.json 中的 id。
+    /// 用于插件卸载时按模块快速定位并清理菜单。
+    /// </summary>
+    [SugarColumn(Length = 64, IsNullable = false, ColumnDescription = "所属模块标识（sys=系统级，其他为插件ModuleId）", DefaultValue = "sys")]
+    public string Module { get; set; } = "sys";
+
     /// <summary>
     /// 菜单名称。
     /// </summary>

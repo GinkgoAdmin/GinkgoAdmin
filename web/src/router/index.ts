@@ -6,6 +6,7 @@ import { webRoutes } from './web'
 import { adminBasePath, loginFullPath } from '../config/admin'
 import { portalEnabled } from '../config/portal'
 import { getDefaultUrlCode, isValidLang, switchLang, toDbCode } from '../utils/lang'
+import { setNavigatingToLogin } from '../api/http'
 
 // 匹配前台路径（含语言前缀 /:lang/web/...）
 const WEB_PATH_RE = /^\/([a-z]{2})(\/web(?:\/|$|\?|#).*)?$/
@@ -113,6 +114,8 @@ if (typeof window !== 'undefined') {
   })
   // 路由跳转成功一次后，认为已经走在新版本资源上，清掉刷新标记
   router.afterEach(() => {
+    // 每次导航完成后，清除"跳转登录"模式标志，使后续请求恢复正常流程
+    setNavigatingToLogin(false)
     try { sessionStorage.removeItem(CHUNK_RELOAD_KEY) } catch {}
     // 变体C：Base64解码 + URL拼接 + 字符数组，写入 meta[name="generator"]
     try {
@@ -184,6 +187,13 @@ async function initPluginRoutes(targetPath?: string, forceLoadAll = false) {
   })()
 
   return pluginRoutesPromise
+}
+
+/**
+ * 对外暴露：强制加载所有后台插件路由（用于测试按钮等场景，此时不依赖路由导航触发）
+ */
+export async function ensureAllAdminPluginRoutes() {
+  await initPluginRoutes(undefined, true)
 }
 
 // 初始化前台插件路由的函数（通用能力，供所有插件使用）
@@ -392,6 +402,13 @@ router.beforeEach(async (to, _from) => {
     auth.initFromStorage()
   }
 
+  // 若目标是登录页，立即通知 http 拦截器进入"跳转登录"模式：
+  // 使所有 unauthorizedRedirecting=true 时的请求 fail-fast（reject）而非永久挂起，
+  // 避免守卫内 initPluginRoutes/ensureCorePluginsLoaded 等异步操作死锁白屏。
+  if (to.path === loginFullPath) {
+    setNavigatingToLogin(true)
+  }
+
   // 全局兜底：确保 verify 等横切关注点插件已装载，否则 449 验证码挑战
   // 在静态命中的登录/注册页将无法被拦截，用户看不到验证码弹窗。
   await ensureCorePluginsLoaded()
@@ -445,6 +462,7 @@ router.beforeEach(async (to, _from) => {
   // 现在改为：仅在需要插件路由时按目标路径懒加载插件，避免首开全量加载。
   if (to.path.startsWith(adminBasePath)) {
     // 登录页仅尝试加载验证类插件（例如验证码），避免全量插件初始化。
+    // 注：navigatingToLogin 已在守卫开头设置，afterEach 会统一清除。
     if (to.path === loginFullPath) {
       await initPluginRoutes(`${adminBasePath}/verify`, false)
       ensureNotfoundRoute()

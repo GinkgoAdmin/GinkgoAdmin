@@ -79,8 +79,8 @@ public sealed class ModuleInstaller
                     var scripts = spec.SqlScripts.Select(p => Path.Combine(baseDir, p));
                     await _sql.ExecuteScriptsAsync(scripts, ct);
                 }
-                // 应用 install.json 中的 Menus 规则（如有）
-                await _sql.ApplyMenusAsync(spec, repoItem.Manifest.Name ?? repoItem.Manifest.Id, ct);
+                // 应用 install.json 中的 Menus 规则（如有），同时把模块 Id 写入 ginkgo_Sys_Menu.Module
+                await _sql.ApplyMenusAsync(spec, repoItem.Manifest.Name ?? repoItem.Manifest.Id, repoItem.Manifest.Id, ct);
             }
         }
         catch (Exception ex)
@@ -177,6 +177,19 @@ public sealed class ModuleInstaller
                 await _sql.RemoveMenusByRootCodeAsync(savedMenuRootCode, ct);
                 menusRemoved = true;
                 _logger.LogInformation("[UninstallAsync] 已通过 MenuRootCode 兜底删除菜单");
+            }
+
+            // ★ 终极兜底：按 Module 字段清理插件在主框架共享表（菜单/字典/字典项/配置）中残留的所有记录
+            //    这样即便 install.json 丢失、MenuRootCode 未持久化，只要插件安装时正确填入 Module=ModuleId，
+            //    依然可以在卸载阶段彻底回收，主框架的菜单/字典/配置不会留下脏数据。
+            try
+            {
+                await _sql.RemoveModuleDataAsync(moduleId, ct);
+                _logger.LogInformation("[UninstallAsync] 已按 Module={ModuleId} 清理共享菜单/字典/配置中的插件数据", moduleId);
+            }
+            catch (Exception cleanEx)
+            {
+                _logger.LogWarning(cleanEx, "[UninstallAsync] 按 Module 清理共享数据失败：{Msg}", cleanEx.Message);
             }
         }
         catch (Exception ex)

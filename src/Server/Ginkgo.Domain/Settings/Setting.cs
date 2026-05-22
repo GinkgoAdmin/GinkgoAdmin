@@ -74,6 +74,13 @@ public sealed class Setting : Ginkgo.Domain.Entity
     [SugarColumn(ColumnName = "class", IsNullable = true, ColumnDescription = "业务分类")]
     public string? Class { get; set; }
 
+    /// <summary>
+    /// 所属模块标识：sys = 主框架系统级，其他为插件 module.json 中的 id。
+    /// 用于插件卸载时按模块快速定位并清理配置项。
+    /// </summary>
+    [SugarColumn(Length = 64, IsNullable = false, ColumnDescription = "所属模块标识（sys=系统级，其他为插件ModuleId）", DefaultValue = "sys")]
+    public string Module { get; set; } = "sys";
+
     // ========= 领域行为 =========
     public static Setting Create(string key, string? value, string? type, string? description, string? @class, long? operatorId, DateTime? nowUtc = null)
     {

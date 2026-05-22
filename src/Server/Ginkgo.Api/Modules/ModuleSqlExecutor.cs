@@ -266,9 +266,11 @@ public sealed class ModuleSqlExecutor
         }
         catch { return null; }
     }
-        public async Task ApplyMenusAsync(InstallSpec? spec, string moduleName, CancellationToken ct)
+        public async Task ApplyMenusAsync(InstallSpec? spec, string moduleName, string moduleId, CancellationToken ct)
         {
             if (spec?.Menus == null || string.IsNullOrWhiteSpace(spec.Menus.RootCode)) return;
+            // moduleId 用于写入 ginkgo_Sys_Menu.Module，便于插件卸载时按模块清理
+            var module = string.IsNullOrWhiteSpace(moduleId) ? "sys" : moduleId;
             using var scope = _services.CreateScope();
             var conn = GetSqlSugarConnection(scope.ServiceProvider);
             if (conn.State != System.Data.ConnectionState.Open)
@@ -288,22 +290,23 @@ public sealed class ModuleSqlExecutor
                 var r = await cmd.ExecuteScalarAsync(ct);
                 if (r != null && long.TryParse(r.ToString(), out rootId))
                 {
-                    // 根目录已存在，总是更新 SupportedClients、Name、Icon
+                    // 根目录已存在，总是更新 SupportedClients、Name、Icon、Module
                     using var uc = conn.CreateCommand();
-                    uc.CommandText = $"update ginkgo_Sys_Menu set SupportedClients=@sc, Name=@Name, Icon=@Icon, UpdatedAt={_dialect.UtcNowExpr} where Id=@Id";
+                    uc.CommandText = $"update ginkgo_Sys_Menu set Module=@Module, SupportedClients=@sc, Name=@Name, Icon=@Icon, UpdatedAt={_dialect.UtcNowExpr} where Id=@Id";
                     var u1 = uc.CreateParameter(); u1.ParameterName = "@Id"; u1.Value = rootId; uc.Parameters.Add(u1);
                     var u2 = uc.CreateParameter(); u2.ParameterName = "@sc"; u2.Value = (object?)rootSupportedClients ?? DBNull.Value; uc.Parameters.Add(u2);
                     var rootName = !string.IsNullOrWhiteSpace(spec.Menus.RootName) ? spec.Menus.RootName : moduleName;
                     var u3 = uc.CreateParameter(); u3.ParameterName = "@Name"; u3.Value = rootName; uc.Parameters.Add(u3);
                     var u4 = uc.CreateParameter(); u4.ParameterName = "@Icon"; u4.Value = (object?)spec.Menus.RootIcon ?? DBNull.Value; uc.Parameters.Add(u4);
+                    var u5 = uc.CreateParameter(); u5.ParameterName = "@Module"; u5.Value = module; uc.Parameters.Add(u5);
                     await uc.ExecuteNonQueryAsync(ct);
                 }
                 else
                 {
                     rootId = SnowflakeIdGenerator.NextId();
                     using var ic = conn.CreateCommand();
-                    ic.CommandText = $@"insert into ginkgo_Sys_Menu(Id,Name,Route,Type,ItemMode,Icon,Url,ParentId,OrderNo,Visible,Code,CreatedAt,IsDeleted,SupportedClients)
-values(@Id,@Name,@Route,'Directory',NULL,@Icon,NULL,NULL,50,1,@Code,{_dialect.UtcNowExpr},0,@SupportedClients)";
+                    ic.CommandText = $@"insert into ginkgo_Sys_Menu(Id,Module,Name,Route,Type,ItemMode,Icon,Url,ParentId,OrderNo,Visible,Code,CreatedAt,IsDeleted,SupportedClients)
+values(@Id,@Module,@Name,@Route,'Directory',NULL,@Icon,NULL,50,1,@Code,{_dialect.UtcNowExpr},0,@SupportedClients)";
                     var p1 = ic.CreateParameter(); p1.ParameterName = "@Id"; p1.Value = rootId; ic.Parameters.Add(p1);
                     // 优先使用 RootName，否则使用模块名
                     var rootName = !string.IsNullOrWhiteSpace(spec.Menus.RootName) ? spec.Menus.RootName : moduleName;
@@ -312,6 +315,7 @@ values(@Id,@Name,@Route,'Directory',NULL,@Icon,NULL,NULL,50,1,@Code,{_dialect.Ut
                     var p4 = ic.CreateParameter(); p4.ParameterName = "@Code"; p4.Value = spec.Menus.RootCode!; ic.Parameters.Add(p4);
                     var p5 = ic.CreateParameter(); p5.ParameterName = "@Icon"; p5.Value = (object?)spec.Menus.RootIcon ?? DBNull.Value; ic.Parameters.Add(p5);
                     var p6 = ic.CreateParameter(); p6.ParameterName = "@SupportedClients"; p6.Value = (object?)rootSupportedClients ?? DBNull.Value; ic.Parameters.Add(p6);
+                    var p7 = ic.CreateParameter(); p7.ParameterName = "@Module"; p7.Value = module; ic.Parameters.Add(p7);
                     await ic.ExecuteNonQueryAsync(ct);
                 }
             }
@@ -347,7 +351,7 @@ values(@Id,@Name,@Route,'Directory',NULL,@Icon,NULL,NULL,50,1,@Code,{_dialect.Ut
                             IsDeleted=0, Visible=@Visible, Name=@Name, OrderNo=@OrderNo,
                             WebRouteUrl=@WebRouteUrl, WebDisplayMode=@WebDisplayMode, 
                             SupportedClients=@SupportedClients, Resource=@Resource, Method=@Method,
-                            ParentId=@ParentId, UpdatedAt={_dialect.UtcNowExpr} where Id=@Id";
+                            ParentId=@ParentId, Module=@Module, UpdatedAt={_dialect.UtcNowExpr} where Id=@Id";
                         var u1 = uc.CreateParameter(); u1.ParameterName = "@Id"; u1.Value = existingId; uc.Parameters.Add(u1);
                         var u2 = uc.CreateParameter(); u2.ParameterName = "@Visible"; u2.Value = it.Hidden ? 0 : 1; uc.Parameters.Add(u2);
                         var u3 = uc.CreateParameter(); u3.ParameterName = "@Name"; u3.Value = it.Name; uc.Parameters.Add(u3);
@@ -358,6 +362,7 @@ values(@Id,@Name,@Route,'Directory',NULL,@Icon,NULL,NULL,50,1,@Code,{_dialect.Ut
                         var u8 = uc.CreateParameter(); u8.ParameterName = "@Resource"; u8.Value = (object?)it.Resource ?? DBNull.Value; uc.Parameters.Add(u8);
                         var u9 = uc.CreateParameter(); u9.ParameterName = "@Method"; u9.Value = (object?)it.Method ?? DBNull.Value; uc.Parameters.Add(u9);
                         var u10 = uc.CreateParameter(); u10.ParameterName = "@ParentId"; u10.Value = parentId; uc.Parameters.Add(u10);
+                        var u11 = uc.CreateParameter(); u11.ParameterName = "@Module"; u11.Value = module; uc.Parameters.Add(u11);
                         await uc.ExecuteNonQueryAsync(ct);
                         continue;
                     }
@@ -365,8 +370,8 @@ values(@Id,@Name,@Route,'Directory',NULL,@Icon,NULL,NULL,50,1,@Code,{_dialect.Ut
                 }
                 // Insert（新增菜单，包含 Resource 和 Method）
                 using var ic2 = conn.CreateCommand();
-                ic2.CommandText = $@"insert into ginkgo_Sys_Menu(Id,Name,Route,Type,ItemMode,Icon,Url,ParentId,OrderNo,Visible,Code,CreatedAt,IsDeleted,WebRouteUrl,WebDisplayMode,SupportedClients,Resource,Method)
-values(@Id,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@Visible,@Code,{_dialect.UtcNowExpr},0,@WebRouteUrl,@WebDisplayMode,@SupportedClients,@Resource,@Method)";
+                ic2.CommandText = $@"insert into ginkgo_Sys_Menu(Id,Module,Name,Route,Type,ItemMode,Icon,Url,ParentId,OrderNo,Visible,Code,CreatedAt,IsDeleted,WebRouteUrl,WebDisplayMode,SupportedClients,Resource,Method)
+values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@Visible,@Code,{_dialect.UtcNowExpr},0,@WebRouteUrl,@WebDisplayMode,@SupportedClients,@Resource,@Method)";
                 var q1 = ic2.CreateParameter(); q1.ParameterName = "@Id"; q1.Value = SnowflakeIdGenerator.NextId(); ic2.Parameters.Add(q1);
                 var q2 = ic2.CreateParameter(); q2.ParameterName = "@Name"; q2.Value = it.Name; ic2.Parameters.Add(q2);
                 var q3 = ic2.CreateParameter(); q3.ParameterName = "@Route"; q3.Value = it.Route ?? string.Empty; ic2.Parameters.Add(q3);
@@ -384,6 +389,7 @@ values(@Id,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@Visible,@
                 var q14 = ic2.CreateParameter(); q14.ParameterName = "@Visible"; q14.Value = it.Hidden ? 0 : 1; ic2.Parameters.Add(q14);
                 var q15 = ic2.CreateParameter(); q15.ParameterName = "@Resource"; q15.Value = (object?)it.Resource ?? DBNull.Value; ic2.Parameters.Add(q15);
                 var q16 = ic2.CreateParameter(); q16.ParameterName = "@Method"; q16.Value = (object?)it.Method ?? DBNull.Value; ic2.Parameters.Add(q16);
+                var q17 = ic2.CreateParameter(); q17.ParameterName = "@Module"; q17.Value = module; ic2.Parameters.Add(q17);
                 await ic2.ExecuteNonQueryAsync(ct);
             }
         }
@@ -484,6 +490,92 @@ values(@Id,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@Visible,@
                     dm.CommandText = $"DELETE FROM ginkgo_Sys_Menu WHERE Id IN ({idstr})";
                     await dm.ExecuteNonQueryAsync(ct);
                 }
+            }
+        }
+
+        /// <summary>
+        /// 按 Module 字段统一清理插件在主框架共享表中的数据。
+        /// 涉及表：
+        ///   - ginkgo_Sys_Menu            （顺带清理 ginkgo_Sys_RolePermission 中对应的菜单授权）
+        ///   - ginkgo_Sys_DictionaryItem  （先清子表再清父表，避免外键约束）
+        ///   - ginkgo_Sys_Dictionary
+        ///   - ginkgo_Sys_Settings
+        /// 设计目的：让插件无需重建菜单/字典/配置表，可以直接复用主框架表，
+        /// 卸载时再按 Module = ModuleId 一次性清理，做到“安装登记、卸载归零”。
+        /// </summary>
+        public async Task RemoveModuleDataAsync(string moduleId, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(moduleId)) return;
+            // 保留主框架内置数据：禁止误删 sys 级别记录
+            if (string.Equals(moduleId, "sys", StringComparison.OrdinalIgnoreCase)) return;
+
+            using var scope = _services.CreateScope();
+            var conn = GetSqlSugarConnection(scope.ServiceProvider);
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync(ct);
+
+            // 1. 收集属于该模块的菜单 Id（用于一并清理 ginkgo_Sys_RolePermission）
+            var menuIds = new List<long>();
+            using (var qc = conn.CreateCommand())
+            {
+                qc.CommandText = "SELECT Id FROM ginkgo_Sys_Menu WHERE Module=@m";
+                var p = qc.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; qc.Parameters.Add(p);
+                using var reader = await qc.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                {
+                    menuIds.Add(reader.GetInt64(0));
+                }
+            }
+            if (menuIds.Count > 0)
+            {
+                var idstr = string.Join(",", menuIds);
+                using (var dp = conn.CreateCommand())
+                {
+                    dp.CommandText = $"DELETE FROM ginkgo_Sys_RolePermission WHERE PermissionId IN ({idstr})";
+                    await dp.ExecuteNonQueryAsync(ct);
+                }
+                using (var dm = conn.CreateCommand())
+                {
+                    dm.CommandText = $"DELETE FROM ginkgo_Sys_Menu WHERE Id IN ({idstr})";
+                    await dm.ExecuteNonQueryAsync(ct);
+                }
+            }
+
+            // 2. 字典条目：先按 Module 清理，再清理仍挂在该模块字典下的孤儿条目
+            using (var di = conn.CreateCommand())
+            {
+                di.CommandText = "DELETE FROM ginkgo_Sys_DictionaryItem WHERE Module=@m OR DictionaryId IN (SELECT Id FROM ginkgo_Sys_Dictionary WHERE Module=@m)";
+                var p = di.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; di.Parameters.Add(p);
+                try { await di.ExecuteNonQueryAsync(ct); }
+                catch
+                {
+                    // 某些 MySQL 版本不允许 DELETE 子查询自指目标表，回退两步
+                    using var step1 = conn.CreateCommand();
+                    step1.CommandText = "DELETE FROM ginkgo_Sys_DictionaryItem WHERE Module=@m";
+                    var sp1 = step1.CreateParameter(); sp1.ParameterName = "@m"; sp1.Value = moduleId; step1.Parameters.Add(sp1);
+                    await step1.ExecuteNonQueryAsync(ct);
+
+                    using var step2 = conn.CreateCommand();
+                    step2.CommandText = "DELETE FROM ginkgo_Sys_DictionaryItem WHERE DictionaryId IN (SELECT Id FROM ginkgo_Sys_Dictionary WHERE Module=@m)";
+                    var sp2 = step2.CreateParameter(); sp2.ParameterName = "@m"; sp2.Value = moduleId; step2.Parameters.Add(sp2);
+                    await step2.ExecuteNonQueryAsync(ct);
+                }
+            }
+
+            // 3. 字典分类
+            using (var dd = conn.CreateCommand())
+            {
+                dd.CommandText = "DELETE FROM ginkgo_Sys_Dictionary WHERE Module=@m";
+                var p = dd.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; dd.Parameters.Add(p);
+                await dd.ExecuteNonQueryAsync(ct);
+            }
+
+            // 4. 系统配置
+            using (var ds = conn.CreateCommand())
+            {
+                ds.CommandText = "DELETE FROM ginkgo_Sys_Settings WHERE Module=@m";
+                var p = ds.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; ds.Parameters.Add(p);
+                await ds.ExecuteNonQueryAsync(ct);
             }
         }
 

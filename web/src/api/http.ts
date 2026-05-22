@@ -11,6 +11,17 @@ const http = axios.create({
 })
 
 let unauthorizedRedirecting = false
+// 是否正在执行"跳转到登录页"的路由守卫流程。
+// 在 beforeEach 守卫内，initPluginRoutes/initializePluginSystem 会发起 API 请求，
+// 若此时 unauthorizedRedirecting=true，请求会被永久挂起（createUnauthorizedPendingPromise），
+// 导致守卫永远无法完成、路由跳转被阻塞、页面白屏。
+// 通过此标志让守卫期间的请求改为 fail-fast（reject），使 try-catch 能正常捕获并继续。
+let navigatingToLogin = false
+
+/** 由路由守卫调用：通知 http 拦截器当前正处于"跳转登录页"的守卫流程中 */
+export function setNavigatingToLogin(value: boolean) {
+  navigatingToLogin = value
+}
 
 function isWebPortalPath(path?: string): boolean {
   try {
@@ -92,6 +103,10 @@ http.interceptors.request.use((config) => {
   }
 
   if (unauthorizedRedirecting && shouldStartUnauthorizedFlow()) {
+    if (navigatingToLogin) {
+      // 正在执行跳转登录页的路由守卫，拒绝请求而非永久挂起，避免死锁导致白屏
+      return Promise.reject(new Error('认证已过期，正在跳转登录页'))
+    }
     return createUnauthorizedPendingPromise<any>()
   }
 
@@ -136,6 +151,16 @@ function handleUnauthorized(message?: string) {
   if (router.currentRoute.value.name !== 'login' && router.currentRoute.value.name !== 'web-login') {
     const target = isWebPortalPath() ? 'web-login' : 'login'
     router.replace({ name: target, query: { redirect: location.pathname + location.search } })
+      .catch(() => {
+        // 路由跳转失败时（如 NavigationDuplicated/NavigationCancelled），
+        // 使用 location.replace 做硬跳转兜底，确保用户一定能回到登录页
+        try {
+          const loginPath = isWebPortalPath()
+            ? `/${(location.pathname.split('/')[1] || 'zh')}/web/login`
+            : '/ginkgo-admin/login'
+          location.replace(loginPath)
+        } catch { /* 静默 */ }
+      })
   }
 }
 
