@@ -317,6 +317,13 @@ public static class StaticFiles
         var indexHtml = Path.Combine(wwwroot, "index.html");
         if (!File.Exists(indexHtml)) return;
 
+
+        app.MapFallback("/config/{**path}", async context =>
+        {
+            context.Response.StatusCode = 404;
+            context.Response.ContentLength = 0;
+        }).AllowAnonymous();
+
         var fileProvider = new PhysicalFileProvider(wwwroot);
 
         // MapFallbackToFile serves index.html for any request not matched by

@@ -43,6 +43,12 @@ public sealed class FriendlyAuthorizationResultHandler : IAuthorizationMiddlewar
             return;
         }
 
+        if (path.StartsWith("/config/", StringComparison.OrdinalIgnoreCase))
+        {
+            await next(context);
+            return;
+        }
+
         // 根据鉴权结果返回 401 或 403 真实状态
         var isChallenged = authorizeResult.Challenged;
         context.Response.StatusCode = isChallenged ? StatusCodes.Status401Unauthorized : StatusCodes.Status403Forbidden;

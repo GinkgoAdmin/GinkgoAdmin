@@ -190,41 +190,21 @@ const handlePluginEvent = (event: string, data: any) => {
 }
 
 // 处理第三方登录
+// ThirdPartyLoginPanel 在弹窗成功后已经写入 useWebAuthStore 并尝试跳转，
+// 这里仅做兜底缓存清理与成功提示，**不**再调用 executeHook('auth:login')，
+// 否则会因为缺少 OAuth code/state 必然失败，把已登录成功的状态被错误提示覆盖。
 const handleThirdPartyLogin = async (data: any) => {
-  try {
-    loading.value = true
-
-    // 通过钩子系统处理第三方登录
-    const result = await executeHook('auth:login', {
-      provider: data.provider,
-      ...data
-    })
-
-    if (result.success) {
-      webAuth.login(result.token, result.user)
-      ElMessage.success(t('login_success'))
-
-      let redirect = (route.query.redirect as string) || '/web/user'
-      try {
-        while (redirect.includes('/web/login')) {
-          const urlObj = new URL(redirect, window.location.origin)
-          redirect = urlObj.searchParams.get('redirect') || '/web/user'
-        }
-      } catch {
-        // ignore
-      }
-      if (redirect.includes('/web/login') || redirect === '/') {
-        redirect = '/web/user'
-      }
-      router.replace(redirect)
-    } else {
-      ElMessage.error(result.error || t('login_third_party_fail'))
-    }
-  } catch (error) {
-    ElMessage.error(t('login_error'))
-  } finally {
-    loading.value = false
+  if (!data?.success || !data?.token) {
+    if (data?.error) ElMessage.error(data.error)
+    return
   }
+
+  try {
+    menuStore.clearCache()
+    languageStore.clearCache()
+  } catch { /* ignore */ }
+
+  ElMessage.success(t('login_success'))
 }
 
 onMounted(() => {
