@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    多端通用插件业务入口特性（multi-client-plugin-portal）的后端应用层属性测试工程。
+    - 测试框架：xUnit + FsCheck.Xunit 2.16.6（与既有 tests/Ginkgo.Module.SmartCommunity.Tests 保持一致，禁止自行实现属性测试框架）。
+    - 被测项目：Ginkgo.Application、Ginkgo.Domain；SqlSugar 与 SQLite 运行时由 Ginkgo.Infrastructure 传递引入，
+      供内存仓储（基于 SQLite 内存库的 IRepository<T> 实现）使用。
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!--
+    集成测试（17.1 [LoginOnly] 鉴权）需要直接构造 ASP.NET Core 的鉴权管道类型
+    （AuthorizationHandlerContext / DefaultHttpContext / Endpoint 等），
+    因此引用共享框架 Microsoft.AspNetCore.App，以便复用真实的 PermissionAuthorizationHandler
+    与 [LoginOnly] 鉴权链路（不新建鉴权机制）。
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="xunit" Version="2.7.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FsCheck.Xunit" Version="2.16.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Server\Ginkgo.Application\Ginkgo.Application.csproj" />
+    <ProjectReference Include="..\..\Server\Ginkgo.Domain\Ginkgo.Domain.csproj" />
+    <!--
+      引用 Ginkgo.Api 仅用于在属性测试（Property 15：雪花 Id 对前端序列化为字符串）中复用
+      框架「全局 JSON 序列化契约」的真实转换器（Ginkgo.Api.Filters.LongToStringConverter /
+      NullableLongToStringConverter）。这些转换器由主框架 ServiceRegistration.AddJsonOptions 注册，
+      仅存在于 Ginkgo.Api 程序集；为避免手写一份不同实现导致测试无法验证「真实序列化契约」，
+      此处直接引用主框架程序集取用真实转换器类型（与集成测试引用 Web 工程的惯例一致）。
+    -->
+    <ProjectReference Include="..\..\Server\Ginkgo.Api\Ginkgo.Api.csproj" />
+  </ItemGroup>
+
+</Project>

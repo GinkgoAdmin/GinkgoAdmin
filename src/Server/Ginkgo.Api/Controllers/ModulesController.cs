@@ -1055,17 +1055,36 @@ public sealed class ModulesController : ControllerBase
             return NotFound(new { ok = false, message = $"未找到模块 {req.ModuleId} 的 install.json 配置文件" });
 
         var spec = ModuleSqlExecutor.ReadInstallJson(installPath);
-        if (spec?.Menus == null || string.IsNullOrWhiteSpace(spec.Menus.RootCode))
-            return BadRequest(new { ok = false, message = "该模块的 install.json 中未定义菜单配置" });
+        if (spec == null)
+            return BadRequest(new { ok = false, message = "该模块的 install.json 解析失败" });
+
+        // 后台 RBAC 菜单（ginkgo_Sys_Menu）与客户端入口菜单（MenuGroup，移动/桌面/前端）至少声明其一即可重置。
+        var hasBackendMenus = spec.Menus != null && !string.IsNullOrWhiteSpace(spec.Menus.RootCode);
+        var hasClientMenus = spec.ClientMenus != null && spec.ClientMenus.Count > 0;
+        if (!hasBackendMenus && !hasClientMenus)
+            return BadRequest(new { ok = false, message = "该模块的 install.json 中未定义任何菜单（Menus / ClientMenus）配置" });
 
         try
         {
-            // 1. 删除该模块的所有菜单
-            await sqlExecutor.RemoveMenusAsync(spec, ct);
-            // 2. 根据 install.json 重新创建菜单（moduleName 用于菜单展示名兜底，moduleId 用于归属隔离）
             var moduleId = spec.ModuleId ?? req.ModuleId;
-            await sqlExecutor.ApplyMenusAsync(spec, moduleId, moduleId, ct);
-            return Ok(new { ok = true, message = $"模块「{moduleId}」的菜单已重置" });
+
+            // 1. 后台 RBAC 菜单：删除后按 install.json 重新创建（ginkgo_Sys_Menu）
+            if (hasBackendMenus)
+            {
+                await sqlExecutor.RemoveMenusAsync(spec, ct);
+                // moduleName 用于菜单展示名兜底，moduleId 用于归属隔离
+                await sqlExecutor.ApplyMenusAsync(spec, moduleId, moduleId, ct);
+            }
+
+            // 2. 客户端入口菜单（移动 / 桌面 / 前端，写 ginkgo_Sys_MenuGroupItem）：
+            //    按 Module 清理后，按 install.json 的 ClientMenus 重新注入到各端默认菜单组。
+            await sqlExecutor.RemoveClientMenusByModuleAsync(moduleId, ct);
+            if (hasClientMenus)
+            {
+                await sqlExecutor.ApplyClientMenusAsync(spec, moduleId, ct);
+            }
+
+            return Ok(new { ok = true, message = $"模块「{moduleId}」的菜单已重置（含后台菜单与客户端入口菜单）" });
         }
         catch (Exception ex)
         {
@@ -1087,13 +1106,28 @@ public sealed class ModulesController : ControllerBase
             return NotFound(new { ok = false, message = $"未找到模块 {req.ModuleId} 的 install.json 配置文件" });
 
         var spec = ModuleSqlExecutor.ReadInstallJson(installPath);
-        if (spec?.Menus == null || string.IsNullOrWhiteSpace(spec.Menus.RootCode))
-            return BadRequest(new { ok = false, message = "该模块的 install.json 中未定义菜单配置" });
+        if (spec == null)
+            return BadRequest(new { ok = false, message = "该模块的 install.json 解析失败" });
+
+        var hasBackendMenus = spec.Menus != null && !string.IsNullOrWhiteSpace(spec.Menus.RootCode);
+        var hasClientMenus = spec.ClientMenus != null && spec.ClientMenus.Count > 0;
+        if (!hasBackendMenus && !hasClientMenus)
+            return BadRequest(new { ok = false, message = "该模块的 install.json 中未定义任何菜单（Menus / ClientMenus）配置" });
 
         try
         {
-            await sqlExecutor.RemoveMenusAsync(spec, ct);
-            return Ok(new { ok = true, message = $"模块「{spec.ModuleId ?? req.ModuleId}」的所有菜单已移除" });
+            var moduleId = spec.ModuleId ?? req.ModuleId;
+
+            // 1. 后台 RBAC 菜单（ginkgo_Sys_Menu）
+            if (hasBackendMenus)
+            {
+                await sqlExecutor.RemoveMenusAsync(spec, ct);
+            }
+
+            // 2. 客户端入口菜单（移动 / 桌面 / 前端，ginkgo_Sys_MenuGroupItem）按 Module 一并清理，含级联项授权
+            await sqlExecutor.RemoveClientMenusByModuleAsync(moduleId, ct);
+
+            return Ok(new { ok = true, message = $"模块「{moduleId}」的所有菜单已移除（含后台菜单与客户端入口菜单）" });
         }
         catch (Exception ex)
         {

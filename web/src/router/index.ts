@@ -72,18 +72,26 @@ function isChunkLoadError(err: any): boolean {
     /Loading CSS chunk \S+ failed/i.test(msg)
   )
 }
+// 同一次页面生命周期内是否已经触发过 reload，防止多个事件监听器竞态重复调用
+let chunkReloadTriggered = false
+
 function reloadOnceForChunkError(targetPath: string) {
+  // 本次页面生命周期内已经触发过一次 reload，不再重复（防止 router.onError 与
+  // window.unhandledrejection 在同一 tick 内竞态调用导致 sessionStorage 保护失效）
+  if (chunkReloadTriggered) return
+
   try {
     const last = sessionStorage.getItem(CHUNK_RELOAD_KEY)
     if (last === targetPath) {
       // 同一个路径已经因为 chunk 错误刷过一次了，再刷也没用，避免死循环
-      sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+      // 注意：不删除 key，由 afterEach（导航成功）统一清理
       return
     }
     sessionStorage.setItem(CHUNK_RELOAD_KEY, targetPath)
   } catch {
     // sessionStorage 不可用时直接刷新
   }
+  chunkReloadTriggered = true
   // 用 location.replace 让浏览器重新拉取 index.html，从而拿到最新的 hash 资源
   if (typeof location !== 'undefined') {
     location.replace(targetPath)

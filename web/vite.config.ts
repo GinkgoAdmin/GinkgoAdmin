@@ -30,7 +30,9 @@ export default defineConfig({
       // Three.js 及其 jsm 模块提前预打包，避免首次访问 3D 页时 Vite 按需重优化退出 504
       'three',
       'three/examples/jsm/controls/OrbitControls.js',
-      'three/examples/jsm/controls/TransformControls.js'
+      'three/examples/jsm/controls/TransformControls.js',
+      // MapLibre GL JS 提前预打包，避免首次访问 Geo 编辑器时 Vite 按需重优化退出 504
+      'maplibre-gl'
     ]
   },
   build: {

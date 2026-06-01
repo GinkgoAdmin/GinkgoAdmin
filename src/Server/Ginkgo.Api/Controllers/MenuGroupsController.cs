@@ -233,6 +233,55 @@ public sealed class MenuGroupsController : ControllerBase
         await _service.SetRoleMenuGroupsAsync(input);
         return Result.Success("设置成功");
     }
+
+    // ===== 角色菜单组项（item 级）授权 =====
+
+    /// <summary>
+    /// 获取各端默认菜单组下的可授权入口项（供角色编辑器按端分组勾选）。
+    /// </summary>
+    [HttpGet("grantable-items")]
+    public async Task<Result<List<GrantableMenuItemDto>>> GetGrantableItemsAsync()
+    {
+        var data = await _service.GetGrantableItemsAsync();
+        return Result<List<GrantableMenuItemDto>>.Success(data);
+    }
+
+    /// <summary>
+    /// 获取角色已授权的菜单组项 Id 列表。
+    /// </summary>
+    [HttpGet("role-item-permissions/{roleId}")]
+    public async Task<Result<List<long>>> GetRoleMenuGroupItemsAsync(long roleId)
+    {
+        var data = await _service.GetRoleMenuGroupItemIdsAsync(roleId);
+        return Result<List<long>>.Success(data);
+    }
+
+    /// <summary>
+    /// 设置角色的菜单组项（item 级）授权（以提交集合全量覆盖）。
+    /// </summary>
+    [HttpPut("role-item-permissions")]
+    public async Task<Result> SetRoleMenuGroupItemsAsync([FromBody] SetRoleMenuGroupItemsInput input)
+    {
+        await _service.SetRoleMenuGroupItemsAsync(input);
+        return Result.Success("设置成功");
+    }
+
+    /// <summary>
+    /// 将菜单组设为默认（每端唯一）。当 <c>ClientType</c> 含多个终端类型时返回 400 错误信息。
+    /// </summary>
+    [HttpPut("{id}/set-default")]
+    public async Task<Result> SetGroupDefaultAsync(long id)
+    {
+        try
+        {
+            await _service.SetGroupDefaultAsync(id);
+            return Result.Success("设置成功");
+        }
+        catch (InvalidOperationException ioe)
+        {
+            return Result.Fail(400, ioe.Message);
+        }
+    }
 }
 
 /// <summary>

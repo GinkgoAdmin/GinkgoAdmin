@@ -4,6 +4,7 @@ using Ginkgo.Domain.Utils;
 using Ginkgo.Infrastructure.Abstractions;
 using SqlSugar;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Ginkgo.Api.Modules;
 
@@ -224,6 +225,42 @@ public sealed class ModuleSqlExecutor
         public Dictionary<string, object>? Config { get; set; }
         public Dictionary<string, string>? Constants { get; set; }
         public MenusSpec? Menus { get; set; }
+        // 客户端入口声明段（install.json 的 ClientMenus），独立于既有后台 RBAC 菜单 Menus 段。
+        // 用于将插件在各端（WEB_PORTAL/WPF/UNIAPP）的业务入口注入到对应端默认菜单组的 MenuGroupItem。
+        public List<ClientMenusSpec>? ClientMenus { get; set; }
+    }
+
+    /// <summary>
+    /// install.json 中单条客户端入口声明：指定终端类型及其入口项集合。
+    /// </summary>
+    public sealed class ClientMenusSpec
+    {
+        // 终端类型：取值范围 WEB_PORTAL / WPF / UNIAPP（区分非法值时跳过并记录警告）。
+        public string? ClientType { get; set; }
+        // 该端的入口项集合。
+        public List<ClientMenuItemSpec>? Items { get; set; }
+    }
+
+    /// <summary>
+    /// install.json 中单个客户端入口项声明（与设计文档《Components and Interfaces 3.3》一致）。
+    /// 该类型仅描述安装清单形状，注入时映射为应用层 <c>Ginkgo.Application.Menus.ClientMenuItemSpec</c>。
+    /// </summary>
+    public sealed class ClientMenuItemSpec
+    {
+        // 入口标题（映射写入 MenuGroupItem.Title）。
+        public string Title { get; set; } = string.Empty;
+        // 入口图标（映射写入 MenuGroupItem.Icon），可选。
+        public string? Icon { get; set; }
+        // 入口跳转地址（映射写入 MenuGroupItem.Url）。
+        public string Path { get; set; } = string.Empty;
+        // 是否需要授权（映射写入 MenuGroupItem.RequireGrant）。
+        public bool RequireGrant { get; set; }
+        // 排序号（映射写入 MenuGroupItem.Order）。
+        public int Order { get; set; }
+        // 角标文案（映射写入 MenuGroupItem.Badge），可选。
+        public string? Badge { get; set; }
+        // 父级入口的 Path（父项的 Path）。为空=顶级入口；非空时注入逻辑据此在同组同模块内解析父项并建立层级。
+        public string? ParentPath { get; set; }
     }
 
     public sealed class MenusSpec
@@ -306,7 +343,7 @@ public sealed class ModuleSqlExecutor
                     rootId = SnowflakeIdGenerator.NextId();
                     using var ic = conn.CreateCommand();
                     ic.CommandText = $@"insert into ginkgo_Sys_Menu(Id,Module,Name,Route,Type,ItemMode,Icon,Url,ParentId,OrderNo,Visible,Code,CreatedAt,IsDeleted,SupportedClients)
-values(@Id,@Module,@Name,@Route,'Directory',NULL,@Icon,NULL,50,1,@Code,{_dialect.UtcNowExpr},0,@SupportedClients)";
+values(@Id,@Module,@Name,@Route,'Directory',NULL,@Icon,NULL,50,1,1,@Code,{_dialect.UtcNowExpr},0,@SupportedClients)";
                     var p1 = ic.CreateParameter(); p1.ParameterName = "@Id"; p1.Value = rootId; ic.Parameters.Add(p1);
                     // 优先使用 RootName，否则使用模块名
                     var rootName = !string.IsNullOrWhiteSpace(spec.Menus.RootName) ? spec.Menus.RootName : moduleName;
@@ -491,6 +528,106 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
                     await dm.ExecuteNonQueryAsync(ct);
                 }
             }
+        }
+
+        // ============================================================
+        // 客户端入口（MenuGroupItem）安装/清理：独立于 ginkgo_Sys_Menu 的后台 RBAC 菜单逻辑，
+        // 复用应用层 IMenuGroupAppService 走既有租户隔离链路写入默认菜单组。
+        // ============================================================
+
+        /// <summary>
+        /// 解析 install.json 的 ClientMenus 段，并将各端入口项注入到对应端的默认菜单组（MenuGroupItem）。
+        /// 行为约定（对应需求 5.4/5.5/5.6/5.7、6.1/6.2/6.3/6.4/6.5/6.6）：
+        ///   - ClientMenus 为空 → 直接返回，不影响既有 Menus 段处理（需求 5.7）。
+        ///   - 逐条校验 ClientType ∈ {WEB_PORTAL, WPF, UNIAPP}（大小写不敏感）：非法则记录警告日志并跳过该条（需求 5.4）；
+        ///     警告日志写入若抛出异常，则任其向上传播以中止本次安装（需求 5.6，故不吞掉日志调用异常）。
+        ///   - 合法但该端无 IsDefault=1 默认组 → 记录警告日志、不创建任何入口项、跳过（需求 6.5）。
+        ///   - 合法且有默认组 → 映射为应用层规格并调用 UpsertClientMenuItemsAsync 注入（需求 6.1/6.3/6.4/6.6），
+        ///     成功后记录含 clientType / Module / 注入数量的处理日志（需求 5.5）。
+        /// 注意：moduleId 原样传递（区分大小写），与 module.json 的 Id 完全一致。
+        /// </summary>
+        public async Task ApplyClientMenusAsync(InstallSpec? spec, string moduleId, CancellationToken ct)
+        {
+            // 需求 5.7：未声明 ClientMenus 段则不注入任何客户端入口项，且不影响既有 Menus 段处理
+            if (spec?.ClientMenus == null || spec.ClientMenus.Count == 0) return;
+
+            // 合法终端类型集合（大小写不敏感比较）
+            var allowedClientTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "WEB_PORTAL", "WPF", "UNIAPP"
+            };
+
+            // IMenuGroupAppService 为 Scoped，ModuleSqlExecutor 为 Singleton，
+            // 因此在方法内创建 scope 解析，避免捕获式依赖（与本类既有 scope 使用风格一致）。
+            using var scope = _services.CreateScope();
+            var sp = scope.ServiceProvider;
+            var menuGroupService = sp.GetRequiredService<Ginkgo.Application.Menus.IMenuGroupAppService>();
+            var logger = sp.GetRequiredService<ILogger<ModuleSqlExecutor>>();
+
+            foreach (var decl in spec.ClientMenus)
+            {
+                var clientType = decl?.ClientType?.Trim();
+
+                // 需求 5.4：非法 clientType → 记录警告日志并跳过；
+                // 需求 5.6：不对警告日志调用做 try/catch 吞没，写入失败时异常向上传播中止安装。
+                if (string.IsNullOrWhiteSpace(clientType) || !allowedClientTypes.Contains(clientType))
+                {
+                    logger.LogWarning(
+                        "插件安装：ClientMenus 声明的 clientType 非法（Module={Module}, clientType={ClientType}），已跳过该声明。",
+                        moduleId, clientType ?? "(null)");
+                    continue;
+                }
+
+                // 归一化为大写规范值，传入应用层服务（其内部按归一化值匹配默认组）
+                var normalizedClientType = clientType.ToUpperInvariant();
+
+                // 需求 6.5：该端无 IsDefault=1 默认组 → 记录警告日志、不创建任何项、跳过
+                var defaultGroupId = await menuGroupService.GetDefaultGroupIdAsync(normalizedClientType, ct);
+                if (defaultGroupId == null)
+                {
+                    logger.LogWarning(
+                        "插件安装：终端类型 {ClientType} 不存在默认菜单组（Module={Module}），已跳过该端入口注入、未创建任何入口项。",
+                        normalizedClientType, moduleId);
+                    continue;
+                }
+
+                // 映射安装清单规格 → 应用层规格（同名类型分属不同命名空间，显式以全限定名映射）
+                var items = decl!.Items ?? new List<ClientMenuItemSpec>();
+                var appSpecs = items.Select(it => new Ginkgo.Application.Menus.ClientMenuItemSpec
+                {
+                    Title = it.Title,
+                    Icon = it.Icon,
+                    Path = it.Path,
+                    RequireGrant = it.RequireGrant,
+                    Order = it.Order,
+                    Badge = it.Badge,
+                    ParentPath = it.ParentPath
+                }).ToList();
+
+                // 需求 6.1/6.3/6.4/6.6：注入到该端默认组并 upsert，走既有租户隔离链路
+                await menuGroupService.UpsertClientMenuItemsAsync(normalizedClientType, moduleId, appSpecs, ct);
+
+                // 需求 5.5：成功注入后记录含 clientType / Module / 数量的处理日志
+                logger.LogInformation(
+                    "插件安装：已注入客户端入口项（clientType={ClientType}, Module={Module}, 数量={Count}）。",
+                    normalizedClientType, moduleId, appSpecs.Count);
+            }
+        }
+
+        /// <summary>
+        /// 按 Module 清理插件注入的全部客户端入口项（MenuGroupItem）及其角色授权关联（RoleMenuGroupItem）。
+        /// 委托应用层 RemoveClientMenuItemsByModuleAsync 执行：删除 Module=moduleId 的入口项及其授权关联，
+        /// 不触碰 Module='sys' 项、不删除任何 MenuGroup 记录（需求 7.1/7.2/7.3/7.4）。
+        /// 可并入既有 RemoveModuleDataAsync 调用序列。moduleId 原样传递（区分大小写）。
+        /// </summary>
+        public async Task RemoveClientMenusByModuleAsync(string moduleId, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(moduleId)) return;
+
+            using var scope = _services.CreateScope();
+            var menuGroupService = scope.ServiceProvider
+                .GetRequiredService<Ginkgo.Application.Menus.IMenuGroupAppService>();
+            await menuGroupService.RemoveClientMenuItemsByModuleAsync(moduleId, ct);
         }
 
         /// <summary>

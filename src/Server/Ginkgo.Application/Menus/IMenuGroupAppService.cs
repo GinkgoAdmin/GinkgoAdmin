@@ -97,4 +97,65 @@ public interface IMenuGroupAppService
     /// 设置角色的菜单组权限。
     /// </summary>
     Task SetRoleMenuGroupsAsync(SetRoleMenuGroupsInput input, CancellationToken ct = default);
+
+    // ===== 默认菜单组维护（每端唯一） =====
+
+    /// <summary>
+    /// 将指定菜单组设为默认：校验其 <c>ClientType</c> 为单一终端类型，含逗号分隔多端时抛
+    /// <see cref="InvalidOperationException"/>；将同一 <c>ClientType</c> 下其他组 <c>IsDefault</c>
+    /// 重置为 0，目标组置 1。
+    /// </summary>
+    Task SetGroupDefaultAsync(long groupId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 查指定终端类型的 <c>IsDefault=1</c> 菜单组 Id（无默认组时返回 null）。
+    /// </summary>
+    Task<long?> GetDefaultGroupIdAsync(string clientType, CancellationToken ct = default);
+
+    // ===== 统一客户端入口（Portal） =====
+
+    /// <summary>
+    /// 构建该端默认菜单组下当前用户可见的入口树（超管返回全部项；非超管按 <c>RequireGrant</c>
+    /// 与 item 级授权过滤）。
+    /// </summary>
+    Task<ClientPortalDto> GetClientPortalAsync(string clientType, long? userId, CancellationToken ct = default);
+
+    // ===== 角色菜单组项（item 级）授权 =====
+
+    /// <summary>
+    /// 返回各端 <c>IsDefault=1</c> 默认菜单组下的可授权入口项（供角色编辑器按端分组勾选）。
+    /// </summary>
+    Task<List<GrantableMenuItemDto>> GetGrantableItemsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// 查角色已授权的菜单组项 Id 集合。
+    /// </summary>
+    Task<List<long>> GetRoleMenuGroupItemIdsAsync(long roleId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 以提交的菜单组项集合全量覆盖该角色的 item 级授权（去重后写入，保证唯一）。
+    /// </summary>
+    Task SetRoleMenuGroupItemsAsync(SetRoleMenuGroupItemsInput input, CancellationToken ct = default);
+
+    // ===== 安装链路客户端入口注入 / 清理 =====
+
+    /// <summary>
+    /// 供安装链路注入入口项：定位该端 <c>IsDefault=1</c> 菜单组，按
+    /// <c>(MenuGroupId, Module, Url)</c> 标识对 <see cref="ClientMenuItemSpec"/> 执行 upsert
+    /// （更新已存在项、新增缺失项），无默认组时不创建任何项。
+    /// </summary>
+    Task UpsertClientMenuItemsAsync(string clientType, string moduleId, IEnumerable<ClientMenuItemSpec> items, CancellationToken ct = default);
+
+    /// <summary>
+    /// 按模块归属（<c>Module</c>）过滤查询菜单组项，恰好返回 <c>Module</c> 等于给定值的项集合。
+    /// 用于按插件作用域查询入口项（区分大小写匹配）。
+    /// </summary>
+    Task<List<MenuGroupItemDto>> GetItemsByModuleAsync(string module, CancellationToken ct = default);
+
+    /// <summary>
+    /// 供卸载链路按 <c>Module</c> 清理入口项：删除 <c>Module=moduleId</c> 的全部
+    /// <c>MenuGroupItem</c> 及其级联的 <c>RoleMenuGroupItem</c> 授权关联，不触碰
+    /// <c>Module='sys'</c> 项，不删除任何 <c>MenuGroup</c> 记录。
+    /// </summary>
+    Task RemoveClientMenuItemsByModuleAsync(string moduleId, CancellationToken ct = default);
 }

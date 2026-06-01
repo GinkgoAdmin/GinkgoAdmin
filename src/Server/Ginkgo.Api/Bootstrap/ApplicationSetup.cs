@@ -107,6 +107,12 @@ public static class ApplicationSetup
         services.AddScoped<IRoleAppService, RoleAppService>();
         services.AddScoped<Ginkgo.Application.Departments.IDepartmentAppService, Ginkgo.Application.Departments.DepartmentAppService>();
         services.AddScoped<IMenuAppService, MenuAppService>();
+        // 菜单组应用服务。MenuGroupAppService 与 RoleAppService 构造函数新增依赖
+        // IRepository<RoleMenuGroupItem>（见 RoleMenuGroupItem 角色菜单组明细实体）。
+        // 通用仓储已在 Ginkgo.Infrastructure 的 AddGinkgoPersistence() 中以开放泛型方式注册：
+        //   services.AddScoped(typeof(IRepository<>), typeof(SqlSugarRepository<>));
+        // 因此 IRepository<RoleMenuGroupItem> 会随任意实体类型自动解析，无需在此追加封闭泛型注册，
+        // 也避免与开放泛型注册产生冲突。
         services.AddScoped<IMenuGroupAppService, MenuGroupAppService>();
         services.AddScoped<IDictionaryAppService, DictionaryAppService>();
         services.AddScoped<ISettingsAppService, SettingsAppService>();

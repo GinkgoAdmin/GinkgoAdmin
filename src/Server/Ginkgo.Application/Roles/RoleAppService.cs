@@ -23,6 +23,7 @@ public sealed class RoleAppService : IRoleAppService
     private readonly IRepository<Permission> _permissionRepository;
     private readonly IRepository<RolePermission> _rolePermissionRepository;
     private readonly IRepository<Menu> _menuRepository;
+    private readonly IRepository<RoleMenuGroupItem> _roleMenuGroupItemRepository;
     private readonly IRoleDataScopeService _roleDataScopeService;
 
     // 专用仓储/服务（下沉复杂查询，避免应用层直接 Query）
@@ -39,6 +40,7 @@ public sealed class RoleAppService : IRoleAppService
     /// <param name="permissionRepository">权限仓储。</param>
     /// <param name="rolePermissionRepository">角色-权限关系仓储。</param>
     /// <param name="menuRepository">菜单仓储。</param>
+    /// <param name="roleMenuGroupItemRepository">角色-菜单组项授权关系仓储（删除角色时级联清理）。</param>
     /// <param name="roleDataScopeService">角色数据范围领域服务。</param>
     /// <param name="roleRepoEx">角色仓储（查询/分页专用）。</param>
     /// <param name="rolePermRepoEx">角色-权限关系仓储（替换式保存）。</param>
@@ -50,6 +52,7 @@ public sealed class RoleAppService : IRoleAppService
         IRepository<Permission> permissionRepository,
         IRepository<RolePermission> rolePermissionRepository,
         IRepository<Menu> menuRepository,
+        IRepository<RoleMenuGroupItem> roleMenuGroupItemRepository,
         IRoleDataScopeService roleDataScopeService,
         IRoleRepository roleRepoEx,
         IRolePermissionRepository rolePermRepoEx,
@@ -60,6 +63,7 @@ public sealed class RoleAppService : IRoleAppService
         _permissionRepository = permissionRepository;
         _rolePermissionRepository = rolePermissionRepository;
         _menuRepository = menuRepository;
+        _roleMenuGroupItemRepository = roleMenuGroupItemRepository;
         _roleDataScopeService = roleDataScopeService;
         _roleRepoEx = roleRepoEx;
         _rolePermRepoEx = rolePermRepoEx;
@@ -128,6 +132,16 @@ public sealed class RoleAppService : IRoleAppService
     /// <inheritdoc />
     public async Task DeleteAsync(long id, CancellationToken cancellationToken = default)
     {
+        // 级联清理该角色的菜单组项（item 级）授权关联（RoleMenuGroupItem），避免残留孤儿授权（需求 8.7）
+        var roleItemIds = _roleMenuGroupItemRepository.Query()
+            .Where(x => x.RoleId == id)
+            .Select(x => x.Id)
+            .ToList();
+        if (roleItemIds.Count > 0)
+        {
+            await _roleMenuGroupItemRepository.DeleteRangeAsync(roleItemIds, cancellationToken);
+        }
+
         await _roleRepository.DeleteAsync(id, cancellationToken);
     }
 

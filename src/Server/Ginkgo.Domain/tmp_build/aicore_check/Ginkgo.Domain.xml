@@ -1,0 +1,1757 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Ginkgo.Domain</name>
+    </assembly>
+    <members>
+        <member name="T:Ginkgo.Domain.Entity">
+            <summary>
+            领域实体基类，包含统一的主键 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Entity.Id">
+            <summary>
+            实体主键（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.AuditableEntity">
+            <summary>
+            审计实体基类，包含创建与更新信息，以及软删除标记。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.AuditableEntity.CreatedAt">
+            <summary>
+            创建时间（UTC）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.AuditableEntity.CreatedBy">
+            <summary>
+            创建人用户 ID（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.AuditableEntity.UpdatedAt">
+            <summary>
+            最后更新时间（UTC）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.AuditableEntity.UpdatedBy">
+            <summary>
+            最后更新人用户 ID（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.AuditableEntity.IsDeleted">
+            <summary>
+            是否软删除。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.AuditableEntity.DeletedAt">
+            <summary>
+            删除时间（UTC，可空）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.AuditableEntity.DeletedBy">
+            <summary>
+            删除人用户 ID（Snowflake ID，可空）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.IRepository`1">
+            <summary>
+            泛型仓储接口，定义最小的数据访问操作。
+            </summary>
+            <typeparam name="T">实体类型。</typeparam>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.Query">
+            <summary>
+            返回可查询的集合，用于组合查询。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.GetByIdAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            根据主键获取实体。
+            </summary>
+            <param name="id">实体主键（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.AddAsync(`0,System.Threading.CancellationToken)">
+            <summary>
+            新增实体。
+            </summary>
+            <param name="entity">实体对象。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.UpdateAsync(`0,System.Threading.CancellationToken)">
+            <summary>
+            更新实体。
+            </summary>
+            <param name="entity">实体对象。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.DeleteAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            根据主键删除实体。
+            </summary>
+            <param name="id">实体主键（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.AddRangeAsync(System.Collections.Generic.IEnumerable{`0},System.Threading.CancellationToken)">
+            <summary>
+            批量新增实体。
+            </summary>
+            <param name="entities">实体集合。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.UpdateRangeAsync(System.Collections.Generic.IEnumerable{`0},System.Threading.CancellationToken)">
+            <summary>
+            批量更新实体。
+            </summary>
+            <param name="entities">实体集合。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.DeleteRangeAsync(System.Collections.Generic.IEnumerable{System.Int64},System.Threading.CancellationToken)">
+            <summary>
+            批量删除实体。
+            </summary>
+            <param name="ids">实体主键集合（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.CountAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取实体总数。
+            </summary>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.ExistsAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            检查实体是否存在。
+            </summary>
+            <param name="id">实体主键（Snowflake ID）。</param>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="M:Ginkgo.Domain.IRepository`1.GetAllAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取所有实体。
+            </summary>
+            <param name="cancellationToken">取消令牌。</param>
+        </member>
+        <member name="T:Ginkgo.Domain.Auth.RefreshToken">
+            <summary>
+            Refresh Token 实体，支持令牌轮换（Rotation）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Auth.RefreshToken.Token">
+            <summary>
+            令牌值（随机字符串）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Auth.RefreshToken.UserId">
+            <summary>
+            关联用户 ID。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Auth.RefreshToken.ExpiresAt">
+            <summary>
+            过期时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Auth.RefreshToken.IsRevoked">
+            <summary>
+            是否已吊销。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Auth.RefreshToken.RevokedAt">
+            <summary>
+            吊销时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Auth.RefreshToken.CreatedByIp">
+            <summary>
+            创建时的客户端 IP。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Auth.RefreshToken.ReplacedByToken">
+            <summary>
+            轮换后替代此令牌的新令牌值（用于追踪令牌链）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Auth.RefreshToken.CreatedAt">
+            <summary>
+            创建时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Auth.RefreshToken.IsActive">
+            <summary>
+            令牌是否有效（未过期且未吊销）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Modules.InstalledModuleEntity.Enabled">
+            <summary>
+            是否启用（启用：程序启动时加载；禁用：启动时跳过）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Modules.InstalledModuleEntity.MenuRootCode">
+            <summary>
+            插件菜单根编码（来自 install.json 的 Menus.RootCode），卸载时用于定位并移除关联菜单
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Modules.ModuleIdentifierValidator">
+            <summary>
+            模块标识符与相关安全敏感字段的合法性校验工具。
+            所有接收外部输入的入口（控制器、上传校验、客户端任务）都应在第一时间用本类校验，
+            不合法 → 直接拒绝（400/参数异常），避免路径穿越、命令注入等下游风险。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Modules.ModuleIdentifierValidator.IsSafeModuleId(System.String)">
+            <summary>
+            校验模块 ID 是否合法。规则：以字母开头，仅允许字母/数字/点/连字符/下划线，长度 1~128。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Modules.ModuleIdentifierValidator.IsSafeVersion(System.String)">
+            <summary>
+            校验版本号是否合法（宽松 semver，允许 v 前缀，最多 4 段、含预发布与构建元数据）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Modules.ModuleIdentifierValidator.IsSafeNpmPackageName(System.String)">
+            <summary>
+            校验 npm 包名是否符合 npm 官方规则（含范围包）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Modules.ModuleIdentifierValidator.IsSafeNpmVersionSpec(System.String)">
+            <summary>
+            校验 npm 版本规范字符串是否仅含允许字符（拒绝 shell 元字符）。
+            空字符串视为"未指定版本，使用 latest"，返回 true。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Modules.ModuleIdentifierValidator.IsSafeClientId(System.String)">
+            <summary>
+            校验客户端 ID 是否合法。允许 GUID（"N" 格式，无连字符）或主机名风格短串。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Modules.ModuleIdentifierValidator.IsSafeMenuCode(System.String)">
+            <summary>
+            校验菜单/路由 RootCode 是否合法（不会被拼接到 SQL/路径外）。
+            字母开头 + 字母数字/点/连字符/下划线/冒号，长度 1~128。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Departments.Department">
+            <summary>
+            部门实体。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Departments.Department.ParentId">
+            <summary>
+            父级部门 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Departments.Department.Name">
+            <summary>
+            部门名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Departments.Department.Code">
+            <summary>
+            部门编码。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Departments.Department.LeaderUserId">
+            <summary>
+            负责人用户 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Departments.Department.Order">
+            <summary>
+            排序号。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Departments.Department.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Dictionaries.DictionaryCategory">
+            <summary>
+            字典分类实体。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.Module">
+            <summary>
+            所属模块标识：sys = 主框架系统级，其他为插件 module.json 中的 id。
+            用于插件卸载时按模块快速定位并清理字典。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.Code">
+            <summary>
+            分类编码（唯一）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.Name">
+            <summary>
+            分类名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.NameI18n">
+            <summary>
+            分类名称-多语言 JSON
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.IsSystem">
+            <summary>
+            是否系统内置。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.Category">
+            <summary>
+            字典类型（STATIC/DYNAMIC/MAPPING/HIERARCHY/CONFIG/MULTI_LANG/REFERENCE）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.SourceType">
+            <summary>
+            来源类型或数据源标识（可选）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.Description">
+            <summary>
+            描述。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.DescriptionI18n">
+            <summary>
+            描述-多语言 JSON
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryCategory.ExtraJson">
+            <summary>
+            扩展 JSON（多语言或映射配置等）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Dictionaries.DictionaryItem">
+            <summary>
+            字典条目实体。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryItem.Module">
+            <summary>
+            所属模块标识：sys = 主框架系统级，其他为插件 module.json 中的 id。
+            默认随所属字典分类，便于插件卸载时按模块批量清理。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryItem.ParentId">
+            <summary>
+            上级条目 Id（用于层级型字典）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryItem.CategoryId">
+            <summary>
+            所属分类 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryItem.ItemKey">
+            <summary>
+            条目键。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryItem.ItemValue">
+            <summary>
+            条目值。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryItem.ValueI18n">
+            <summary>
+            条目值-多语言 JSON
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryItem.Order">
+            <summary>
+            排序号。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryItem.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Dictionaries.DictionaryItem.ExtraJson">
+            <summary>
+            扩展数据（不同类型的条目的差异化配置）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Events.IDomainEvent">
+            <summary>
+            领域事件基接口。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Events.IDomainEventHandler`1">
+            <summary>
+            领域事件处理器接口。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Events.IDomainEventPublisher">
+            <summary>
+            领域事件发布器。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Files.FileDomainService">
+            <summary>
+            领域服务实现：封装上传内容的校验、哈希、存储与元数据创建。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Files.IFileContentStorage">
+            <summary>
+            领域层存储端口：文件内容读写删除。
+            由基础设施层适配具体实现（本地/云）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.IFileContentStorage.ProviderName">
+            <summary>提供者名称（用于元数据记录，如 Local、Oss 等）。</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Files.IFileContentStorage.SaveAsync(System.IO.Stream,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>保存内容，返回存储路径/Key。</summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Files.IFileDomainService">
+            <summary>
+            领域服务：处理文件上传中的领域规则与存储交互（哈希、校验、保存、元数据构建）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Files.IFileDomainService.CreateFromUploadAsync(System.IO.Stream,System.String,System.String,System.Int64,System.Nullable{System.Int64},System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            基于上传内容创建文件实体（保存到内容存储并返回聚合根）。
+            不负责对外URL构建与持久化，应用服务负责编排。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Files.SysFile">
+            <summary>
+            系统文件元数据。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.SysFile.Type">
+            <summary>
+            业务分类（来自字典 category=file 的键），默认 default。
+            注意：数据库列名为小写 type，与关键词冲突，映射时指定列名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.SysFile.DepartmentId">
+            <summary>
+            所属部门，可为空。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Files.SysFileGrant">
+            <summary>
+            文件公开访问授权。
+            当某个业务对象（如系统设置、公开门户）需要公开展示某文件时，
+            由该业务对象创建 Grant，生成高强度随机 GrantKey 作为匿名访问凭据。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.SysFileGrant.FileId">
+            <summary>
+            关联的文件 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.SysFileGrant.GrantKey">
+            <summary>
+            公开访问密钥（高强度随机串，Base64Url 编码，不可从 FileId 派生）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.SysFileGrant.RefType">
+            <summary>
+            引用方类型（如 Setting、Article、Portal 等）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.SysFileGrant.RefId">
+            <summary>
+            引用方业务对象标识（如 Site.Logo、文章Id 等）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.SysFileGrant.FieldName">
+            <summary>
+            引用方字段名（如 Logo、CoverImage 等）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.SysFileGrant.IsRevoked">
+            <summary>
+            是否已撤销。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Files.SysFileGrant.ExpiresAt">
+            <summary>
+            过期时间（null 表示永不过期）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Files.SysFileGrant.Create(System.Int64,System.String,System.String,System.String,System.Nullable{System.DateTime},System.Nullable{System.Int64})">
+            <summary>
+            创建新的文件公开授权。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Files.SysFileGrant.Revoke(System.Nullable{System.Int64})">
+            <summary>
+            撤销此授权，公开链接立即失效。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Files.SysFileGrant.IsValid">
+            <summary>
+            判断当前授权是否有效（未撤销且未过期）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Files.SysFileGrant.GenerateGrantKey">
+            <summary>
+            生成 32 字节的高强度随机 Base64Url 串作为 GrantKey。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Logs.Events.OpLogAppended">
+            <summary>
+            操作日志已追加（OpLog appended）事件。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Logs.OpLog">
+            <summary>
+            操作日志实体（逐步对齐标准审计/软删除规范）。
+            说明：为保障迁移灰度，暂继承 Entity，并以 IsIgnore 方式预埋审计字段；
+            数据库列上线后去掉 IsIgnore 即可无缝切换。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Logs.OpLog.At">
+            <summary>
+            操作时间（数据库 NOT NULL）
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Logs.OpLog.Create(System.String,System.String,System.Nullable{System.Int64})">
+            <summary>
+            工厂方法：创建基础操作日志并填充审计字段。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Logs.OpLog.AttachDetails(System.String,System.String,System.Object)">
+            <summary>
+            附加请求细节（自动脱敏/裁剪可在基础设施实现中升级）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Menus.IMenuRepository">
+            <summary>
+            菜单仓储契约。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.IMenuRepository.GetAllOrderedAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取全部菜单，按 ParentId、Order 排序。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Menus.Menu">
+            <summary>
+            菜单实体。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.Module">
+            <summary>
+            所属模块标识：sys = 主框架系统级，其他为插件 module.json 中的 id。
+            用于插件卸载时按模块快速定位并清理菜单。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.Name">
+            <summary>
+            菜单名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.NameI18n">
+            <summary>
+            菜单名称-多语言 JSON，格式: {"zh-CN":"系统管理","en":"System"}
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.Route">
+            <summary>
+            路由或标识。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.Type">
+            <summary>
+            资源类型：Directory / Menu / Button / Api。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.ItemMode">
+            <summary>
+            菜单项打开方式：Tab / Link，仅当 Type=Item 时有效。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.Icon">
+            <summary>
+            图标。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.Url">
+            <summary>
+            外部链接 URL（ItemMode=Link 时使用）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.ParentId">
+            <summary>
+            父级菜单 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.Order">
+            <summary>
+            排序号。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.Menu.Code">
+            <summary>
+            唯一编码：Menu=Route；Button=完整菜单路由:动作；Api=模块:动作
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Menus.MenuGroup">
+            <summary>
+            菜单组实体（类似 WordPress 菜单组概念）。
+            用于管理前端导航、页脚链接、手机端菜单等自定义导航菜单。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroup.Name">
+            <summary>
+            菜单组名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroup.Slug">
+            <summary>
+            唯一标识（程序调用用，如 frontend-nav、footer）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroup.Description">
+            <summary>
+            描述说明。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroup.Location">
+            <summary>
+            展示位置标识（site-header / mobile-tabbar / site-footer 等）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroup.ClientType">
+            <summary>
+            适用终端类型（WEB_ADMIN/WEB_PORTAL/WPF/UNIAPP，逗号分隔）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroup.IsSystem">
+            <summary>
+            是否系统内置（内置菜单组不可删除）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroup.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroup.MaxDepth">
+            <summary>
+            最大嵌套层级（0=不限制）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroup.Version">
+            <summary>
+            版本标识（v1/v2/beta，同 Location 可多版本）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroup.Create(System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            工厂方法：创建菜单组。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroup.UpdateMeta(System.String,System.String,System.String,System.String,System.String,System.String,System.Int32)">
+            <summary>
+            更新菜单组基本信息。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroup.Enable">
+            <summary>
+            启用。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroup.Disable">
+            <summary>
+            禁用。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Menus.MenuGroupItem">
+            <summary>
+            菜单组项实体（菜单组内的菜单项，支持树形嵌套）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.MenuGroupId">
+            <summary>
+            所属菜单组 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.ParentId">
+            <summary>
+            父级菜单项 Id（树形自关联）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.Title">
+            <summary>
+            显示标题。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.TitleI18n">
+            <summary>
+            多语言标题 JSON。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.Subtitle">
+            <summary>
+            副标题/描述。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.Icon">
+            <summary>
+            图标。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.Image">
+            <summary>
+            图片地址（图片导航场景）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.LinkType">
+            <summary>
+            链接类型：Custom=自定义链接, SystemMenu=关联系统菜单, External=外部链接。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.Url">
+            <summary>
+            链接地址。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.Target">
+            <summary>
+            打开方式：_self=当前窗口, _blank=新窗口。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.RefMenuId">
+            <summary>
+            关联的系统菜单 Id（LinkType=SystemMenu 时使用）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.PermissionCode">
+            <summary>
+            权限编码（与系统菜单 PermissionCode 同体系，用于按角色过滤显示）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.CssClass">
+            <summary>
+            自定义 CSS 类名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.Badge">
+            <summary>
+            角标文字（如 New, Hot, 99+）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.BadgeType">
+            <summary>
+            角标类型：primary/success/warning/danger/info。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.ExtraData">
+            <summary>
+            扩展数据（JSON 格式）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.Order">
+            <summary>
+            排序号（同级从小到大）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.MenuGroupItem.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroupItem.Create(System.Int64,System.String,System.String,System.String,System.Nullable{System.Int64},System.Nullable{System.Int64})">
+            <summary>
+            工厂方法：创建菜单组项。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroupItem.UpdateMeta(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Nullable{System.Int64},System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            更新基本信息。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroupItem.MoveTo(System.Nullable{System.Int64})">
+            <summary>
+            移动到指定父级。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroupItem.SetOrder(System.Int32)">
+            <summary>
+            设置排序号。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroupItem.Enable">
+            <summary>
+            启用。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroupItem.Disable">
+            <summary>
+            禁用。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Menus.MenuGroupItem.NormalizeLinkType(System.String)">
+            <summary>
+            标准化链接类型。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Menus.RoleMenuGroup">
+            <summary>
+            角色菜单组权限关联（控制角色可访问哪些菜单组）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.RoleMenuGroup.RoleId">
+            <summary>
+            角色 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.RoleMenuGroup.MenuGroupId">
+            <summary>
+            菜单组 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.RoleMenuGroup.CreatedAt">
+            <summary>
+            创建时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Menus.RoleMenuGroup.CreatedBy">
+            <summary>
+            创建人。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Messages.Message">
+            <summary>
+            系统消息实体，用于存储发送给用户的通知消息。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.Message.UserId">
+            <summary>
+            接收用户ID（Snowflake ID）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.Message.Title">
+            <summary>
+            消息标题。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.Message.Summary">
+            <summary>
+            消息摘要。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.Message.Content">
+            <summary>
+            消息正文。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.Message.Type">
+            <summary>
+            消息类型：system/task/notice。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.Message.IsRead">
+            <summary>
+            是否已读。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.Message.ReadAt">
+            <summary>
+            阅读时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.Message.DeliveryRole">
+            <summary>
+            送达角色：primary（主送）或 cc（知会）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Messages.MessageAttachment">
+            <summary>
+            消息附件实体，关联消息与文件（图片或文件附件）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.MessageAttachment.MessageId">
+            <summary>
+            关联消息ID。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.MessageAttachment.FileId">
+            <summary>
+            关联文件ID（SysFile）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.MessageAttachment.FileName">
+            <summary>
+            文件名。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.MessageAttachment.FileSize">
+            <summary>
+            文件大小（字节）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.MessageAttachment.AttachmentType">
+            <summary>
+            附件类型：image（图片）或 file（文件）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Messages.MessageLink">
+            <summary>
+            消息链接实体，关联消息与跳转链接，支持多平台（web/wpf/uniapp）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.MessageLink.MessageId">
+            <summary>
+            关联消息ID。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.MessageLink.Title">
+            <summary>
+            链接标题。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.MessageLink.Platform">
+            <summary>
+            目标平台：web、wpf 或 uniapp。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Messages.MessageLink.Url">
+            <summary>
+            跳转URL（含路径和参数）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Notifications.IAudienceResolver">
+            <summary>
+            领域服务：将受众种子解析为具体收件人。
+            注意：最小实现可仅支持 TargetType=0（用户），后续再扩展角色/部门/表达式。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Notifications.NotificationMessage.TitleI18n">
+            <summary>
+            标题-多语言 JSON
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Permissions.IPermissionRepository">
+            <summary>
+            权限仓储契约。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Permissions.IPermissionRepository.GetAllEnabledAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取所有启用的权限，按 Code 排序。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Repositories.IOpLogRepository">
+            <summary>
+            操作日志仓储接口（DDD 领域层契约）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Roles.IRoleDataScopeService">
+            <summary>
+            角色数据范围领域服务（领域层接口）。
+            负责读取"指定部门"映射与以事务方式替换数据范围设置。
+            具体数据访问由基础设施层实现，应用层只负责编排与 DTO 映射。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Roles.IRoleDataScopeService.GetSpecifiedDepartmentIdsAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取角色在"指定部门（SpecifiedDepartments）"策略下的部门 Id 列表。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Roles.IRoleDataScopeService.ReplaceAsync(Ginkgo.Domain.Roles.Role,System.String,System.Collections.Generic.IEnumerable{System.Int64},System.Threading.CancellationToken)">
+            <summary>
+            以事务方式替换角色的数据范围设置：更新角色实体的策略字段，并替换"指定部门"映射。
+            说明：如果 <paramref name="normalizedDataScope"/> 不为 "SpecifiedDepartments"，则会清空映射。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Roles.IRolePermissionRepository">
+            <summary>
+            角色-权限关系仓储契约。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Roles.IRolePermissionRepository.GetAssignedPermissionIdsAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            获取角色已分配的权限（此处 PermissionId 存储 MenuId）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Roles.IRolePermissionRepository.ReplaceAsync(System.Int64,System.Collections.Generic.IEnumerable{System.Int64},System.Threading.CancellationToken)">
+            <summary>
+            以替换方式保存角色的权限（先删后插，内部进行最小化写入）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Roles.IRoleRepository">
+            <summary>
+            角色仓储契约（领域层）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Roles.IRoleRepository.GetPagedAsync(System.Int32,System.Int32,System.String,System.Threading.CancellationToken)">
+            <summary>
+            分页查询（按关键词模糊匹配 Name/Code，按 Id 倒序）。
+            返回 total 与 items。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Roles.IRoleRepository.GetAllOrderedAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取扁平列表（用于角色树构建），按 ParentId、Name 排序。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Roles.Role">
+            <summary>
+            角色实体。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Roles.Role.ParentId">
+            <summary>
+            父级角色 Id（树形）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Roles.Role.Name">
+            <summary>
+            角色名称（唯一）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Roles.Role.Code">
+            <summary>
+            角色编码（用于权限控制）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Roles.Role.DataScope">
+            <summary>
+            数据范围策略（与 DataScopeType 对应，存储枚举名：All/OwnOnly/DepartmentOnly/DepartmentAndChildren/SpecifiedDepartments/Custom）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Roles.Role.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Roles.Role.IsSuperAdmin">
+            <summary>
+            是否为超级管理员角色（启用时该角色下所有用户视为超管，跳过所有权限验证）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Roles.Role.AllowedClients">
+            <summary>
+            允许登录的客户端列表（逗号分隔：WEB_ADMIN,WEB_PORTAL,WPF,UNIAPP）。
+            为 null 或空字符串表示不限制（允许所有客户端）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Roles.Role.SetDataScope(System.String)">
+            <summary>
+            设置数据范围（大小写不敏感，非法值回退为 All）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Roles.RoleDataScopeDept">
+            <summary>
+            角色-数据范围-指定部门关系。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Roles.RoleDataScopeDept.RoleId">
+            <summary>
+            角色 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Roles.RoleDataScopeDept.DepartmentId">
+            <summary>
+            部门 Id。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Scheduling.IScheduledTaskRepository">
+            <summary>
+            定时任务仓储接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.GetAllTasksAsync(System.Threading.CancellationToken)">
+            <summary>
+            获取所有任务记录。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.GetByKeyAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            按 TaskKey 获取任务记录。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.UpsertAsync(Ginkgo.Domain.Scheduling.ScheduledTaskRecord,System.Threading.CancellationToken)">
+            <summary>
+            插入或更新任务记录（按 TaskKey 判断是否存在）。
+            如果已存在，仅更新 DisplayName/Group/Description/Source，不覆盖用户自定义的 CronExpression/IsEnabled。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.UpdateRunInfoAsync(System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.Nullable{System.Int32},System.Threading.CancellationToken)">
+            <summary>
+            更新任务的运行信息（LastRunAt/NextRunAt/LastResult/LastElapsedMs）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.UpdateConfigAsync(System.String,System.Boolean,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            更新任务的可配置项（IsEnabled/CronExpression/Description）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.CreateDynamicTaskAsync(Ginkgo.Domain.Scheduling.ScheduledTaskRecord,System.Threading.CancellationToken)">
+            <summary>
+            创建动态任务（完整插入，不走 Upsert 的元数据保护逻辑）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.DeleteDynamicTaskAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            删除动态任务（仅允许删除 DefinitionType=Dynamic 的任务）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.UpdateDynamicTaskAsync(Ginkgo.Domain.Scheduling.ScheduledTaskRecord,System.Threading.CancellationToken)">
+            <summary>
+            更新动态任务的完整配置。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.AddLogAsync(Ginkgo.Domain.Scheduling.ScheduledTaskLog,System.Threading.CancellationToken)">
+            <summary>
+            添加执行日志。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Scheduling.IScheduledTaskRepository.GetLogsPagedAsync(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            分页查询指定任务的执行日志（按 StartedAt 倒序）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Scheduling.ScheduledTaskLog">
+            <summary>
+            定时任务执行日志记录。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskLog.TaskKey">
+            <summary>
+            任务唯一标识。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskLog.StartedAt">
+            <summary>
+            执行开始时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskLog.FinishedAt">
+            <summary>
+            执行结束时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskLog.Success">
+            <summary>
+            是否执行成功。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskLog.ErrorMessage">
+            <summary>
+            错误信息（失败时记录）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskLog.ElapsedMs">
+            <summary>
+            执行耗时（毫秒）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskLog.TriggerType">
+            <summary>
+            触发方式（Auto / Manual）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskLog.DetailsJson">
+            <summary>
+            执行详情 JSON（HTTP 响应、SQL 影响行数、能力返回数据等）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Scheduling.ScheduledTaskRecord">
+            <summary>
+            定时任务注册记录（持久化到数据库，保存运行时状态与用户自定义配置）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.TaskKey">
+            <summary>
+            任务唯一标识（如 System.VerificationCodeCleanup）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.DisplayName">
+            <summary>
+            任务显示名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.Group">
+            <summary>
+            任务分组。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.CronExpression">
+            <summary>
+            Cron 表达式（5 段式，可被管理员在后台修改覆盖代码默认值）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.IsEnabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.LastRunAt">
+            <summary>
+            上次执行时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.NextRunAt">
+            <summary>
+            下次计划执行时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.LastResult">
+            <summary>
+            上次执行结果（Success / Failed / Running）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.LastElapsedMs">
+            <summary>
+            上次执行耗时（毫秒）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.Description">
+            <summary>
+            任务描述。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.ExecutionType">
+            <summary>
+            执行类型（如"内置方法"、"HTTP 回调"、"SQL 脚本"等）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.ExecutionTarget">
+            <summary>
+            执行目标描述（类全名、URL、SQL 等）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.DefinitionType">
+            <summary>
+            任务定义类型：CodeBased（代码注册）或 Dynamic（动态配置）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.ExecutionSource">
+            <summary>
+            执行源标识（对应 ITaskExecutionProvider.SourceKey，如 Action/Http/Sql/AIPrompt）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.ActionKey">
+            <summary>
+            引用的动作键（ExecutionSource=Action 时使用）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.ConfigJson">
+            <summary>
+            动态任务的完整执行配置（JSON 格式，存储提供器所需的所有参数）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.Source">
+            <summary>
+            任务来源（BuiltIn / 模块Id / 插件名称）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.CreatedAt">
+            <summary>
+            创建时间。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Scheduling.ScheduledTaskRecord.UpdatedAt">
+            <summary>
+            更新时间。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Settings.ISettingsRepository">
+            <summary>
+            系统配置仓储（领域专用抽象）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Settings.Setting">
+            <summary>
+            系统配置（键值对）。
+            注意：此表的主键是 Key，不是 Id。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.Id">
+            <summary>
+            覆盖基类的 Id，标记为非主键（此表主键是 Key）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.Key">
+            <summary>
+            配置键（唯一，数据库主键）。
+            注意：SqlSugar 需要 public set 才能从数据库读取值。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.Value">
+            <summary>
+            配置值（字符串或 JSON）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.Type">
+            <summary>
+            值类型：String/Number/Bool/Json。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.Description">
+            <summary>
+            描述（中文说明）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.Version">
+            <summary>
+            版本号。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.RowVersion">
+            <summary>
+            并发控制版本（乐观并发）。
+            注意：SqlSugar 插入/更新时忽略该列（由数据库自动生成）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.UpdatedAt">
+            <summary>
+            更新时间（UTC）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.UpdatedBy">
+            <summary>
+            更新人。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.Class">
+            <summary>
+            业务分类（sysconfig 字典）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Settings.Setting.Module">
+            <summary>
+            所属模块标识：sys = 主框架系统级，其他为插件 module.json 中的 id。
+            用于插件卸载时按模块快速定位并清理配置项。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.SugarLinqCompatExtensions.LongCount``1(SqlSugar.ISugarQueryable{``0})">
+            <summary>
+            EF 的 LongCount 适配到 SqlSugar 的 Count。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.SugarLinqCompatExtensions.LongCount``1(SqlSugar.ISugarQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,System.Boolean}})">
+            <summary>
+            EF 的 LongCount(predicate) 适配。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.SugarLinqCompatExtensions.ThenBy``1(SqlSugar.ISugarQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,System.Object}})">
+            <summary>
+            EF 的 ThenBy 适配：在 SqlSugar 中多次调用 OrderBy 会累计排序条件。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.SugarLinqCompatExtensions.ThenByDescending``1(SqlSugar.ISugarQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,System.Object}})">
+            <summary>
+            EF 的 ThenByDescending 适配。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.SugarLinqCompatExtensions.OrderByDescending``1(SqlSugar.ISugarQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,System.Object}})">
+            <summary>
+            EF 的 OrderByDescending 适配（若原代码直接调用了该扩展，可映射到 SqlSugar 的 OrderBy）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.SugarLinqCompatExtensions.FirstOrDefault``1(SqlSugar.ISugarQueryable{``0})">
+            <summary>
+            EF 的 FirstOrDefault 适配。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.SugarLinqCompatExtensions.FirstOrDefault``1(SqlSugar.ISugarQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,System.Boolean}})">
+            <summary>
+            EF 的 FirstOrDefault(predicate) 适配。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.SugarLinqCompatExtensions.FirstOrDefaultAsync``1(SqlSugar.ISugarQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,System.Boolean}})">
+            <summary>
+            常用的 FirstOrDefaultAsync 适配（便于异步场景）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Tenant.ITenantContext">
+            <summary>
+            租户上下文接口，提供当前请求的租户 ID。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Tenant.ITenantContext.CurrentTenantId">
+            <summary>
+            当前租户 ID。为 null 表示无租户（兼容单租户部署或管理员全局操作）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Tenant.TenantContext">
+            <summary>
+            默认租户上下文实现（Scoped 生命周期）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Tenant.TenantEntity">
+            <summary>
+            多租户实体基类。继承此类的实体会自动参与租户过滤。
+            TenantId 可为空，兼容无租户场景（单租户部署时所有记录 TenantId 为 null）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Tenant.TenantEntity.TenantId">
+            <summary>
+            租户 ID（可空，兼容单租户部署）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.IUnitOfWork">
+            <summary>
+            工作单元抽象：用于在应用用例（命令处理器）中定义事务边界。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Users.Events.UserLoggedIn">
+            <summary>
+            用户登录成功领域事件。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Users.Events.UserLoggedOut">
+            <summary>
+            用户登出成功领域事件。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Users.Events.UserRegistered">
+            <summary>
+            用户注册完成事件。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Users.IUserRepository.HardDeleteAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            硬删除用户（物理删除，同时删除关联的角色和部门关系）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Users.PasswordResetToken">
+            <summary>
+            找回密码令牌（仅存储哈希，避免明文泄露）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.PasswordResetToken.UserId">
+            <summary>User Id。</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.PasswordResetToken.TokenHash">
+            <summary>
+            令牌哈希（SHA256）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.PasswordResetToken.ExpiresAt">
+            <summary>过期时间（UTC）。</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.PasswordResetToken.UsedAt">
+            <summary>使用时间（UTC）。</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.PasswordResetToken.CreatedAt">
+            <summary>创建时间（UTC）。</summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Users.User">
+            <summary>
+            用户实体。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.UserName">
+            <summary>
+            用户名（唯一）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.DisplayName">
+            <summary>
+            显示名称。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.PasswordHash">
+            <summary>
+            密码哈希。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.Salt">
+            <summary>
+            密码盐（用于加盐哈希）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.Email">
+            <summary>
+            邮箱。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.Phone">
+            <summary>
+            手机号。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.Enabled">
+            <summary>
+            是否启用。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.LastLoginAt">
+            <summary>
+            最后登录时间（UTC）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.Avatar">
+            <summary>
+            头像（文件路径或URL）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.Introduction">
+            <summary>
+            个人介绍。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Users.User.DepartmentId">
+            <summary>
+            主属部门（用于数据范围的部门过滤；多部门场景仍通过 UserDepartment 表维护）。
+            注意：当前数据库尚无该列，为避免运行时查询错误，暂不映射到物理列；
+            待数据库添加列后，去掉 IsIgnore=true 即可。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Users.User.SetPassword(System.String,Ginkgo.Domain.Users.IPasswordHasher)">
+            <summary>
+            设置密码（领域逻辑）：使用领域密码哈希服务生成哈希与盐。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Users.UserDepartment">
+            <summary>
+            用户-部门关系。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Users.UserRole">
+            <summary>
+            用户-角色关系。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Utils.SequentialGuid">
+            <summary>
+            顺序 GUID 生成器（Sequential-At-End）：
+            - 前 10 字节为随机数，后 6 字节为大端毫秒时间戳；
+            - 兼顾分布式唯一性与按时间递增的插入局部性；
+            - 设置 RFC 4122 标志位（Version=4, Variant=RFC4122）。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Utils.SequentialGuid.NewGuid">
+            <summary>
+            生成顺序 GUID（尾部顺序，贴近 SQL Server 的聚集索引插入友好性）。
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Utils.SnowflakeConfig">
+            <summary>
+            Snowflake ID 生成器配置类。
+            支持从配置文件和环境变量读取 MachineId。
+            </summary>
+        </member>
+        <member name="F:Ginkgo.Domain.Utils.SnowflakeConfig.SectionName">
+            <summary>
+            配置节名称
+            </summary>
+        </member>
+        <member name="F:Ginkgo.Domain.Utils.SnowflakeConfig.MachineIdEnvVar">
+            <summary>
+            环境变量名称
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Utils.SnowflakeConfig.MachineId">
+            <summary>
+            机器ID（0-1023）
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Utils.SnowflakeConfig.DatacenterId">
+            <summary>
+            数据中心ID（可选，0-31）
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Utils.SnowflakeConfig.GetMachineIdFromEnvironment">
+            <summary>
+            从环境变量获取 MachineId，如果环境变量未设置则返回 null
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Utils.SnowflakeConfig.GetEffectiveMachineId">
+            <summary>
+            获取有效的 MachineId（优先使用环境变量，其次使用配置值）
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Utils.SnowflakeConfig.Validate">
+            <summary>
+            验证配置是否有效
+            </summary>
+            <exception cref="T:System.ArgumentOutOfRangeException">当 MachineId 超出有效范围时抛出</exception>
+        </member>
+        <member name="T:Ginkgo.Domain.Utils.SnowflakeIdGenerator">
+            <summary>
+            Snowflake ID 生成器服务。
+            封装 YitIdHelper，提供统一的 ID 生成接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Utils.SnowflakeIdGenerator.Initialize(Ginkgo.Domain.Utils.SnowflakeConfig)">
+            <summary>
+            初始化 Snowflake ID 生成器
+            </summary>
+            <param name="config">配置对象</param>
+            <exception cref="T:System.InvalidOperationException">当生成器已初始化时抛出</exception>
+        </member>
+        <member name="M:Ginkgo.Domain.Utils.SnowflakeIdGenerator.Initialize(System.UInt16)">
+            <summary>
+            初始化 Snowflake ID 生成器（使用机器ID）
+            </summary>
+            <param name="machineId">机器ID（0-1023）</param>
+        </member>
+        <member name="M:Ginkgo.Domain.Utils.SnowflakeIdGenerator.NextId">
+            <summary>
+            生成新的 Snowflake ID
+            </summary>
+            <returns>64位整数ID</returns>
+            <exception cref="T:System.InvalidOperationException">当生成器未初始化时抛出</exception>
+        </member>
+        <member name="M:Ginkgo.Domain.Utils.SnowflakeIdGenerator.NextIds(System.Int32)">
+            <summary>
+            批量生成 Snowflake ID
+            </summary>
+            <param name="count">生成数量</param>
+            <returns>ID 数组</returns>
+        </member>
+        <member name="P:Ginkgo.Domain.Utils.SnowflakeIdGenerator.IsInitialized">
+            <summary>
+            检查生成器是否已初始化
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Utils.SnowflakeIdGenerator.EnsureInitialized">
+            <summary>
+            确保生成器已初始化
+            </summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Verification.IVerificationCodeRepository">
+            <summary>
+            验证码记录仓储接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationCodeRepository.AddAsync(Ginkgo.Domain.Verification.VerificationCode,System.Threading.CancellationToken)">
+            <summary>新增验证码记录</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationCodeRepository.GetLatestAsync(System.String,System.Int32,System.Threading.CancellationToken)">
+            <summary>获取指定目标和用途的最新有效验证码记录</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationCodeRepository.UpdateAsync(Ginkgo.Domain.Verification.VerificationCode,System.Threading.CancellationToken)">
+            <summary>更新验证码记录（校验次数、验证时间等）</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationCodeRepository.DeleteExpiredAsync(System.DateTime,System.Threading.CancellationToken)">
+            <summary>清理过期记录</summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Verification.IVerificationTemplateRepository">
+            <summary>
+            验证码模板仓储接口。
+            </summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationTemplateRepository.GetDefaultAsync(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>获取指定用途和渠道的默认模板</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationTemplateRepository.GetAllAsync(System.Threading.CancellationToken)">
+            <summary>获取所有模板</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationTemplateRepository.GetByIdAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>根据ID获取模板</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationTemplateRepository.AddAsync(Ginkgo.Domain.Verification.VerificationTemplate,System.Threading.CancellationToken)">
+            <summary>新增模板</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationTemplateRepository.UpdateAsync(Ginkgo.Domain.Verification.VerificationTemplate,System.Threading.CancellationToken)">
+            <summary>更新模板</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationTemplateRepository.ClearDefaultAsync(System.Int32,System.Int32,System.Int64,System.Threading.CancellationToken)">
+            <summary>取消指定 Purpose+Channel 组中其他模板的默认标记（保留 excludeId）</summary>
+        </member>
+        <member name="M:Ginkgo.Domain.Verification.IVerificationTemplateRepository.DeleteAsync(System.Int64,System.Threading.CancellationToken)">
+            <summary>删除模板</summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Verification.VerificationCode">
+            <summary>
+            验证码发送记录实体（审计 + 持久化双重职责）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.Id">
+            <summary>主键（雪花ID）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.UserId">
+            <summary>关联用户ID（匿名场景可为空）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.Target">
+            <summary>接收目标（邮箱地址或手机号）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.Channel">
+            <summary>发送渠道：0=邮件 1=短信 2=站内通知</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.Purpose">
+            <summary>验证用途：0=找回密码 1=登录验证 2=注册验证 3=绑定邮箱 4=绑定手机 10=危险操作 99=自定义</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.PurposeLabel">
+            <summary>用途中文描述（自定义用途时填写）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.CodeHash">
+            <summary>验证码哈希（SHA256，不存明文）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.ExpiresAt">
+            <summary>过期时间</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.VerifiedAt">
+            <summary>验证通过时间（NULL=未使用）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.Attempts">
+            <summary>已尝试校验次数（防暴力破解）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.MaxAttempts">
+            <summary>最大允许校验次数</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.Ip">
+            <summary>发送时的客户端IP</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationCode.CreatedAt">
+            <summary>创建时间</summary>
+        </member>
+        <member name="T:Ginkgo.Domain.Verification.VerificationTemplate">
+            <summary>
+            验证码消息模板实体（邮件/短信模板可后台配置）。
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.Id">
+            <summary>主键（雪花ID）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.Purpose">
+            <summary>验证用途（与 VerificationCode 表一致）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.Channel">
+            <summary>渠道：0=邮件 1=短信</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.Name">
+            <summary>模板名称（如：找回密码邮件模板）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.Subject">
+            <summary>邮件主题（短信渠道可为空）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.BodyTemplate">
+            <summary>
+            模板正文（支持占位符：{code}=验证码, {minutes}=有效分钟数, {purpose}=用途描述, {appName}=应用名称）
+            </summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.IsHtml">
+            <summary>是否为HTML格式（邮件用）</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.IsDefault">
+            <summary>是否为该用途的默认模板</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.Enabled">
+            <summary>是否启用</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.SortOrder">
+            <summary>排序</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.CreatedAt">
+            <summary>创建时间</summary>
+        </member>
+        <member name="P:Ginkgo.Domain.Verification.VerificationTemplate.UpdatedAt">
+            <summary>更新时间</summary>
+        </member>
+    </members>
+</doc>

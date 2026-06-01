@@ -86,6 +86,9 @@
           </div>
 
           <div v-else class="perm-content">
+            <el-tabs v-model="activePermTab" class="perm-tabs">
+              <!-- 功能权限：后台 RBAC 资源权限树 + 数据范围 -->
+              <el-tab-pane label="功能权限" name="function">
             <div class="scope-row">
               <span class="scope-label"><i class="bi bi-shield-lock"></i> 数据范围：</span>
               <el-select v-model="dataScope.strategy" size="default" style="width: 220px" @change="onPanelScopeChange">
@@ -180,6 +183,70 @@
                 </template>
               </el-tree>
             </el-scrollbar>
+              </el-tab-pane>
+
+              <!-- 业务入口授权：各端默认菜单组下的 item 级授权 -->
+              <el-tab-pane label="业务入口授权" name="portal">
+                <div class="portal-grant-toolbar">
+                  <span class="portal-grant-tip">
+                    <i class="bi bi-info-circle"></i>
+                    勾选授予该角色可见的业务入口；标记「公共可见、无需勾选」的入口对所有登录用户可见，无需授权。
+                  </span>
+                  <el-button size="small" @click="loadGrantableItems" title="刷新可授权入口">
+                    <i class="bi bi-arrow-clockwise" style="margin-right: 4px;"></i>刷新
+                  </el-button>
+                </div>
+
+                <el-scrollbar height="calc(100vh - 420px)">
+                  <div v-if="grantableLoading" class="portal-grant-loading">
+                    <i class="bi bi-hourglass-split"></i> 正在加载可授权入口...
+                  </div>
+                  <template v-else>
+                    <div
+                      v-for="group in grantableGroups"
+                      :key="group.groupId"
+                      class="portal-grant-group"
+                    >
+                      <div class="portal-grant-group-header">
+                        <i class="bi bi-collection portal-grant-group-icon"></i>
+                        <span class="portal-grant-group-name">{{ group.groupName }}</span>
+                        <span class="portal-grant-client-tag">{{ clientTypeLabel(group.clientType) }}</span>
+                      </div>
+                      <el-tree
+                        :ref="el => setGrantTreeRef(group.groupId, el)"
+                        :data="group.items"
+                        node-key="id"
+                        show-checkbox
+                        check-strictly
+                        default-expand-all
+                        :props="grantTreeProps"
+                        class="portal-grant-tree"
+                      >
+                        <template #default="{ data }">
+                          <div class="portal-node-content">
+                            <i v-if="data.icon" :class="normalizeIcon(data.icon)" class="portal-node-icon"></i>
+                            <i v-else class="bi bi-dot portal-node-icon"></i>
+                            <span class="portal-node-label">{{ data.title }}</span>
+                            <span v-if="!data.requireGrant" class="portal-public-tag">
+                              <i class="bi bi-unlock"></i> 公共可见、无需勾选
+                            </span>
+                            <span v-else class="portal-grant-required-tag">
+                              <i class="bi bi-shield-lock"></i> 需授权
+                            </span>
+                            <span class="portal-node-module">{{ data.module }}</span>
+                          </div>
+                        </template>
+                      </el-tree>
+                    </div>
+                    <el-empty
+                      v-if="!grantableGroups.length"
+                      description="暂无可授权的业务入口（未配置默认菜单组或入口为空）"
+                      :image-size="80"
+                    />
+                  </template>
+                </el-scrollbar>
+              </el-tab-pane>
+            </el-tabs>
           </div>
         </el-card>
       </div>
@@ -277,7 +344,21 @@ import {
   type PermissionTreeNode
 } from '../../../api/role'
 import { matchesSearchableTreeNodeDeep } from './treeSearch.utils'
+import {
+  collectRequireGrantItemIds,
+  isPortalGrantNodeDisabled,
+  collectGrantedRequireGrantIds,
+  clientTypeLabel,
+  normalizeIcon
+} from './rolePortalGrant.utils'
 import { getDepartmentsTree, type DepartmentTreeNode } from '../../../api/department'
+import {
+  getGrantableItems,
+  getRoleItemPermissions,
+  setRoleItemPermissions,
+  type GrantableMenuItem,
+  type GrantableItemNode
+} from '../../../api/menuGroup'
 
 const keyword = ref('')
 const loadingTree = ref(false)
@@ -332,6 +413,89 @@ const dataScope = ref<{ strategy: string; departmentIds?: string[] }>({ strategy
 // 部门树（供「指定部门」多选使用，进入页面时一次性拉取并缓存）
 const deptTree = ref<DepartmentTreeNode[]>([])
 
+// ==================== 业务入口授权（item 级授权） ====================
+/** 当前权限面板激活的 Tab：function=功能权限，portal=业务入口授权 */
+const activePermTab = ref<'function' | 'portal'>('function')
+/** 各端默认菜单组下的可授权入口（按端分组） */
+const grantableGroups = ref<GrantableMenuItem[]>([])
+/** 可授权入口加载中标记 */
+const grantableLoading = ref(false)
+/** 每个默认组对应一棵 el-tree 的引用（key 为 groupId，雪花 Id 字符串） */
+const grantTreeRefs = new Map<string, any>()
+/**
+ * 业务入口树节点 props：
+ * - label/children 字段映射
+ * - disabled：RequireGrant=0（公共可见）的项禁用勾选
+ */
+const grantTreeProps = {
+  label: 'title',
+  children: 'children',
+  disabled: (data: GrantableItemNode) => isPortalGrantNodeDisabled(data)
+}
+
+/** 收集所有「需授权（RequireGrant=1）」入口项 Id 集合，用于保存时精确过滤 */
+const requireGrantItemIds = computed(() => collectRequireGrantItemIds(grantableGroups.value))
+
+/** 注册/注销某个默认组对应的 el-tree 引用 */
+function setGrantTreeRef(groupId: string, el: any) {
+  if (el) grantTreeRefs.set(groupId, el)
+  else grantTreeRefs.delete(groupId)
+}
+
+/** 终端类型中文标签 */
+// clientTypeLabel 由 ./rolePortalGrant.utils 提供
+
+/** 入口图标归一化：直接使用声明的图标类（兼容 bi / ri 等图标库），缺省给通用图标 */
+// normalizeIcon 由 ./rolePortalGrant.utils 提供
+
+/** 加载各端默认组下的可授权入口（角色无关，进入面板时加载一次，可手动刷新） */
+async function loadGrantableItems() {
+  grantableLoading.value = true
+  try {
+    grantableGroups.value = await getGrantableItems()
+  } catch (e: any) {
+    grantableGroups.value = []
+    ElMessage.error(e?.message || '加载可授权入口失败')
+  } finally {
+    grantableLoading.value = false
+  }
+  // 若当前已选中角色，重新回填勾选
+  if (currentRoleId.value) await loadRoleItemPermissions(currentRoleId.value)
+}
+
+/** 加载并回填某角色已授权的入口项勾选 */
+async function loadRoleItemPermissions(roleId: string) {
+  let grantedIds: string[] = []
+  try {
+    grantedIds = await getRoleItemPermissions(roleId)
+  } catch {
+    grantedIds = []
+  }
+  await nextTick()
+  applyRoleItemChecks(grantedIds)
+}
+
+/** 将已授权 Id 集合回填到各棵入口树（仅勾选树内存在的节点） */
+function applyRoleItemChecks(grantedIds: string[]) {
+  const grantedSet = new Set(grantedIds)
+  grantTreeRefs.forEach(tree => {
+    if (!tree) return
+    // check-strictly：仅勾选 grantedSet 中、且该树存在的节点（不存在的 key 会被忽略）
+    tree.setCheckedKeys?.([...grantedSet])
+  })
+}
+
+/** 收集所有入口树中已勾选、且属于「需授权」的入口项 Id（全量覆盖提交用） */
+function collectGrantedItemIds(): string[] {
+  const checkedKeyGroups: string[][] = []
+  grantTreeRefs.forEach(tree => {
+    if (!tree) return
+    checkedKeyGroups.push((tree.getCheckedKeys?.(false) as string[]) || [])
+  })
+  // 仅提交需授权项；公共可见项（RequireGrant=0）无需授权，禁止勾选
+  return collectGrantedRequireGrantIds(checkedKeyGroups, requireGrantItemIds.value)
+}
+
 /** 权限面板：数据范围切换时，非「指定部门」清空已选部门，避免脏数据 */
 function onPanelScopeChange(val: string) {
   if (val !== 'SpecifiedDepartments') dataScope.value.departmentIds = []
@@ -357,6 +521,12 @@ async function loadPermissions(roleId: string) {
   dataScope.value = { strategy: (scope.strategy || scope.dataScope || 'All') as string, departmentIds: scope.departmentIds || [] }
   // 进入权限分配面板时，懒加载部门树供「指定部门」多选使用
   await ensureDeptTreeLoaded()
+  // 加载业务入口授权数据：首次加载可授权入口列表，并回填该角色已授权的入口项
+  if (!grantableGroups.value.length) {
+    await loadGrantableItems()
+  } else {
+    await loadRoleItemPermissions(roleId)
+  }
 }
 
 function filterPermissionNode(keyword: string, data: PermissionTreeNode) {
@@ -465,6 +635,13 @@ async function savePerms() {
   const ids = (permTreeRef.value?.getCheckedKeys(false) as string[]) || []
   await saveRolePermissions(currentRoleId.value, ids)
   await setRoleDataScope(currentRoleId.value, { dataScope: dataScope.value.strategy, departmentIds: dataScope.value.departmentIds })
+  // 业务入口授权（item 级）：以当前勾选的需授权入口项全量覆盖该角色授权
+  try {
+    await setRoleItemPermissions({ roleId: currentRoleId.value, menuGroupItemIds: collectGrantedItemIds() })
+  } catch (e: any) {
+    // 不阻断主流程：功能权限已保存，仅业务入口授权写入失败时提示
+    ElMessage.warning(e?.message || '业务入口授权保存失败')
+  }
   ElMessage.success('已保存')
 }
 
@@ -835,6 +1012,230 @@ onMounted(loadTree)
 
 .admin-dark .perm-tree :deep(.el-tree-node__content:hover) {
   background: #334155;
+}
+
+/* ==================== 业务入口授权（item 级授权） ==================== */
+.perm-tabs :deep(.el-tabs__item) {
+  font-weight: 500;
+}
+
+.admin-dark .perm-tabs :deep(.el-tabs__item) {
+  color: #cbd5e1;
+}
+
+.admin-dark .perm-tabs :deep(.el-tabs__item.is-active) {
+  color: #8b5cf6;
+}
+
+.admin-dark .perm-tabs :deep(.el-tabs__nav-wrap::after) {
+  background-color: #374151;
+}
+
+.portal-grant-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.portal-grant-tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.portal-grant-tip i {
+  color: #3b82f6;
+}
+
+.admin-dark .portal-grant-tip {
+  color: #94a3b8;
+}
+
+.portal-grant-loading {
+  padding: 32px 0;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.portal-grant-loading i {
+  margin-right: 6px;
+}
+
+.portal-grant-group {
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-dark .portal-grant-group {
+  border-color: #374151;
+  background: #1e293b;
+}
+
+.portal-grant-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.admin-dark .portal-grant-group-header {
+  background: #243044;
+  border-bottom-color: #374151;
+}
+
+.portal-grant-group-icon {
+  color: #8b5cf6;
+  font-size: 16px;
+}
+
+.portal-grant-group-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.admin-dark .portal-grant-group-name {
+  color: #f1f5f9;
+}
+
+.portal-grant-client-tag {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(139, 92, 246, 0.12);
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.admin-dark .portal-grant-client-tag {
+  background: rgba(139, 92, 246, 0.22);
+  color: #c4b5fd;
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.portal-grant-tree {
+  padding: 6px 10px 10px;
+  background: transparent;
+}
+
+.portal-grant-tree :deep(.el-tree-node__content) {
+  height: 36px;
+  border-radius: 6px;
+}
+
+.portal-grant-tree :deep(.el-tree-node__content:hover) {
+  background: #f1f5f9;
+}
+
+.admin-dark .portal-grant-tree {
+  /* 让 el-tree 内部文本在深色下可读 */
+  --el-tree-text-color: #e2e8f0;
+  color: #e2e8f0;
+}
+
+.admin-dark .portal-grant-tree :deep(.el-tree-node__content:hover) {
+  background: #334155;
+}
+
+.admin-dark .portal-grant-tree :deep(.el-tree) {
+  background: transparent;
+  color: #e2e8f0;
+}
+
+.portal-node-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-node-icon {
+  font-size: 14px;
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.admin-dark .portal-node-icon {
+  color: #a5b4fc;
+}
+
+.portal-node-label {
+  font-size: 13px;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-dark .portal-node-label {
+  color: #e2e8f0;
+}
+
+.portal-public-tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.admin-dark .portal-public-tag {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.portal-grant-required-tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.admin-dark .portal-grant-required-tag {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.portal-node-module {
+  flex-shrink: 1;
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: Consolas, 'Courier New', monospace;
+}
+
+.admin-dark .portal-node-module {
+  color: #64748b;
 }
 
 /* ==================== 权限类型统计 ==================== */

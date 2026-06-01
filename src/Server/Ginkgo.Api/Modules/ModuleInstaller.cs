@@ -81,6 +81,9 @@ public sealed class ModuleInstaller
                 }
                 // 应用 install.json 中的 Menus 规则（如有），同时把模块 Id 写入 ginkgo_Sys_Menu.Module
                 await _sql.ApplyMenusAsync(spec, repoItem.Manifest.Name ?? repoItem.Manifest.Id, repoItem.Manifest.Id, ct);
+                // 应用 install.json 中的 ClientMenus 规则（如有），把客户端入口项写入共享菜单表并归属到本模块（Module=moduleId）
+                // 与上方 ApplyMenusAsync 使用相同的 moduleId，保持模块归属一致；置于同一 try 块内，异常将传播到下方 catch 形成安装失败结果
+                await _sql.ApplyClientMenusAsync(spec, repoItem.Manifest.Id, ct);
             }
         }
         catch (Exception ex)
@@ -190,6 +193,19 @@ public sealed class ModuleInstaller
             catch (Exception cleanEx)
             {
                 _logger.LogWarning(cleanEx, "[UninstallAsync] 按 Module 清理共享数据失败：{Msg}", cleanEx.Message);
+            }
+
+            // ★ 同阶段清理：按 Module=moduleId 移除本模块写入共享菜单表的客户端入口项（ClientMenus）及其授权关联，
+            //    仅删除归属本模块的入口项，不触碰 Module='sys' 项、不删除 MenuGroup（需求 7.1/7.2）。
+            //    与 RemoveModuleDataAsync 保持相同的容错语义：失败仅记录告警，不中断后续卸载与目录清理流程。
+            try
+            {
+                await _sql.RemoveClientMenusByModuleAsync(moduleId, ct);
+                _logger.LogInformation("[UninstallAsync] 已按 Module={ModuleId} 清理共享菜单表中的客户端入口项(ClientMenus)", moduleId);
+            }
+            catch (Exception cleanEx)
+            {
+                _logger.LogWarning(cleanEx, "[UninstallAsync] 按 Module 清理客户端入口项失败：{Msg}", cleanEx.Message);
             }
         }
         catch (Exception ex)

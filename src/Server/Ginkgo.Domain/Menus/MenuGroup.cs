@@ -52,6 +52,14 @@ public sealed class MenuGroup : AuditableEntity
     public bool IsSystem { get; set; }
 
     /// <summary>
+    /// 是否为该终端类型的默认菜单组（每个 ClientType 下唯一）。
+    /// 插件业务入口仅注入到默认菜单组；角色授权界面仅展示默认菜单组。
+    /// 布尔语义列，MySQL 映射为 TINYINT(1)，默认 false。
+    /// </summary>
+    [SugarColumn(ColumnDescription = "是否为该终端类型的默认菜单组")]
+    public bool IsDefault { get; set; }
+
+    /// <summary>
     /// 是否启用。
     /// </summary>
     [SugarColumn(ColumnDescription = "是否启用")]
@@ -73,9 +81,12 @@ public sealed class MenuGroup : AuditableEntity
 
     /// <summary>
     /// 工厂方法：创建菜单组。
+    /// isSystem：是否系统内置（内置菜单组不可删除），默认 false；
+    /// isDefault：是否为该终端类型的默认菜单组，默认 false。
     /// </summary>
     public static MenuGroup Create(string name, string slug, string? description = null,
-        string? location = null, string? clientType = null, string? version = null)
+        string? location = null, string? clientType = null, string? version = null,
+        bool isSystem = false, bool isDefault = false)
     {
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("菜单组名称不能为空", nameof(name));
         if (string.IsNullOrWhiteSpace(slug)) throw new ArgumentException("菜单组标识不能为空", nameof(slug));
@@ -89,7 +100,8 @@ public sealed class MenuGroup : AuditableEntity
             ClientType = clientType?.Trim(),
             Version = version?.Trim(),
             Enabled = true,
-            IsSystem = false,
+            IsSystem = isSystem,
+            IsDefault = isDefault,
             MaxDepth = 3
         };
     }
@@ -120,4 +132,19 @@ public sealed class MenuGroup : AuditableEntity
     /// 禁用。
     /// </summary>
     public void Disable() => Enabled = false;
+
+    /// <summary>
+    /// 标记为该终端类型的默认菜单组（仅切换 IsDefault，唯一性由应用层维护）。
+    /// </summary>
+    public void MarkAsDefault() => IsDefault = true;
+
+    /// <summary>
+    /// 取消默认菜单组标记（仅切换 IsDefault）。
+    /// </summary>
+    public void UnmarkDefault() => IsDefault = false;
+
+    /// <summary>
+    /// 标记为系统内置菜单组（置 IsSystem=true，用于框架预置）。
+    /// </summary>
+    public void MarkSystem() => IsSystem = true;
 }
