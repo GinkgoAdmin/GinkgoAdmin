@@ -123,9 +123,10 @@
     }
   },
 
-  "ConnectionStrings": {
-    // 主连接串（主库），由方言驱动解析（MySql.Data / Microsoft.Data.SqlClient / Npgsql）。
-    // ⚠️ 读写分离的从库在上方 ReadWriteSplit.Slaves 中配置，此处仅主库。
-    "Default": "Server=127.0.0.1;Port=3306;User ID=GinkgoAdmin;Password=GinkgoAdmin;Database=GinkgoAdmin;Character Set=utf8mb4"
-  }
+    "ConnectionStrings": {
+        // 主连接串（主库），由方言驱动解析（MySql.Data / Microsoft.Data.SqlClient / Npgsql）。
+        // ⚠️ 读写分离的从库在上方 ReadWriteSplit.Slaves 中配置，此处仅主库。
+        "Default": "Server=127.0.0.1;Port=3306;User ID=GinkgoAdmin;Password=GinkgoAdmin;Database=GinkgoAdmin;Character Set=utf8mb4"
+       // "Default": "Server=127.0.0.1;Port=3306;User ID=GinkgoAdmin;Password=GinkgoAdmin;Database=GinkgoAdmin;Character Set=utf8mb4"
+    }
 }

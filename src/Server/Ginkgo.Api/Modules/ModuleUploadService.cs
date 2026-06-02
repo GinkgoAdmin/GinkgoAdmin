@@ -855,11 +855,13 @@ public sealed class ModuleUploadService
             {
                 var installJsonDir = FindInstallJsonDirectory(extractedPath);
                 var scripts = installSpec.SqlScripts.Select(p => Path.Combine(installJsonDir, p)).ToList();
-                
-                await _sqlExecutor.ExecuteScriptsAsync(scripts, ct);
-                result.ExecutedSteps.Add($"执行SQL脚本: {string.Join(", ", installSpec.SqlScripts)}");
 
-                // 添加SQL回滚（执行卸载脚本）
+                // 注意：必须在执行 install.sql 之前注册卸载 SQL 回滚。
+                // 因为 install.sql 大量使用 CREATE TABLE（DDL），MySQL 中的 DDL 会触发隐式提交，
+                // 把事务边界切碎，使得 ExecuteScriptsAsync 内部的 ROLLBACK 只能回滚最后一段未提交的批次，
+                // 之前已被 DDL 隐式提交的建表与种子数据会残留在库里。
+                // 只有提前注册卸载脚本作为回滚动作，外层 catch 才会在 SQL 中途失败时执行 uninstall.sql，
+                // 把残留的表/字典/数据清理干净，避免下次安装因重复主键继续报错。
                 if (installSpec.UninstallSql != null && installSpec.UninstallSql.Length > 0)
                 {
                     var uninstallScripts = installSpec.UninstallSql.Select(p => Path.Combine(installJsonDir, p)).ToList();
@@ -872,6 +874,9 @@ public sealed class ModuleUploadService
                         catch { }
                     });
                 }
+
+                await _sqlExecutor.ExecuteScriptsAsync(scripts, ct);
+                result.ExecutedSteps.Add($"执行SQL脚本: {string.Join(", ", installSpec.SqlScripts)}");
             }
 
             // Step 3: 注册菜单

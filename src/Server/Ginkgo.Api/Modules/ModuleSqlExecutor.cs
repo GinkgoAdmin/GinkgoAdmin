@@ -1055,6 +1055,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
             sb.AppendLine("-- ============================================================");
             sb.AppendLine("-- 模块表数据导出（自动生成，请勿手动修改）");
             sb.AppendLine($"-- 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine("-- 采用幂等插入：与插件既有种子脚本(seed_*.sql)写入相同主键、或重复安装时自动跳过，不会因主键冲突中断安装");
             if (rowLimit.HasValue)
                 sb.AppendLine($"-- 每表最多导出 {rowLimit.Value} 行{(orderByPkDesc ? "（按主键降序，优先保留最新数据）" : string.Empty)}");
             sb.AppendLine("-- ============================================================");
@@ -1119,7 +1120,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
                                     values.Add(val.ToString() ?? "NULL");
                             }
                         }
-                        sb.AppendLine($"INSERT INTO {_dialect.QuoteIdentifier(tableName)} ({string.Join(", ", columnNames.Select(c => _dialect.QuoteIdentifier(c)))}) VALUES ({string.Join(", ", values)});");
+                        sb.AppendLine($"{_dialect.ToIdempotentInsert($"INSERT INTO {_dialect.QuoteIdentifier(tableName)}")} ({string.Join(", ", columnNames.Select(c => _dialect.QuoteIdentifier(c)))}) VALUES ({string.Join(", ", values)});");
                     }
 
                     if (hasRows)

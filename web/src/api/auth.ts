@@ -2,6 +2,10 @@ import http from './http'
 
 export interface LoginResponse {
   token: string
+  /** 刷新令牌：用于在 access token 过期前静默换取新令牌（一次性轮换） */
+  refreshToken?: string
+  /** access token 过期时间（后端返回的服务器本地时间 ISO 字符串） */
+  expiresAt?: string
   userName: string
   displayName: string
   avatar?: string
@@ -19,6 +23,23 @@ export async function login(userName: string, password: string, clientType: stri
   // baseURL 已含 /api → 这里用 "/auth/login"
   const data = await http.post<any, LoginResponse>('/auth/login', form, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
   return data
+}
+
+/** 刷新令牌返回结构（对应后端 AuthController.RefreshAsync） */
+export interface RefreshTokenResponse {
+  token: string
+  refreshToken: string
+  expiresAt: string
+  isSuperAdmin?: boolean
+}
+
+/**
+ * 使用 Refresh Token 静默换取新的 Access Token + Refresh Token（一次性轮换）。
+ * 对应后端 [AllowAnonymous] 的 POST /api/auth/refresh，仅凭 refreshToken 即可换发，
+ * 不依赖当前可能已过期的 access token，适用于大屏长时间挂屏的静默续期场景。
+ */
+export async function refreshAuthToken(refreshToken: string): Promise<RefreshTokenResponse> {
+  return await http.post<any, RefreshTokenResponse>('/auth/refresh', { refreshToken })
 }
 
 export interface RegisterInput {

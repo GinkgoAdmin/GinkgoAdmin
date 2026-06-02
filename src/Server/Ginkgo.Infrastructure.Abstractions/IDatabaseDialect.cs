@@ -176,6 +176,14 @@ public interface IDatabaseDialect
     /// </summary>
     string SanitizeInsertBatch(string batch, ISqlSugarClient sugar);
 
+    /// <summary>
+    /// 将一条标准 "INSERT INTO ..." 语句改写为"存在即跳过"的幂等形式，
+    /// 供导出初始化数据脚本（init_data.sql）使用：当导出的数据与插件既有种子脚本（seed_*.sql）
+    /// 写入相同主键、或同一脚本被重复安装时，避免因主键冲突直接中断整个安装。
+    /// 默认实现返回原文（不改写、不保证幂等）；MySQL 覆写为 "INSERT IGNORE INTO"。
+    /// </summary>
+    string ToIdempotentInsert(string insertStatement) => insertStatement;
+
     // ================================================================
     // MySQL → 当前方言的轻量 DDL 转写 hook（默认恒等）
     // ================================================================

@@ -264,6 +264,19 @@ public sealed class MySqlDialect : IDatabaseDialect
     /// <inheritdoc/>
     public string SanitizeInsertBatch(string batch, ISqlSugarClient sugar) => batch;
 
+    /// <inheritdoc/>
+    public string ToIdempotentInsert(string insertStatement)
+    {
+        if (string.IsNullOrWhiteSpace(insertStatement)) return insertStatement;
+        // 仅改写以 INSERT INTO 开头的语句（忽略前导空白与大小写），改为 INSERT IGNORE INTO。
+        // 已经是 INSERT IGNORE / INSERT ... ON DUPLICATE 的语句不做处理，避免重复改写。
+        return Regex.Replace(
+            insertStatement,
+            @"^(\s*)INSERT\s+INTO\b",
+            "$1INSERT IGNORE INTO",
+            RegexOptions.IgnoreCase);
+    }
+
     // ================================================================
     // MySQL → 当前方言转写（MySQL 自身：恒等）
     // ================================================================

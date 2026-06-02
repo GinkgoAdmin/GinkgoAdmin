@@ -220,6 +220,7 @@ async function onSubmit() {
     loading.value = true
     const res: LoginResponse = await login(form.userName, form.password, 'WEB_ADMIN')
     auth.setToken(res.token)
+    auth.setRefreshToken(res.refreshToken, res.expiresAt)
     auth.setProfile({ userName: res.userName || form.userName, displayName: res.displayName, avatar: res.avatar, roles: res.roles, isSuperAdmin: res.isSuperAdmin })
     
     // 登录成功后自动清空缓存，确保加载最新数据

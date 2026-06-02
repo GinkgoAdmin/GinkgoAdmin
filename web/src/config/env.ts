@@ -4,6 +4,7 @@ export const ENV_MODE = (import.meta as any).env?.MODE || process.env.NODE_ENV |
 
 // 本地开发后端源地址（Vite 代理与需要直连后端的场景共用）
 // 可通过 VITE_DEV_BACKEND_ORIGIN 覆盖，例如 http://127.0.0.1:5001
+//const ENV_DEV_BACKEND_ORIGIN = 'http://new.kysylsqjwh.cn'
 const ENV_DEV_BACKEND_ORIGIN = (import.meta as any).env?.VITE_DEV_BACKEND_ORIGIN
 export const DEV_BACKEND_ORIGIN: string =
 	ENV_DEV_BACKEND_ORIGIN !== undefined ? String(ENV_DEV_BACKEND_ORIGIN) : 'http://localhost:5288'
