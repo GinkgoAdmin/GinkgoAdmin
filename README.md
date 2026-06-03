@@ -102,11 +102,7 @@ npm run dev
 
 Vite 默认监听 `http://localhost:5174`，已内置 `/api` 反代。**安装向导会随机生成一段后台路径前缀**，请在安装完成页复制并保存，按 `http://localhost:5174/<后台地址>/` 进入后台(后台地址在web\src\config\admin.ts中修改ADMIN_SLUG)。前台门户访问 `http://localhost:5174/`。
 
-![后端安装完成与前端启动指引](img/install3.png)
-
 ### 5) 生产打包部署（Linux 服务器等）
-
-开源裁剪版仓库（GitHub / Gitee 镜像）**不包含**商业发版脚本 `publish-all.ps1` 及其依赖的 `release-config.ps1`，请使用仓库自带的独立打包脚本：
 
 ```powershell
 # 在仓库根目录执行（Windows PowerShell）
@@ -126,7 +122,7 @@ Vite 默认监听 `http://localhost:5174`，已内置 `/api` 反代。**安装�
 3. 复制 `resource/`（安装锁、数据库配置模板等）
 4. （默认）构建 Web 前端并输出到 `wwwroot/`
 
-默认输出目录为 `dist/publish/`，部署时将**整个输出文件夹**上传到服务器，在服务器上编辑 `resource/db.json` 后运行 `dotnet Ginkgo.Api.dll`（或使用 `-Runtime` 生成的自包含可执行文件）。
+默认输出目录为 `dist/publish/`，部署时将**整个输出文件夹**上传到服务器，在服务器上编辑 `resource/db.json` 后运行 `dotnet Ginkgo.Api.dll`（或使用 `-Runtime` 生成的自包含可执行文件）。后续更新可以不上传resource目录，这样db.json就不会被覆盖。免费自动化CI/CD工具可以进沟通群获取。
 
 > 若你自行安装了业务插件，请确保对应模块源码仍在 `src/Module/` 下，打包时才会一并打入 `modules/`。仅修改 `resource/db.json` 后裸 `dotnet publish` **不会**自动带上插件运行时。
 
