@@ -289,7 +289,34 @@ export async function ensureDynamicAdminRoutes(router: any) {
       && !/\.vue$/i.test(webUrl)
       && !/^system\//i.test(routeRaw)
 
+    // 插件路由：按菜单 code 前缀 + route/webRouteUrl 解析 views 组件并注入（菜单驱动模式）。
+    // 不可直接 return 跳过——否则仅依赖 route:register 的插件在新装/打包部署后若前端未重启，
+    // 或 index.ts 被自动生成覆盖时，点击菜单会稳定 404。
     if (isPluginRoute) {
+      const routePath = routeRaw || webUrl.replace(/^\/+/, '').trim()
+      if (!routePath) return
+
+      if (injected.has(routePath)) return
+
+      const existing = router.getRoutes().find((r: any) =>
+        r.path === routePath || r.path === `${adminBasePath}/${routePath}` || r.name === toKebabName(routePath)
+      )
+      if (existing) {
+        existing.meta = { ...(existing.meta || {}), title: item.name, icon: item.icon }
+        injected.add(routePath)
+        return
+      }
+
+      const component = resolvePluginComponent(code, routePath)
+      if (!component) return
+
+      router.addRoute('admin-root', {
+        path: routePath,
+        name: toKebabName(routePath),
+        component,
+        meta: { title: item.name, icon: item.icon }
+      })
+      injected.add(routePath)
       return
     }
 

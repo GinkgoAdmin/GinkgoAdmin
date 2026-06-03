@@ -187,12 +187,8 @@ public sealed class WebModuleManager
         var version = root.TryGetProperty("version", out var verProp) ? verProp.GetString() ?? "1.0.0" : "1.0.0";
         var description = root.TryGetProperty("description", out var descProp) ? descProp.GetString() ?? "" : "";
 
-        // 从 module.json 读取 npmDependencies 并同步到 plugin.json
-        var npmDepsJson = "[]";
-        if (root.TryGetProperty("npmDependencies", out var npmDepsProp) && npmDepsProp.ValueKind == JsonValueKind.Array)
-        {
-            npmDepsJson = npmDepsProp.GetRawText();
-        }
+        // 从 module.json 读取 npmDependencies，并与 web-plugin 自带 plugin.json 中的声明合并（避免安装时覆盖丢失）
+        var npmDepsJson = BuildMergedNpmDependenciesJson(moduleJsonPath, Path.Combine(pluginDir, "plugin.json"));
 
         // 生成 plugin.json（同步 npmDependencies）
         // 注意：路由和菜单由系统动态菜单表驱动（web/src/router/admin.ts），
@@ -370,17 +366,17 @@ public sealed class WebModuleManager
     }
 
     /// <summary>
-    /// 从 module.json 中解析 npmDependencies 数组
+    /// 从 module.json / plugin.json 中解析 npmDependencies 数组
     /// 返回 (包名, 版本号) 列表
     /// </summary>
-    private static List<(string name, string version)> ParseNpmDependencies(string moduleJsonPath)
+    private static List<(string name, string version)> ParseNpmDependencies(string jsonPath)
     {
         var result = new List<(string name, string version)>();
-        if (!File.Exists(moduleJsonPath)) return result;
+        if (!File.Exists(jsonPath)) return result;
 
         try
         {
-            var json = File.ReadAllText(moduleJsonPath);
+            var json = File.ReadAllText(jsonPath);
             using var doc = JsonDocument.Parse(json);
             if (doc.RootElement.TryGetProperty("npmDependencies", out var deps) && deps.ValueKind == JsonValueKind.Array)
             {
@@ -395,6 +391,38 @@ public sealed class WebModuleManager
         }
         catch { /* 解析失败时忽略 */ }
         return result;
+    }
+
+    /// <summary>
+    /// 合并多个 JSON 清单中的 npmDependencies（按包名去重，先到先得）。
+    /// </summary>
+    private static List<(string name, string version)> MergeNpmDependencies(params string[] jsonPaths)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in jsonPaths)
+        {
+            foreach (var (name, version) in ParseNpmDependencies(path))
+            {
+                if (!map.ContainsKey(name))
+                    map[name] = version;
+            }
+        }
+        return map.Select(kv => (kv.Key, kv.Value)).ToList();
+    }
+
+    /// <summary>
+    /// 生成写入 plugin.json 的 npmDependencies JSON 数组文本。
+    /// </summary>
+    private static string BuildMergedNpmDependenciesJson(params string[] jsonPaths)
+    {
+        var merged = MergeNpmDependencies(jsonPaths);
+        if (merged.Count == 0) return "[]";
+        var arr = merged.Select(d => new Dictionary<string, string>
+        {
+            ["name"] = d.name,
+            ["version"] = d.version
+        });
+        return JsonSerializer.Serialize(arr);
     }
 
     /// <summary>
@@ -415,14 +443,11 @@ public sealed class WebModuleManager
 
             var moduleJson = Path.Combine(dir, "module.json");
             var pluginJson = Path.Combine(dir, "plugin.json");
-            // 优先读取 module.json，如果不存在则尝试 plugin.json（兼容纯前端插件）
-            var jsonFile = File.Exists(moduleJson) ? moduleJson : (File.Exists(pluginJson) ? pluginJson : null);
-            if (jsonFile != null)
+            foreach (var (name, _) in MergeNpmDependencies(
+                         File.Exists(moduleJson) ? moduleJson : "",
+                         File.Exists(pluginJson) ? pluginJson : ""))
             {
-                foreach (var (name, _) in ParseNpmDependencies(jsonFile))
-                {
-                    allDeps.Add(name);
-                }
+                allDeps.Add(name);
             }
         }
         return allDeps;
@@ -442,8 +467,9 @@ public sealed class WebModuleManager
             return;
         }
 
-        var moduleJsonPath = Path.Combine(pluginDir, "module.json");
-        var deps = ParseNpmDependencies(moduleJsonPath);
+        var deps = MergeNpmDependencies(
+            Path.Combine(pluginDir, "module.json"),
+            Path.Combine(pluginDir, "plugin.json"));
         if (deps.Count == 0) return;
 
         foreach (var (name, version) in deps)
@@ -506,8 +532,9 @@ public sealed class WebModuleManager
             return;
         }
 
-        var moduleJsonPath = Path.Combine(pluginDir, "module.json");
-        var deps = ParseNpmDependencies(moduleJsonPath);
+        var deps = MergeNpmDependencies(
+            Path.Combine(pluginDir, "module.json"),
+            Path.Combine(pluginDir, "plugin.json"));
         if (deps.Count == 0) return;
 
         // 收集其他插件（排除当前插件）的所有依赖

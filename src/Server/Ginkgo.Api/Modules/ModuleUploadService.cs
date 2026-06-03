@@ -718,6 +718,16 @@ public sealed class ModuleUploadService
             return result;
         }
 
+        // 端能力探测：根据当前主框架源码是否含 WPF / UNIAPP 端，决定是否安装对应端内容。
+        // 开源版主框架若缺少 WPF 客户端及 WPF UI 项目，强行安装插件 WPF 端会导致解决方案生成报错；
+        // 缺少 UNIAPP 端时也不应把移动端文件复制到移动端目录。此规则对本地上传安装与应用商店下载安装一致生效。
+        var installWpf = HasWpfFrameworkProjects();
+        var installUniapp = HasUniappFramework();
+        if (!installWpf)
+            result.ExecutedSteps.Add("检测到主框架不含 WPF 客户端/UI 项目，本次将跳过插件 WPF 端安装");
+        if (!installUniapp)
+            result.ExecutedSteps.Add("检测到主框架不含 UNIAPP 移动端目录，本次将跳过插件移动端安装");
+
         // 回滚操作列表
         var rollbackActions = new List<Func<Task>>();
 
@@ -833,6 +843,19 @@ public sealed class ModuleUploadService
                             }
                         }
                         result.ExecutedSteps.Add($"[编译包] 已解包到 {targetModuleDir}");
+                    }
+
+                    // 端能力裁剪：主框架缺少 WPF 端时移除模块自带的 client/ 与独立 wpf-plugin/ 目录，
+                    // 避免后续被加入解决方案导致生成报错；缺少 UNIAPP 端时移除 uniapp/ 与 uniapp-plugin/ 目录。
+                    if (!installWpf)
+                    {
+                        RemoveModuleEndDirectory(targetModuleDir, "client", result);
+                        RemoveModuleEndDirectory(targetModuleDir, "wpf-plugin", result);
+                    }
+                    if (!installUniapp)
+                    {
+                        RemoveModuleEndDirectory(targetModuleDir, "uniapp", result);
+                        RemoveModuleEndDirectory(targetModuleDir, "uniapp-plugin", result);
                     }
 
                     // 如果没有备份，添加删除回滚
@@ -1028,7 +1051,9 @@ public sealed class ModuleUploadService
                     {
                         var moduleDir = Path.Combine(devModuleDir, manifest.Id);
                         var serverCsproj = Directory.GetFiles(Path.Combine(moduleDir, "server"), "*.csproj", SearchOption.TopDirectoryOnly).FirstOrDefault();
-                        var clientCsproj = Directory.Exists(Path.Combine(moduleDir, "client")) 
+                        // 仅当主框架支持 WPF 端时才把客户端项目加入解决方案；
+                        // 开源版无 WPF 客户端/UI 项目时，client 端已在 Step 1 被裁剪，这里也不再引用，避免解决方案生成报错。
+                        var clientCsproj = (installWpf && Directory.Exists(Path.Combine(moduleDir, "client")))
                             ? Directory.GetFiles(Path.Combine(moduleDir, "client"), "*.csproj", SearchOption.TopDirectoryOnly).FirstOrDefault()
                             : null;
                         var contractsCsproj = Directory.Exists(Path.Combine(moduleDir, "contracts"))
@@ -1064,8 +1089,8 @@ public sealed class ModuleUploadService
                 }
             }
 
-            // Step 7.1: 安装 UniApp 前端文件
-            if (isDev)
+            // Step 7.1: 安装 UniApp 前端文件（仅当主框架包含 UNIAPP 移动端目录时执行）
+            if (isDev && installUniapp)
             {
                 try
                 {
@@ -1077,6 +1102,10 @@ public sealed class ModuleUploadService
                 {
                     result.ExecutedSteps.Add($"安装 UniApp 前端文件失败（不影响安装）: {ex.Message}");
                 }
+            }
+            else if (isDev && !installUniapp)
+            {
+                result.ExecutedSteps.Add("跳过 UniApp 前端文件安装（主框架不含 UNIAPP 移动端目录）");
             }
 
             // Step 7.5: 开发环境 + 源码包 - 安装 Backend NuGet 依赖
@@ -1101,7 +1130,12 @@ public sealed class ModuleUploadService
             }
 
             // Step 8: 安装 WPF 客户端插件文件（从 wpf-plugin/ 目录到 src/Client/）
-            if (isDev)
+            //   仅当主框架包含 WPF 客户端及 WPF UI 项目时执行；开源版无 WPF 端时整体跳过。
+            if (isDev && !installWpf)
+            {
+                result.ExecutedSteps.Add("跳过 WPF 客户端插件安装（主框架不含 WPF 客户端/UI 项目）");
+            }
+            if (isDev && installWpf)
             {
                 try
                 {
@@ -1364,6 +1398,61 @@ public sealed class ModuleUploadService
     {
         var devModuleBase = GetDevModuleSourceDir();
         return devModuleBase != null ? Path.GetFullPath(Path.Combine(devModuleBase, "..", "..")) : null;
+    }
+
+    /// <summary>
+    /// 检测当前主框架源码是否包含 WPF 客户端与 WPF UI 项目。
+    /// 开源版主框架不含 WPF 端（src/Client 下没有 Ginkgo.Wpf / Ginkgo.UI 项目），
+    /// 此时插件的 WPF 端（模块自带 client/ 源码、独立 wpf-plugin/）不应安装，
+    /// 否则会把缺失依赖的 WPF 客户端项目加入解决方案，导致解决方案生成/编译报错。
+    /// </summary>
+    private bool HasWpfFrameworkProjects()
+    {
+        var repoRoot = GetRepoRoot();
+        if (repoRoot == null) return false;
+
+        var clientBase = Path.Combine(repoRoot, "src", "Client");
+        if (!Directory.Exists(clientBase)) return false;
+
+        // 主框架 WPF 宿主项目与公共 UI 库均存在，才认定该框架支持 WPF 端
+        var wpfCsproj = Path.Combine(clientBase, "Ginkgo.Wpf", "Ginkgo.Wpf.csproj");
+        var uiCsproj = Path.Combine(clientBase, "Ginkgo.UI", "Ginkgo.UI.csproj");
+        return File.Exists(wpfCsproj) && File.Exists(uiCsproj);
+    }
+
+    /// <summary>
+    /// 检测当前主框架源码是否包含 UNIAPP 移动端工程目录。
+    /// 开源版/精简版主框架可能不含 uniapp 端，此时插件的移动端文件不应复制到移动端目录，
+    /// 仅安装 API 与 WEB 端即可。
+    /// </summary>
+    private bool HasUniappFramework()
+    {
+        var repoRoot = GetRepoRoot();
+        if (repoRoot == null) return false;
+
+        var uniappRoot = Path.Combine(repoRoot, "uniapp");
+        return Directory.Exists(uniappRoot);
+    }
+
+    /// <summary>
+    /// 删除已复制到模块源码目录下的某个端目录（如 client / wpf-plugin / uniapp / uniapp-plugin），
+    /// 用于主框架缺少对应端时清理掉不需要安装的内容。删除失败仅记录步骤，不影响安装。
+    /// </summary>
+    private static void RemoveModuleEndDirectory(string moduleDir, string endDirName, ModuleInstallResultEx result)
+    {
+        try
+        {
+            var target = Path.Combine(moduleDir, endDirName);
+            if (Directory.Exists(target))
+            {
+                Directory.Delete(target, recursive: true);
+                result.ExecutedSteps.Add($"主框架缺少对应端，已跳过并移除 {endDirName}/ 目录");
+            }
+        }
+        catch (Exception ex)
+        {
+            result.ExecutedSteps.Add($"清理 {endDirName}/ 目录失败（不影响安装）: {ex.Message}");
+        }
     }
 
     /// <summary>

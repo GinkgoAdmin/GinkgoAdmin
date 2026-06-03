@@ -2,6 +2,7 @@ import { reactive, ref } from 'vue'
 import type { Plugin, PluginConfig, PluginAPI, PluginDependency, PluginAsset } from './types'
 import { HookSystem } from './HookSystem'
 import { DependencyManager } from './DependencyManager'
+import { adminBasePath } from '@/config/admin'
 
 type PluginInitializeScope = 'admin' | 'portal' | 'standalone'
 export interface PluginInitializeOptions {
@@ -52,6 +53,7 @@ export class PluginManager {
   private enabledPluginNamesCache: Set<string> | null = null
   private coreOnlyLoaded = false
   private pluginModules = import.meta.glob('../installed/*/index.ts')
+  private pluginViewModules = import.meta.glob('../installed/*/views/**/*.vue')
   // module.json 文件体量极小（每个插件不到 1KB），eager 加载便于在路由前置守卫中
   // 同步判断 loadPolicy，避免每次导航都异步并发读取 JSON。
   private pluginModuleJsonModules = import.meta.glob<PluginModuleManifest>(
@@ -464,7 +466,8 @@ export class PluginManager {
     const aliasMap = this.getPathAliasMap()
 
     if (options.scope === 'admin') {
-      const seg = this.extractSegment(path, '/admin/')
+      const adminPrefix = adminBasePath.endsWith('/') ? adminBasePath : `${adminBasePath}/`
+      const seg = this.extractSegment(path, adminPrefix)
       if (seg && aliasMap[seg]) candidates.add(aliasMap[seg])
     }
 
@@ -520,6 +523,21 @@ export class PluginManager {
           aliasMap[`${parts[0]}s`] = pluginDir
         }
       }
+    }
+
+    // 3) 扫描各插件 views 下 .vue 文件名，建立「路由 leaf 段 -> 插件目录」映射
+    //    例如 /ai-agent-orchestration -> aicore（AIAgentOrchestration.vue）
+    for (const viewPath of Object.keys(this.pluginViewModules)) {
+      const pluginDir = this.extractPluginDirFromPath(viewPath)
+      if (!pluginDir) continue
+      const fileName = viewPath.split('/').pop() || ''
+      const base = fileName.replace(/\.vue$/i, '')
+      if (!base) continue
+      const kebab = base
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+        .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+        .toLowerCase()
+      if (kebab) aliasMap[kebab] = pluginDir
     }
 
     this.pathAliasMapCache = aliasMap

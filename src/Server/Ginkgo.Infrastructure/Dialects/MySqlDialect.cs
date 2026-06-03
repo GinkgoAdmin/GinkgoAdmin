@@ -45,7 +45,7 @@ public sealed class MySqlDialect : IDatabaseDialect
         Code: Code,
         DisplayName: DisplayName,
         DefaultPort: DefaultPort,
-        ConnectionStringTemplate: "Server={Server};Port={Port};Database={Database};User Id={User};Password={Password};CharSet=utf8mb4;");
+        ConnectionStringTemplate: "Server={Server};Port={Port};Database={Database};User Id={User};Password={Password};CharSet=utf8mb4;Allow User Variables=true;");
 
     // ================================================================
     // 标识符与字面量
@@ -190,6 +190,9 @@ public sealed class MySqlDialect : IDatabaseDialect
             var csb = new MySqlConnectionStringBuilder(connectionString);
             if (string.IsNullOrEmpty(csb.CharacterSet))
                 csb.CharacterSet = "utf8mb4";
+            // 模块安装/升级 SQL 普遍使用 @col_exists + PREPARE 做幂等 ALTER；
+            // MySqlConnector 默认把 @xxx 当参数占位符，必须显式允许用户变量。
+            csb.AllowUserVariables = true;
             return csb.ConnectionString;
         }
         catch

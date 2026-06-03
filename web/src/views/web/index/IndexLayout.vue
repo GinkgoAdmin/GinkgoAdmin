@@ -28,6 +28,7 @@ import MaintenanceGate from '../components/MaintenanceGate.vue'
 
 .main-content {
   flex: 1;
+  min-height: 0;
   position: relative;
 }
 

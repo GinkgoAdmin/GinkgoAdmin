@@ -100,6 +100,37 @@ function switchLang(urlCode: string) {
   height: 64px;
 }
 
+/* 底部品牌流光带，与页脚顶部呼应 */
+.index-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.15) 18%,
+    #3b82f6 38%,
+    #8b5cf6 50%,
+    #ec4899 62%,
+    rgba(236, 72, 153, 0.15) 82%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: header-flow 5s linear infinite;
+}
+
+@keyframes header-flow {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .index-header::after { animation: none; }
+}
+
 .header-container {
   max-width: 1200px;
   margin: 0 auto;

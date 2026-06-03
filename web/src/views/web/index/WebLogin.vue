@@ -12,15 +12,16 @@
         <div class="auth-brand">
           <div class="brand-content">
             <div class="brand-logo">
-              <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z" /></svg>
+              <img v-if="logoUrl" :src="logoUrl" alt="" class="brand-logo-img" />
+              <svg v-else viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z" /></svg>
             </div>
-            <h1 class="brand-title">{{ system.siteName || 'GinkgoAdmin' }}</h1>
+            <h1 class="brand-title">{{ siteName }}</h1>
             <p class="brand-slogan">{{ t('login_welcome') }}</p>
-            <p class="brand-desc">开源的 AI 开发交付底座，<br>帮助团队快速构建可复用、收益更高的高效模型。</p>
+            <p class="brand-desc">登录您的账户，即可访问工作台，<br>统一管理业务数据与日常协作事务。</p>
             <div class="brand-features">
-              <div class="brand-feat"><i class="ri-shield-check-line"></i><span>企业级安全</span></div>
-              <div class="brand-feat"><i class="ri-speed-line"></i><span>极致性能</span></div>
-              <div class="brand-feat"><i class="ri-plug-line"></i><span>插件化架构</span></div>
+              <div class="brand-feat"><i class="ri-shield-check-line"></i><span>安全可靠的账户体系</span></div>
+              <div class="brand-feat"><i class="ri-dashboard-3-line"></i><span>清晰高效的工作台</span></div>
+              <div class="brand-feat"><i class="ri-building-2-line"></i><span>灵活适配业务场景</span></div>
             </div>
           </div>
           <!-- 动画装饰 -->
@@ -116,6 +117,8 @@ const system = useSystemStore()
 const menuStore = useMenuStore()
 const languageStore = useLanguageStore()
 const registrationEnabled = computed(() => system.registrationMode !== 'disabled' && system.registrationEnabled)
+const siteName = computed(() => system.siteName || 'GinkgoAdmin')
+const logoUrl = computed(() => system.logoUrl || '')
 const { executeHook } = usePlugins()
 
 const form = reactive({
@@ -275,6 +278,16 @@ onMounted(() => {
   animation: logoFloat 6s ease-in-out infinite;
 }
 .brand-logo svg { width: 32px; height: 32px; color: #fff; }
+.brand-logo:has(.brand-logo-img) {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
+}
 @keyframes logoFloat {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }

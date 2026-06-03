@@ -30,6 +30,7 @@
 
 - [一、它是什么](#一它是什么)
 - [二、快速开始](#二快速开始)
+  - [生产打包部署](#5-生产打包部署linux-服务器等)
 - [三、整体架构](#三整体架构)
 - [四、目录与功能截图](#四目录与功能截图)
 - [五、适用场景](#五适用场景)
@@ -103,6 +104,32 @@ Vite 默认监听 `http://localhost:5174`，已内置 `/api` 反代。**安装�
 
 ![后端安装完成与前端启动指引](img/install3.png)
 
+### 5) 生产打包部署（Linux 服务器等）
+
+开源裁剪版仓库（GitHub / Gitee 镜像）**不包含**商业发版脚本 `publish-all.ps1` 及其依赖的 `release-config.ps1`，请使用仓库自带的独立打包脚本：
+
+```powershell
+# 在仓库根目录执行（Windows PowerShell）
+.\scripts\publish-community-standalone.ps1
+
+# 发布 Linux x64 自包含运行时（推荐服务器部署）
+.\scripts\publish-community-standalone.ps1 -Runtime linux-x64
+
+# 仅打包 API + 插件 modules，跳过前端构建
+.\scripts\publish-community-standalone.ps1 -Runtime linux-x64 -SkipWeb
+```
+
+脚本会依次完成：
+
+1. `dotnet publish` 主框架 API
+2. 扫描 `src/Module/Ginkgo.Module.*`，将已安装的插件编译产物写入 `modules/`
+3. 复制 `resource/`（安装锁、数据库配置模板等）
+4. （默认）构建 Web 前端并输出到 `wwwroot/`
+
+默认输出目录为 `dist/publish/`，部署时将**整个输出文件夹**上传到服务器，在服务器上编辑 `resource/db.json` 后运行 `dotnet Ginkgo.Api.dll`（或使用 `-Runtime` 生成的自包含可执行文件）。
+
+> 若你自行安装了业务插件，请确保对应模块源码仍在 `src/Module/` 下，打包时才会一并打入 `modules/`。仅修改 `resource/db.json` 后裸 `dotnet publish` **不会**自动带上插件运行时。
+
 ---
 
 ## 三、整体架构
@@ -144,6 +171,8 @@ GinkgoFramework-admin/
 │       └── plugins/installed/                # Web 插件目录
 ├── document/                                 # 主框架文档（架构、安装、模块、权限等）
 ├── resource/                                 # 安装脚本、菜单种子、上传目录
+├── scripts/
+│   └── publish-community-standalone.ps1      # 开源裁剪版一键打包（不依赖 release-config）
 └── README.md / LICENSE / LICENSE_COMMERCIAL
 ```
 

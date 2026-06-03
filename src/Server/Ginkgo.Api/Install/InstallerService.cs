@@ -111,7 +111,7 @@ public sealed class InstallerService
         }
 
         Log(result.Logs, $"开始一键安装（数据库方言：{dialect.DisplayName}）...");
-        SqlSugarClient db = CreateInstallClient(dialect, input.ConnectionString);
+        SqlSugarClient db = CreateInstallClient(dialect, dialect.NormalizeConnectionString(input.ConnectionString));
 
         try
         {

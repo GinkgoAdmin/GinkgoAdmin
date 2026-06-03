@@ -152,6 +152,10 @@ public static class ModuleRuntimeBootstrap
         var devModuleRoot = LocateDevModuleRoot();
         if (devModuleRoot == null) return;
 
+        // 端能力探测：仅当主框架包含 WPF 客户端及 WPF UI 项目时，才把模块的 client 端补充注册到解决方案。
+        // 开源版主框架缺少 WPF 端，若强行加入插件 WPF 客户端项目会导致解决方案生成/编译报错。
+        var hasWpfFramework = HasWpfFrameworkProjects(devModuleRoot);
+
         foreach (var m in preload.Modules)
         {
             var moduleDir = Path.Combine(devModuleRoot, m.Manifest.Id);
@@ -162,7 +166,7 @@ public static class ModuleRuntimeBootstrap
             if (Directory.Exists(serverDir))
                 serverCsproj = Directory.GetFiles(serverDir, "*.csproj", SearchOption.TopDirectoryOnly).FirstOrDefault();
             var clientDir = Path.Combine(moduleDir, "client");
-            if (Directory.Exists(clientDir))
+            if (hasWpfFramework && Directory.Exists(clientDir))
                 clientCsproj = Directory.GetFiles(clientDir, "*.csproj", SearchOption.TopDirectoryOnly).FirstOrDefault();
             var contractsDir = Path.Combine(moduleDir, "contracts");
             if (Directory.Exists(contractsDir))
@@ -180,6 +184,27 @@ public static class ModuleRuntimeBootstrap
             {
                 Console.WriteLine($"[BOOT] 自愈注册模块到解决方案失败 {m.Manifest.Id}: {ex.Message}");
             }
+        }
+    }
+
+    /// <summary>
+    /// 检测主框架源码是否包含 WPF 客户端与 WPF UI 项目（src/Client/Ginkgo.Wpf 与 Ginkgo.UI）。
+    /// devModuleRoot 为 src/Module 目录，往上两级即仓库根目录。
+    /// </summary>
+    private static bool HasWpfFrameworkProjects(string devModuleRoot)
+    {
+        try
+        {
+            var repoRoot = Path.GetFullPath(Path.Combine(devModuleRoot, "..", ".."));
+            var clientBase = Path.Combine(repoRoot, "src", "Client");
+            if (!Directory.Exists(clientBase)) return false;
+            var wpfCsproj = Path.Combine(clientBase, "Ginkgo.Wpf", "Ginkgo.Wpf.csproj");
+            var uiCsproj = Path.Combine(clientBase, "Ginkgo.UI", "Ginkgo.UI.csproj");
+            return File.Exists(wpfCsproj) && File.Exists(uiCsproj);
+        }
+        catch
+        {
+            return false;
         }
     }
 

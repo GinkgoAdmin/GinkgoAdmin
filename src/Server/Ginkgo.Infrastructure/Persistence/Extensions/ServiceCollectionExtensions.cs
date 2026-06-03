@@ -84,6 +84,7 @@ public static class ServiceCollectionExtensions
             // 通过方言注册中心解析。未注册的 provider 会抛出包含已注册清单的明确异常。
             var dialect = registry.Get(provider);
             var dbType = dialect.SqlSugarDbType;
+            cs = dialect.NormalizeConnectionString(cs);
 
             var config = new ConnectionConfig
             {

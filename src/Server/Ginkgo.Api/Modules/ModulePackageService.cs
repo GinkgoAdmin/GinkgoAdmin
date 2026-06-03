@@ -442,6 +442,17 @@ public sealed class ModulePackageService
             }
 
             // ============================================================
+            // 步骤 9.5: 清理安装器不允许的敏感文件（证书/密钥等）
+            // 与 ModuleUploadService.ValidateExtractedPaths 白名单保持一致，避免打入 .pem 等导致安装被拒
+            // ============================================================
+            result.Steps.Add("[9.5/10] 清理不允许打入模块包的敏感文件...");
+            var removedSensitive = PurgeDisallowedPackageFiles(stagingDir, result.IncludedFiles);
+            if (removedSensitive.Count > 0)
+                result.Steps.Add($"  已排除 {removedSensitive.Count} 个文件：{string.Join(", ", removedSensitive)}");
+            else
+                result.Steps.Add("  未发现需排除的敏感文件");
+
+            // ============================================================
             // 步骤 10: 计算文件哈希并写入 module.json
             // ============================================================
             result.Steps.Add("[10] 计算文件哈希...");
@@ -1142,6 +1153,62 @@ public sealed class ModulePackageService
     }
 
     /// <summary>
+    /// 安装器白名单不允许的扩展名（证书/密钥须部署侧自行配置，不可打入模块包）。
+    /// 与 <see cref="ModuleUploadService"/> 解压校验白名单保持一致。
+    /// </summary>
+    private static readonly HashSet<string> PackageExcludedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pem", ".key", ".pfx", ".p12", ".crt", ".cer"
+    };
+
+    /// <summary>
+    /// 判断相对路径是否属于打包时应整段排除的目录（如支付微信证书目录）。
+    /// </summary>
+    private static bool IsPackageExcludedRelativePath(string relativePath)
+    {
+        var norm = relativePath.Replace('\\', '/').Trim('/');
+        if (string.IsNullOrEmpty(norm))
+            return false;
+
+        // 微信/支付证书目录：须目标环境在 server/config/wechatpay/ 自行放置，禁止随模块包分发
+        return norm.Contains("/config/wechatpay/", StringComparison.OrdinalIgnoreCase)
+            || norm.EndsWith("/config/wechatpay", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(norm, "server/config/wechatpay", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// 判断单个文件是否应被排除在模块包之外。
+    /// </summary>
+    private static bool ShouldExcludeFromPackage(string relativePath, string? extension)
+    {
+        if (IsPackageExcludedRelativePath(relativePath))
+            return true;
+
+        return !string.IsNullOrEmpty(extension) && PackageExcludedExtensions.Contains(extension);
+    }
+
+    /// <summary>
+    /// 扫描暂存区并删除不允许安装的文件，同时从 IncludedFiles 中移除对应项。
+    /// </summary>
+    private static List<string> PurgeDisallowedPackageFiles(string stagingDir, List<string> includedFiles)
+    {
+        var removed = new List<string>();
+        foreach (var file in Directory.GetFiles(stagingDir, "*", SearchOption.AllDirectories))
+        {
+            var rel = Path.GetRelativePath(stagingDir, file).Replace('\\', '/');
+            var ext = Path.GetExtension(file);
+            if (!ShouldExcludeFromPackage(rel, ext))
+                continue;
+
+            File.Delete(file);
+            removed.Add(rel);
+            includedFiles.RemoveAll(f => string.Equals(f.Replace('\\', '/'), rel, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return removed;
+    }
+
+    /// <summary>
     /// 收集目录下的「非源码资源」：递归复制除 .cs/.csproj/.sln/.user/.cache/bin/obj/.vs 之外的所有文件。
     /// 用于编译包模式保留 module.json/install.json/sql/config/data 等运行期必需内容。
     /// 【低成本反编译防御】同时排除 .pdb（调试符号）与 .xml（文档注释），即使用户源码目录下
@@ -1163,6 +1230,8 @@ public sealed class ModulePackageService
                 if (fileName.EndsWith(".user", StringComparison.OrdinalIgnoreCase)) continue;
 
                 var relFile = Path.Combine(rel, fileName);
+                if (ShouldExcludeFromPackage(relFile.Replace('\\', '/'), ext))
+                    continue;
                 var target = Path.Combine(stagingDir, relFile);
                 var targetDir = Path.GetDirectoryName(target);
                 if (targetDir != null && !Directory.Exists(targetDir))
@@ -1175,7 +1244,10 @@ public sealed class ModulePackageService
             {
                 var subName = Path.GetFileName(sub);
                 if (skipDirs.Contains(subName)) continue;
-                Recurse(sub, Path.Combine(rel, subName));
+                var nextRel = Path.Combine(rel, subName);
+                if (IsPackageExcludedRelativePath(nextRel.Replace('\\', '/')))
+                    continue;
+                Recurse(sub, nextRel);
             }
         }
 
@@ -1210,6 +1282,9 @@ public sealed class ModulePackageService
                     continue;
                 }
                 var destRel = string.IsNullOrEmpty(relPath) ? fileName : Path.Combine(relPath, fileName);
+                var stagedRel = (relTargetDir + "/" + destRel.Replace('\\', '/')).Replace("//", "/");
+                if (ShouldExcludeFromPackage(stagedRel, ext))
+                    continue;
                 var destFull = Path.Combine(targetDir, destRel);
                 var destFullDir = Path.GetDirectoryName(destFull);
                 if (destFullDir != null && !Directory.Exists(destFullDir))
@@ -1243,6 +1318,9 @@ public sealed class ModulePackageService
                 continue;
 
             var relPath = Path.Combine(relativePath, fileName);
+            if (ShouldExcludeFromPackage(relPath.Replace('\\', '/'), Path.GetExtension(fileName)))
+                continue;
+
             var targetPath = Path.Combine(stagingDir, relPath);
             var targetDir = Path.GetDirectoryName(targetPath);
             if (targetDir != null && !Directory.Exists(targetDir))
@@ -1257,7 +1335,11 @@ public sealed class ModulePackageService
             if (excludeSet.Contains(dirName))
                 continue;
 
-            CollectFiles(dir, Path.Combine(relativePath, dirName), files, excludeDirs, stagingDir);
+            var nextRel = Path.Combine(relativePath, dirName);
+            if (IsPackageExcludedRelativePath(nextRel.Replace('\\', '/')))
+                continue;
+
+            CollectFiles(dir, nextRel, files, excludeDirs, stagingDir);
         }
     }
 
