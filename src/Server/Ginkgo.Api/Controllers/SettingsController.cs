@@ -89,9 +89,18 @@ public sealed class SettingsController : ControllerBase
                 "Upload.BasePath",
                 "Upload.ImageCompress.Enabled",
                 "Upload.ImageCompress.Quality",
-                "Upload.ImageCompress.KeepOriginal"
+                "Upload.ImageCompress.KeepOriginal",
+                // 移动端（UNIAPP）公开配置
+                "App.HomePlugin",
+                "App.Privacy.ShowPopup",
+                "App.Privacy.PolicyVersion",
+                "App.Privacy.PolicyContent",
+                "App.Privacy.UserAgreementContent",
+                "App.Privacy.EnableCorrectInfo",
+                "App.Privacy.EnableDeleteAccount",
+                "App.Privacy.EnableWithdrawConsent"
             };
-            list = list?.Where(s => s?.Key != null && (allowedKeys.Contains(s.Key) || s.Key.StartsWith("cudr.", StringComparison.OrdinalIgnoreCase) || s.Key.StartsWith("Language.MultiLang.", StringComparison.OrdinalIgnoreCase))).ToList() ?? new List<SettingDto>();
+            list = list?.Where(s => s?.Key != null && (allowedKeys.Contains(s.Key) || s.Key.StartsWith("cudr.", StringComparison.OrdinalIgnoreCase) || s.Key.StartsWith("Language.MultiLang.", StringComparison.OrdinalIgnoreCase) || s.Key.StartsWith("App.", StringComparison.OrdinalIgnoreCase))).ToList() ?? new List<SettingDto>();
         }
         return Result<List<SettingDto>>.Success(list ?? new List<SettingDto>());
         }

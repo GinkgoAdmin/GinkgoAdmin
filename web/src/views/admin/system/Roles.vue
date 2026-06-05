@@ -221,6 +221,7 @@
                         default-expand-all
                         :props="grantTreeProps"
                         class="portal-grant-tree"
+                        @check="(data, checked) => handlePortalGrantCheck(group.groupId, data, checked)"
                       >
                         <template #default="{ data }">
                           <div class="portal-node-content">
@@ -348,6 +349,7 @@ import {
   collectRequireGrantItemIds,
   isPortalGrantNodeDisabled,
   collectGrantedRequireGrantIds,
+  applyPortalGrantCheckCascade,
   clientTypeLabel,
   normalizeIcon
 } from './rolePortalGrant.utils'
@@ -422,6 +424,8 @@ const grantableGroups = ref<GrantableMenuItem[]>([])
 const grantableLoading = ref(false)
 /** 每个默认组对应一棵 el-tree 的引用（key 为 groupId，雪花 Id 字符串） */
 const grantTreeRefs = new Map<string, any>()
+/** 防止勾选联动 setCheckedKeys 触发 @check 递归 */
+let portalGrantCheckSyncing = false
 /**
  * 业务入口树节点 props：
  * - label/children 字段映射
@@ -483,6 +487,37 @@ function applyRoleItemChecks(grantedIds: string[]) {
     // check-strictly：仅勾选 grantedSet 中、且该树存在的节点（不存在的 key 会被忽略）
     tree.setCheckedKeys?.([...grantedSet])
   })
+}
+
+/**
+ * 业务入口授权树勾选联动：
+ * - 勾选上级：自动勾选全部「需授权」下级
+ * - 取消勾选：仅取消当前节点，不联动取消上级
+ */
+function handlePortalGrantCheck(
+  groupId: string,
+  data: GrantableItemNode,
+  checked: { checkedKeys: string[]; halfCheckedKeys: string[] }
+) {
+  if (portalGrantCheckSyncing) return
+
+  const nodeId = String(data.id)
+  const isChecking = (checked.checkedKeys || []).map(String).includes(nodeId)
+  if (!isChecking) return
+
+  const tree = grantTreeRefs.get(groupId)
+  if (!tree) return
+
+  const currentKeys = ((tree.getCheckedKeys?.(false) as string[]) || []).map(String)
+  const nextKeys = applyPortalGrantCheckCascade(currentKeys, data, true)
+  if (nextKeys.length === currentKeys.length && nextKeys.every(k => currentKeys.includes(k))) return
+
+  portalGrantCheckSyncing = true
+  try {
+    tree.setCheckedKeys(nextKeys)
+  } finally {
+    portalGrantCheckSyncing = false
+  }
 }
 
 /** 收集所有入口树中已勾选、且属于「需授权」的入口项 Id（全量覆盖提交用） */

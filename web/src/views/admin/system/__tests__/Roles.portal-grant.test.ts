@@ -36,6 +36,8 @@ import {
   collectRequireGrantItemIds,
   isPortalGrantNodeDisabled,
   collectGrantedRequireGrantIds,
+  collectGrantableDescendantIds,
+  applyPortalGrantCheckCascade,
   clientTypeLabel,
   normalizeIcon
 } from '../rolePortalGrant.utils'
@@ -111,8 +113,15 @@ class FakeElTree {
     const node = this.byId.get(id)
     if (!node) return false
     if (this.disabledFn(node)) return false // 公共可见项禁用，无法勾选
-    if (checked) this.checked.add(id)
-    else this.checked.delete(id)
+    if (checked) {
+      this.checked.add(id)
+      // 勾选上级：自动勾选全部需授权下级（与 Roles.vue handlePortalGrantCheck 一致）
+      const next = applyPortalGrantCheckCascade([...this.checked], node, true)
+      this.checked = new Set(next.filter(k => this.byId.has(k)))
+    } else {
+      // 取消勾选：仅取消当前节点，不联动上级
+      this.checked.delete(id)
+    }
     return true
   }
 }
@@ -321,6 +330,78 @@ describe('角色编辑器业务入口授权 - 纯逻辑工具', () => {
     expect(normalizeIcon('ri-mic-line')).toBe('ri-mic-line')
     expect(normalizeIcon('')).toBe('bi bi-grid')
     expect(normalizeIcon(null)).toBe('bi bi-grid')
+  })
+
+  it('勾选上级自动勾选全部需授权下级', () => {
+    const root: GrantableItemNode = {
+      id: 'root',
+      parentId: null,
+      title: '评估中心',
+      requireGrant: true,
+      module: 'Ginkgo.Module.Evaluate',
+      order: 1,
+      children: [
+        {
+          id: 'child1',
+          parentId: 'root',
+          title: '任务详情',
+          requireGrant: true,
+          module: 'Ginkgo.Module.Evaluate',
+          order: 1,
+          children: [
+            {
+              id: 'child1-1',
+              parentId: 'child1',
+              title: '前置步骤',
+              requireGrant: true,
+              module: 'Ginkgo.Module.Evaluate',
+              order: 1
+            }
+          ]
+        },
+        {
+          id: 'child2',
+          parentId: 'root',
+          title: '评估记录详情',
+          requireGrant: true,
+          module: 'Ginkgo.Module.Evaluate',
+          order: 2
+        }
+      ]
+    }
+
+    expect(collectGrantableDescendantIds(root).sort()).toEqual(['child1', 'child1-1', 'child2'])
+    expect(applyPortalGrantCheckCascade([], root, true).sort()).toEqual(['child1', 'child1-1', 'child2', 'root'])
+  })
+
+  it('取消全部下级时不取消上级勾选', () => {
+    const root: GrantableItemNode = {
+      id: 'root',
+      parentId: null,
+      title: '评估中心',
+      requireGrant: true,
+      module: 'Ginkgo.Module.Evaluate',
+      order: 1,
+      children: [
+        { id: 'c1', parentId: 'root', title: '子1', requireGrant: true, module: 'm', order: 1 },
+        { id: 'c2', parentId: 'root', title: '子2', requireGrant: true, module: 'm', order: 2 }
+      ]
+    }
+
+    const groups: GrantableMenuItem[] = [{
+      clientType: 'UNIAPP',
+      groupId: 'g-eval',
+      groupName: '默认移动端',
+      items: [root]
+    }]
+
+    const tree = new FakeElTree(groups[0].items, isPortalGrantNodeDisabled)
+    tree.userToggle('root', true)
+    expect(tree.getCheckedKeys().sort()).toEqual(['c1', 'c2', 'root'])
+
+    tree.userToggle('c1', false)
+    tree.userToggle('c2', false)
+    expect(tree.getCheckedKeys()).toEqual(['root'])
   })
 })
 

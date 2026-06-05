@@ -9,7 +9,7 @@ export type { AddressValue } from './AddressPicker.vue'
 
 // 经纬度选择组件 - 基于 Leaflet + OpenStreetMap
 export { default as LocationPicker } from './LocationPicker.vue'
-export type { LocationValue } from './LocationPicker.vue'
+export type { LocationValue, LocationPickerTileProvider } from './LocationPicker.vue'
 
 // 多图片上传组件（支持从附件库选择）
 export { default as ImageUploader } from './ImageUploader.vue'

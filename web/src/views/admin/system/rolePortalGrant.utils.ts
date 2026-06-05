@@ -58,6 +58,43 @@ export function collectGrantedRequireGrantIds(
   return [...result]
 }
 
+/**
+ * 递归收集某节点下全部「需授权（requireGrant=true）」子孙入口 Id。
+ * 用于勾选上级时自动勾选下级。
+ */
+export function collectGrantableDescendantIds(node: GrantableItemNode): string[] {
+  const ids: string[] = []
+  const walk = (nodes?: GrantableItemNode[]) => {
+    for (const n of nodes || []) {
+      if (n.requireGrant) ids.push(String(n.id))
+      if (n.children?.length) walk(n.children)
+    }
+  }
+  walk(node.children)
+  return ids
+}
+
+/**
+ * 业务入口授权树勾选联动：
+ * - 勾选上级：自动勾选全部「需授权」下级
+ * - 取消勾选：仅取消当前节点，不联动上级
+ */
+export function applyPortalGrantCheckCascade(
+  currentCheckedKeys: string[],
+  node: GrantableItemNode,
+  isChecking: boolean
+): string[] {
+  if (!isChecking) {
+    return currentCheckedKeys.filter(k => String(k) !== String(node.id))
+  }
+  const next = new Set(currentCheckedKeys.map(String))
+  next.add(String(node.id))
+  for (const id of collectGrantableDescendantIds(node)) {
+    next.add(id)
+  }
+  return [...next]
+}
+
 /** 终端类型中文标签 */
 export function clientTypeLabel(clientType?: string): string {
   const map: Record<string, string> = {

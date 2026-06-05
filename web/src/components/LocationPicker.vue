@@ -45,7 +45,7 @@
         <div class="map-search">
           <el-input
             v-model="searchKeyword"
-            placeholder="输入地址搜索（使用 Nominatim 服务）"
+            :placeholder="searchPlaceholder"
             clearable
             @keyup.enter="searchLocation"
           >
@@ -72,7 +72,7 @@
 <script setup lang="ts">
 /**
  * 经纬度坐标选择组件
- * 基于 Leaflet + OpenStreetMap（开源免费）
+ * 基于 Leaflet；默认高德路网瓦片（无需 key），可切换 OpenStreetMap
  * 
  * 使用示例:
  * <LocationPicker v-model="location" />
@@ -89,7 +89,7 @@
  * - 拖动标记调整位置
  * - 地址搜索（使用 Nominatim 开源服务）
  */
-import { ref, watch, onUnmounted, nextTick } from 'vue'
+import { ref, watch, onUnmounted, nextTick, computed } from 'vue'
 import { Location, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import L from 'leaflet'
@@ -109,16 +109,28 @@ export interface LocationValue {
   latitude: number | null
 }
 
+/** 底图类型：gaode=高德路网瓦片（国内无需 key）；osm=OpenStreetMap */
+export type LocationPickerTileProvider = 'gaode' | 'osm'
+
 const props = withDefaults(defineProps<{
   modelValue?: LocationValue | null
   disabled?: boolean
   defaultCenter?: [number, number]
   defaultZoom?: number
+  /** 地图瓦片源，默认高德（无需 API Key） */
+  tileProvider?: LocationPickerTileProvider
 }>(), {
   disabled: false,
   defaultCenter: () => [116.397428, 39.90923], // 北京天安门
-  defaultZoom: 12
+  defaultZoom: 12,
+  tileProvider: 'gaode'
 })
+
+const searchPlaceholder = computed(() =>
+  props.tileProvider === 'gaode'
+    ? '输入地址关键词搜索（开源地理编码，选点后可在高德底图上微调）'
+    : '输入地址搜索（使用 Nominatim 服务）'
+)
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: LocationValue | null): void
@@ -173,8 +185,9 @@ function showMapDialog() {
 
 // 初始化地图
 function initMap() {
+  destroyMap()
   nextTick(() => {
-    if (!mapRef.value || map) return
+    if (!mapRef.value) return
 
     // 确定初始中心点
     const center: [number, number] = 
@@ -185,11 +198,20 @@ function initMap() {
     // 创建地图
     map = L.map(mapRef.value).setView(center, props.defaultZoom)
 
-    // 添加 OpenStreetMap 瓦片图层
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19
-    }).addTo(map)
+    // 高德路网瓦片（webrd 子域，无需 key）；或 OpenStreetMap
+    const isGaode = props.tileProvider === 'gaode'
+    L.tileLayer(
+      isGaode
+        ? 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}'
+        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        subdomains: isGaode ? ['1', '2', '3', '4'] : ['a', 'b', 'c'],
+        attribution: isGaode
+          ? '&copy; <a href="https://www.amap.com/">高德地图</a>'
+          : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: isGaode ? 18 : 19
+      }
+    ).addTo(map)
 
     // 如果有初始坐标，添加标记
     if (tempLatitude.value && tempLongitude.value) {

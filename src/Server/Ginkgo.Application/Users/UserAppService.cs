@@ -403,6 +403,34 @@ public sealed class UserAppService : IUserAppService
         await _userRepository.HardDeleteAsync(id, cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task DeleteSelfAsync(long id, string password, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            throw new ArgumentException("请输入密码确认注销");
+
+        var user = await _userRepoBasic.GetByIdAsync(id, cancellationToken);
+        if (user == null) throw new InvalidOperationException("用户不存在");
+
+        var ok = _passwordHasher.Verify(password, user.PasswordHash, user.Salt);
+        if (!ok) throw new ArgumentException("密码不正确，无法注销帐号");
+
+        await _userRepository.HardDeleteAsync(id, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task ClearPersonalInfoAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var entity = await _userRepoBasic.GetByIdAsync(id, cancellationToken);
+        if (entity == null) throw new InvalidOperationException("用户不存在");
+
+        entity.Email = null;
+        entity.Phone = null;
+        entity.Avatar = null;
+        entity.Introduction = null;
+        await _userRepoBasic.UpdateAsync(entity, cancellationToken);
+    }
+
     // ===== 关联：角色 =====
     public Task<List<long>> GetUserRoleIdsAsync(long userId, CancellationToken cancellationToken = default)
     {

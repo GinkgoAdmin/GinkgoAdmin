@@ -78,6 +78,16 @@ public interface IUserAppService
     /// <param name="cancellationToken">取消令牌。</param>
     Task DeleteAsync(long id, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// 用户自助注销帐号（需验证密码）。
+    /// </summary>
+    Task DeleteSelfAsync(long id, string password, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 清除用户可选个人信息（邮箱、手机、头像、简介）。
+    /// </summary>
+    Task ClearPersonalInfoAsync(long id, CancellationToken cancellationToken = default);
+
     // 关联：角色
     Task<List<long>> GetUserRoleIdsAsync(long userId, CancellationToken cancellationToken = default);
     Task SaveUserRolesAsync(long userId, IEnumerable<long> roleIds, CancellationToken cancellationToken = default);

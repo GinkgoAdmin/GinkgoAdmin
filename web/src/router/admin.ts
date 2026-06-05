@@ -96,15 +96,19 @@ function pascalToKebab(str: string): string {
 }
 
 /**
- * 解析插件组件：基于菜单 code 前缀定位插件目录，按路由末段 kebab 名匹配 .vue 文件。
- * - code 形如 'aicore:sessions' -> 插件短名 'aicore'
- * - routePath 形如 'ai-sessions' -> 匹配 views/**\/*.vue 文件中文件名（PascalCase）转 kebab 等于 'ai-sessions'
+ * 解析插件组件：基于菜单 code 前缀定位插件目录，按路由路径匹配 .vue 文件。
+ * - code 形如 'evaluate:scale' -> 插件短名 'evaluate'
+ * - routePath 形如 'evaluate/scale' -> 优先 views/scale/Index.vue（列表页）
  */
 function resolvePluginComponent(code: string | undefined, routePath: string) {
   if (!code || code.indexOf(':') < 0) return null
   const shortName = code.split(':')[0].trim().toLowerCase()
   if (!shortName) return null
-  const leaf = (routePath || '').split('/').filter(Boolean).pop() || ''
+
+  const normalized = (routePath || '').replace(/^\/+|\/+$/g, '').trim()
+  if (!normalized) return null
+  const segments = normalized.split('/').filter(Boolean)
+  const leaf = segments[segments.length - 1] || ''
   if (!leaf) return null
   const leafKebab = leaf.toLowerCase()
 
@@ -113,19 +117,44 @@ function resolvePluginComponent(code: string | undefined, routePath: string) {
   const keys = Object.keys(modules).filter(k => k.toLowerCase().startsWith(prefix))
   if (keys.length === 0) return null
 
-  // 精确匹配：文件名（去 .vue）kebab 化后等于 leafKebab
+  const findBySuffix = (suffix: string) => {
+    const lower = suffix.toLowerCase()
+    const key = keys.find(k => k.replace(/\\/g, '/').toLowerCase().endsWith(lower))
+    return key ? modules[key] : null
+  }
+
+  // 1. 目录列表页：evaluate/scale -> views/scale/Index.vue
+  const indexByPath = findBySuffix(`${segments.join('/')}/Index.vue`)
+  if (indexByPath) return indexByPath
+  const indexByLeaf = findBySuffix(`${leaf}/Index.vue`)
+  if (indexByLeaf) return indexByLeaf
+
+  // 2. 插件根工作台：evaluate / evaluate/index -> views/Index.vue（仅匹配插件 views 根目录）
+  if (segments.length === 1 || (segments.length === 2 && leafKebab === 'index')) {
+    const rootIndexKey = keys.find(k => k.replace(/\\/g, '/').toLowerCase() === `${prefix}index.vue`)
+    if (rootIndexKey) return modules[rootIndexKey]
+  }
+
+  // 3. 精确匹配：文件名 kebab 等于路径末段（如 assessor -> Assessor/Index 已由上条覆盖）
   for (const k of keys) {
     const fileName = k.split('/').pop() || ''
     const base = fileName.replace(/\.vue$/i, '')
     if (pascalToKebab(base) === leafKebab) return modules[k]
     if (base.toLowerCase() === leafKebab.replace(/-/g, '')) return modules[k]
   }
-  // 兜底：kebab 子串包含匹配
-  const fallback = keys.find(k => {
-    const base = (k.split('/').pop() || '').replace(/\.vue$/i, '')
-    return pascalToKebab(base).includes(leafKebab)
-  })
-  return fallback ? modules[fallback] : null
+
+  // 4. 多级业务页：evaluate/report/template -> views/report/TemplateList.vue
+  if (normalized.endsWith('report/template')) {
+    const tpl = findBySuffix('report/TemplateList.vue')
+    if (tpl) return tpl
+  }
+  if (normalized.endsWith('report/seal')) {
+    const seal = findBySuffix('report/SealManage.vue')
+    if (seal) return seal
+  }
+
+  // 不使用文件名子串包含匹配，避免 evaluate/scale 误命中 ScaleOutputConfig.vue
+  return null
 }
 
 function resolveSystemComponent(pathOrFile: string) {

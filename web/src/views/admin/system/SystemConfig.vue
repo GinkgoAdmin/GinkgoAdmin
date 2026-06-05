@@ -388,6 +388,74 @@
         </el-card>
       </el-tab-pane>
 
+      <!-- 移动端（UNIAPP）配置 -->
+      <el-tab-pane label="移动端" name="mobile">
+        <el-card class="config-card" style="margin-bottom: 16px">
+          <template #header><span style="font-weight: 600;">首页与基础</span></template>
+          <el-form :model="formData" label-width="220px" label-position="left">
+            <el-form-item label="首页替换插件 ID">
+              <div class="config-value-row"><div class="config-value-control">
+                <el-input v-model="formData.mobileHomePlugin" placeholder="留空则显示默认首页" clearable />
+              </div>
+              <div class="config-value-actions"><el-button size="small" class="copy-btn copy-btn-vue" @click="copyVueCode('App.HomePlugin')">Vue</el-button><el-button size="small" class="copy-btn copy-btn-csharp" @click="copyCSharpCode('App.HomePlugin')">C#</el-button></div></div>
+              <span class="form-tip">设置后 UNIAPP 登录首页将完全替换为该插件页面。可选值：training / crm / smart-community / evaluate，留空则显示默认首页</span>
+            </el-form-item>
+          </el-form>
+        </el-card>
+
+        <el-card class="config-card" style="margin-bottom: 16px">
+          <template #header><span style="font-weight: 600;">隐私政策</span></template>
+          <el-form :model="formData" label-width="220px" label-position="left">
+            <el-form-item label="首次启动弹出隐私政策">
+              <div class="config-value-row"><div class="config-value-control"><el-switch v-model="formData.mobilePrivacyShowPopup" /></div>
+              <div class="config-value-actions"><el-button size="small" class="copy-btn copy-btn-vue" @click="copyVueCode('App.Privacy.ShowPopup')">Vue</el-button><el-button size="small" class="copy-btn copy-btn-csharp" @click="copyCSharpCode('App.Privacy.ShowPopup')">C#</el-button></div></div>
+              <span class="form-tip">开启后，用户首次打开 UNIAPP 或隐私政策版本更新时需同意后才能继续使用</span>
+            </el-form-item>
+            <el-form-item label="隐私政策版本号">
+              <div class="config-value-row"><div class="config-value-control">
+                <el-input v-model="formData.mobilePrivacyPolicyVersion" placeholder="如 1.0.0，更新后需用户重新同意" />
+              </div>
+              <div class="config-value-actions"><el-button size="small" class="copy-btn copy-btn-vue" @click="copyVueCode('App.Privacy.PolicyVersion')">Vue</el-button><el-button size="small" class="copy-btn copy-btn-csharp" @click="copyCSharpCode('App.Privacy.PolicyVersion')">C#</el-button></div></div>
+            </el-form-item>
+            <el-form-item label="隐私政策内容">
+              <div class="config-value-row"><div class="config-value-control">
+                <DynamicEditor v-model="formData.mobilePrivacyPolicyContent" editor-type="rich" :height="280" placeholder="请输入隐私政策内容（支持富文本）" />
+              </div>
+              <div class="config-value-actions"><el-button size="small" class="copy-btn copy-btn-vue" @click="copyVueCode('App.Privacy.PolicyContent')">Vue</el-button><el-button size="small" class="copy-btn copy-btn-csharp" @click="copyCSharpCode('App.Privacy.PolicyContent')">C#</el-button></div></div>
+              <span class="form-tip">移动端《隐私政策》全文，注册页、隐私弹窗与用户中心将读取此内容</span>
+            </el-form-item>
+            <el-form-item label="用户协议内容">
+              <div class="config-value-row"><div class="config-value-control">
+                <DynamicEditor v-model="formData.mobileUserAgreementContent" editor-type="rich" :height="240" placeholder="请输入用户协议内容（支持富文本）" />
+              </div>
+              <div class="config-value-actions"><el-button size="small" class="copy-btn copy-btn-vue" @click="copyVueCode('App.Privacy.UserAgreementContent')">Vue</el-button><el-button size="small" class="copy-btn copy-btn-csharp" @click="copyCSharpCode('App.Privacy.UserAgreementContent')">C#</el-button></div></div>
+            </el-form-item>
+          </el-form>
+        </el-card>
+
+        <el-card class="config-card">
+          <template #header><span style="font-weight: 600;">个人信息合规功能</span></template>
+          <el-alert type="info" :closable="false" show-icon style="margin-bottom: 16px;" title="以下开关控制 UNIAPP「我的」页面中是否展示对应的个人信息权利入口，并与实际功能联动。" />
+          <el-form :model="formData" label-width="220px" label-position="left">
+            <el-form-item label="更正/删除个人信息">
+              <div class="config-value-row"><div class="config-value-control"><el-switch v-model="formData.mobilePrivacyEnableCorrectInfo" /></div>
+              <div class="config-value-actions"><el-button size="small" class="copy-btn copy-btn-vue" @click="copyVueCode('App.Privacy.EnableCorrectInfo')">Vue</el-button><el-button size="small" class="copy-btn copy-btn-csharp" @click="copyCSharpCode('App.Privacy.EnableCorrectInfo')">C#</el-button></div></div>
+              <span class="form-tip">开启后展示入口，用户可编辑资料或清除邮箱、手机、头像、简介等可选个人信息</span>
+            </el-form-item>
+            <el-form-item label="注销用户帐号">
+              <div class="config-value-row"><div class="config-value-control"><el-switch v-model="formData.mobilePrivacyEnableDeleteAccount" /></div>
+              <div class="config-value-actions"><el-button size="small" class="copy-btn copy-btn-vue" @click="copyVueCode('App.Privacy.EnableDeleteAccount')">Vue</el-button><el-button size="small" class="copy-btn copy-btn-csharp" @click="copyCSharpCode('App.Privacy.EnableDeleteAccount')">C#</el-button></div></div>
+              <span class="form-tip">开启后用户可在移动端申请注销帐号（需密码确认，数据将被永久删除）</span>
+            </el-form-item>
+            <el-form-item label="撤回同意隐私协议">
+              <div class="config-value-row"><div class="config-value-control"><el-switch v-model="formData.mobilePrivacyEnableWithdrawConsent" /></div>
+              <div class="config-value-actions"><el-button size="small" class="copy-btn copy-btn-vue" @click="copyVueCode('App.Privacy.EnableWithdrawConsent')">Vue</el-button><el-button size="small" class="copy-btn copy-btn-csharp" @click="copyCSharpCode('App.Privacy.EnableWithdrawConsent')">C#</el-button></div></div>
+              <span class="form-tip">开启后用户可撤回已同意的隐私政策，撤回后将退出登录并再次弹出隐私政策</span>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </el-tab-pane>
+
       <!-- 动态配置项 TAB（从字典 sysconfig 分类加载，位于多语言之前） -->
       <el-tab-pane
         v-for="group in dynamicGroups"
@@ -1104,6 +1172,16 @@ const formData = reactive({
   imageCompressEnabled: false,
   imageCompressQuality: 75,
   imageCompressKeepOriginal: false,
+
+  // 移动端（UNIAPP）
+  mobileHomePlugin: '',
+  mobilePrivacyShowPopup: true,
+  mobilePrivacyPolicyVersion: '1.0.0',
+  mobilePrivacyPolicyContent: '',
+  mobileUserAgreementContent: '',
+  mobilePrivacyEnableCorrectInfo: true,
+  mobilePrivacyEnableDeleteAccount: true,
+  mobilePrivacyEnableWithdrawConsent: true,
 })
 
 // ---------- CORS 来源标签 ----------
@@ -1326,6 +1404,16 @@ async function loadSettings() {
     formData.imageCompressQuality = parseInt(map.get('Upload.ImageCompress.Quality') || '75', 10)
     formData.imageCompressKeepOriginal = (map.get('Upload.ImageCompress.KeepOriginal') || 'false').toLowerCase() === 'true'
 
+    // 移动端（UNIAPP）
+    formData.mobileHomePlugin = map.get('App.HomePlugin') || ''
+    formData.mobilePrivacyShowPopup = (map.get('App.Privacy.ShowPopup') || 'true').toLowerCase() === 'true'
+    formData.mobilePrivacyPolicyVersion = map.get('App.Privacy.PolicyVersion') || '1.0.0'
+    formData.mobilePrivacyPolicyContent = map.get('App.Privacy.PolicyContent') || ''
+    formData.mobileUserAgreementContent = map.get('App.Privacy.UserAgreementContent') || ''
+    formData.mobilePrivacyEnableCorrectInfo = (map.get('App.Privacy.EnableCorrectInfo') || 'true').toLowerCase() === 'true'
+    formData.mobilePrivacyEnableDeleteAccount = (map.get('App.Privacy.EnableDeleteAccount') || 'true').toLowerCase() === 'true'
+    formData.mobilePrivacyEnableWithdrawConsent = (map.get('App.Privacy.EnableWithdrawConsent') || 'true').toLowerCase() === 'true'
+
     // 加载动态配置项
     await loadDynamicConfigs(settings)
 
@@ -1343,7 +1431,7 @@ async function loadSettings() {
 async function loadDynamicConfigs(allSettings: SettingDto[]) {
   try {
     // 已有专用标签页的内置分组，不在动态列表中重复显示
-    const excludeGroups = new Set(['Language', 'Site', 'Registration', 'Security', 'DataPermission', 'Mail', 'Upload'])
+    const excludeGroups = new Set(['Language', 'Site', 'Registration', 'Security', 'DataPermission', 'Mail', 'Upload', 'App', 'Mobile'])
 
     // 1. 从字典 sysconfig 分类获取分组名称
     const dictGroupNames = new Set<string>()
@@ -1492,7 +1580,11 @@ async function handleSave() {
       'DataPermission.DefaultScope', 'DataPermission.Enabled', 'DataPermission.AllowCrossLevel',
       'Mail.Smtp.Host', 'Mail.Smtp.Port', 'Mail.Ssl.Enable', 'Mail.Smtp.UserName', 'Mail.Smtp.Password', 'Mail.Smtp.AuthType',
       'Mail.From.Address', 'Mail.From.DisplayName',
-      'Site.Cors.AllowedOrigins', 'Upload.MaxSizeMB', 'Upload.AllowedExtensions', 'Upload.BasePath'
+      'Site.Cors.AllowedOrigins', 'Upload.MaxSizeMB', 'Upload.AllowedExtensions', 'Upload.BasePath',
+      'Upload.ImageCompress.Enabled', 'Upload.ImageCompress.Quality', 'Upload.ImageCompress.KeepOriginal',
+      'App.HomePlugin', 'App.Privacy.ShowPopup', 'App.Privacy.PolicyVersion', 'App.Privacy.PolicyContent',
+      'App.Privacy.UserAgreementContent', 'App.Privacy.EnableCorrectInfo', 'App.Privacy.EnableDeleteAccount',
+      'App.Privacy.EnableWithdrawConsent',
     ])
 
     // 同步选择器数据到 formData
@@ -1554,6 +1646,16 @@ async function handleSave() {
       { key: 'Upload.ImageCompress.Enabled', value: formData.imageCompressEnabled ? 'true' : 'false', type: 'Bool', description: '上传图片时是否启用后端压缩' },
       { key: 'Upload.ImageCompress.Quality', value: String(formData.imageCompressQuality), type: 'Number', description: '图片压缩质量（10-100）' },
       { key: 'Upload.ImageCompress.KeepOriginal', value: formData.imageCompressKeepOriginal ? 'true' : 'false', type: 'Bool', description: '压缩后是否保留原图' },
+
+      // 移动端（UNIAPP）
+      { key: 'App.HomePlugin', value: formData.mobileHomePlugin, type: 'String', description: 'UNIAPP端首页替换插件ID', class: 'Mobile' },
+      { key: 'App.Privacy.ShowPopup', value: formData.mobilePrivacyShowPopup ? 'true' : 'false', type: 'Bool', description: '首次启动弹出隐私政策', class: 'Mobile' },
+      { key: 'App.Privacy.PolicyVersion', value: formData.mobilePrivacyPolicyVersion, type: 'String', description: '隐私政策版本号', class: 'Mobile' },
+      { key: 'App.Privacy.PolicyContent', value: formData.mobilePrivacyPolicyContent, type: 'RichText', description: '隐私政策内容', class: 'Mobile' },
+      { key: 'App.Privacy.UserAgreementContent', value: formData.mobileUserAgreementContent, type: 'RichText', description: '用户协议内容', class: 'Mobile' },
+      { key: 'App.Privacy.EnableCorrectInfo', value: formData.mobilePrivacyEnableCorrectInfo ? 'true' : 'false', type: 'Bool', description: '开启更正/删除个人信息', class: 'Mobile' },
+      { key: 'App.Privacy.EnableDeleteAccount', value: formData.mobilePrivacyEnableDeleteAccount ? 'true' : 'false', type: 'Bool', description: '开启注销用户帐号', class: 'Mobile' },
+      { key: 'App.Privacy.EnableWithdrawConsent', value: formData.mobilePrivacyEnableWithdrawConsent ? 'true' : 'false', type: 'Bool', description: '开启撤回同意隐私协议', class: 'Mobile' },
     ]
 
     // 添加动态配置项（排除已在静态列表中的 Key，避免重复覆盖）

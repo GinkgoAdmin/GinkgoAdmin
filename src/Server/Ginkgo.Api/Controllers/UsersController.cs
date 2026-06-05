@@ -241,6 +241,53 @@ public sealed class UsersController : ControllerBase
     }
 
     /// <summary>
+    /// 注销“本人”帐号（需密码确认）。
+    /// </summary>
+    public sealed class DeleteMeInput
+    {
+        public string Password { get; set; } = string.Empty;
+    }
+
+    [HttpDelete("me")]
+    [AllowAnonymous]
+    public async Task<Result> DeleteMeAsync([FromBody] DeleteMeInput input)
+    {
+        if (!TryGetCurrentUserId(User, out var userId)) return Result.Fail(401, "未登录");
+        try
+        {
+            await _service.DeleteSelfAsync(userId, input?.Password ?? string.Empty);
+            return Result.Success("帐号已注销");
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Fail(400, ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result.Fail(404, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// 清除“本人”可选个人信息。
+    /// </summary>
+    [HttpPost("me/clear-personal-info")]
+    [AllowAnonymous]
+    public async Task<Result> ClearPersonalInfoAsync()
+    {
+        if (!TryGetCurrentUserId(User, out var userId)) return Result.Fail(401, "未登录");
+        try
+        {
+            await _service.ClearPersonalInfoAsync(userId);
+            return Result.Success("个人信息已清除");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result.Fail(404, ex.Message);
+        }
+    }
+
+    /// <summary>
     /// 修改“本人”密码。
     /// </summary>
     [HttpPost("me/password")]

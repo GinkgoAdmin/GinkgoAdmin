@@ -174,15 +174,17 @@ async function initPluginRoutes(targetPath?: string, forceLoadAll = false) {
             routePath = routePath.slice(1)
           }
 
-          // 检查路由是否已存在
+          const childRoute = { ...route, path: routePath }
           const existingRoute = router.getRoutes().find(r =>
-            r.path === `${adminBasePath}/${routePath}` || r.name === route.name
+            r.path === `${adminBasePath}/${routePath}` || (route.name && r.name === route.name)
           )
-          if (existingRoute) {
+          // 同名路由由插件 hook 覆盖菜单误注入的定义（如 evaluate-scale 应对应 Index 而非 ScaleOutputConfig）
+          if (existingRoute?.name && route.name && existingRoute.name === route.name) {
+            router.removeRoute(existingRoute.name)
+          } else if (existingRoute) {
             return
           }
 
-          const childRoute = { ...route, path: routePath }
           router.addRoute('admin-root', childRoute)
         })
       }
@@ -482,25 +484,18 @@ router.beforeEach(async (to, _from) => {
       return { name: 'login', query: { redirect: to.fullPath }, replace: true }
     }
 
+    // 先注册插件 route:register 钩子中的权威路由，再注入菜单驱动路由（避免菜单解析绑错组件后无法覆盖）
+    await initPluginRoutes(to.path, false)
     await injectAdminRoutes(router)
 
-    const isMatchedBeforePlugin = to.matched.length > 0 &&
+    const isMatchedAfterPlugin = to.matched.length > 0 &&
       !(to.matched.length === 1 && to.matched[0]?.name === 'admin-root') &&
       !to.matched.some(m => m.name === 'notfound')
 
-    // 仅在未命中后台路由时才触发插件加载
-    if (!isMatchedBeforePlugin) {
-      await initPluginRoutes(to.path, false)
-      ensureNotfoundRoute()
-
-      const isMatchedAfterTargeted = to.matched.length > 0 &&
-        !(to.matched.length === 1 && to.matched[0]?.name === 'admin-root') &&
-        !to.matched.some(m => m.name === 'notfound')
-
-      // 目标插件未命中时，回退全量一次，保证兼容旧插件
-      if (!isMatchedAfterTargeted) {
-        await initPluginRoutes(to.path, true)
-      }
+    // 目标插件未命中时，回退全量一次，保证兼容旧插件
+    if (!isMatchedAfterPlugin) {
+      await initPluginRoutes(to.path, true)
+      await injectAdminRoutes(router)
     }
 
     // 后台动态路由处理后，添加 notfound 兜底路由
