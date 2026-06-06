@@ -728,6 +728,24 @@ public sealed class ModuleUploadService
         if (!installUniapp)
             result.ExecutedSteps.Add("检测到主框架不含 UNIAPP 移动端目录，本次将跳过插件移动端安装");
 
+        // 全新框架（standalone）部署：当包内携带 standalone/uniapp 或 standalone/wpf，
+        // 且当前主框架缺少对应端时，先把打包器精简过的主框架部署到仓库根目录，使后续插件端内容能正常安装。
+        // 若对应框架已存在则一律跳过，避免覆盖现有主框架与其它插件内容。
+        var freshRepoRoot = GetRepoRoot();
+        if (freshRepoRoot != null)
+        {
+            if (!installUniapp && DeployStandaloneUniapp(extractedPath, freshRepoRoot, result))
+            {
+                installUniapp = true;
+                result.ExecutedSteps.Add("已部署全新 UNIAPP 主框架，后续将正常安装本插件移动端内容");
+            }
+            if (!installWpf && DeployStandaloneWpf(extractedPath, freshRepoRoot, result))
+            {
+                installWpf = true;
+                result.ExecutedSteps.Add("已部署全新 WPF 主框架，后续将正常安装本插件 WPF 端内容");
+            }
+        }
+
         // 回滚操作列表
         var rollbackActions = new List<Func<Task>>();
 
@@ -857,6 +875,11 @@ public sealed class ModuleUploadService
                         RemoveModuleEndDirectory(targetModuleDir, "uniapp", result);
                         RemoveModuleEndDirectory(targetModuleDir, "uniapp-plugin", result);
                     }
+
+                    // 清理被复制进模块源码目录的 standalone/ 内容（全新框架已在前面部署到仓库根目录，
+                    // 此处避免它残留在 src/Module/{id}/standalone 或 src/Module/{id}/server/standalone）。
+                    RemoveModuleEndDirectory(targetModuleDir, "standalone", result);
+                    RemoveModuleEndDirectory(Path.Combine(targetModuleDir, "server"), "standalone", result);
 
                     // 如果没有备份，添加删除回滚
                     if (backupDir == null)
@@ -1398,6 +1421,68 @@ public sealed class ModuleUploadService
     {
         var devModuleBase = GetDevModuleSourceDir();
         return devModuleBase != null ? Path.GetFullPath(Path.Combine(devModuleBase, "..", "..")) : null;
+    }
+
+    /// <summary>
+    /// 部署包内 standalone/uniapp/&lt;appName&gt;/ 到仓库根 uniapp/&lt;appName&gt;/。
+    /// 仅在仓库根尚无 uniapp/ 目录（即开源版缺少 UNIAPP 主框架）时执行，避免覆盖现有框架与其它插件。
+    /// </summary>
+    private bool DeployStandaloneUniapp(string extractedPath, string repoRoot, ModuleInstallResultEx result)
+    {
+        try
+        {
+            var src = Path.Combine(extractedPath, "standalone", "uniapp");
+            if (!Directory.Exists(src)) return false;
+
+            var uniappRoot = Path.Combine(repoRoot, "uniapp");
+            if (Directory.Exists(uniappRoot))
+            {
+                result.ExecutedSteps.Add("仓库根已存在 uniapp/ 目录，跳过全新 UNIAPP 框架部署");
+                return false;
+            }
+
+            foreach (var appDir in Directory.GetDirectories(src))
+            {
+                var name = Path.GetFileName(appDir);
+                CopyDirectory(appDir, Path.Combine(uniappRoot, name));
+            }
+            result.ExecutedSteps.Add($"已部署全新 UNIAPP 主框架到 {uniappRoot}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            result.ExecutedSteps.Add($"部署全新 UNIAPP 主框架失败（不影响安装）: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 部署包内 standalone/wpf/（内部已按仓库相对结构组织：src/Client/*、src/Module/&lt;id&gt;/client）到仓库根。
+    /// 仅在主框架缺少 WPF 宿主/UI 工程时执行，避免覆盖现有 WPF 框架。
+    /// </summary>
+    private bool DeployStandaloneWpf(string extractedPath, string repoRoot, ModuleInstallResultEx result)
+    {
+        try
+        {
+            var src = Path.Combine(extractedPath, "standalone", "wpf");
+            if (!Directory.Exists(src)) return false;
+
+            if (HasWpfFrameworkProjects())
+            {
+                result.ExecutedSteps.Add("主框架已存在 WPF 客户端/UI 工程，跳过全新 WPF 框架部署");
+                return false;
+            }
+
+            // standalone/wpf 内部已按仓库相对路径组织，直接合并复制到仓库根
+            CopyDirectory(src, repoRoot);
+            result.ExecutedSteps.Add($"已部署全新 WPF 主框架到 {Path.Combine(repoRoot, "src", "Client")}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            result.ExecutedSteps.Add($"部署全新 WPF 主框架失败（不影响安装）: {ex.Message}");
+            return false;
+        }
     }
 
     /// <summary>
