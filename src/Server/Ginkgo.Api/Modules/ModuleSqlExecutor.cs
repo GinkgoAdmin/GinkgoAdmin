@@ -123,7 +123,7 @@ public sealed class ModuleSqlExecutor
 
     /// <summary>
     /// 在事务中按顺序执行所有脚本。每个脚本文件独立事务（避免 MySQL DDL 隐式提交污染数据脚本回滚）。
-    /// 数据脚本（非 install.sql）安装时临时关闭外键检查，并支持大文件流式执行，无行数限制。
+    /// 模块安装 SQL 统一临时关闭外键检查（建表 + 数据），并支持大文件流式执行，无行数限制。
     /// </summary>
     public async Task ExecuteScriptsAsync(IEnumerable<string> scriptPaths, CancellationToken ct)
     {
@@ -139,14 +139,6 @@ public sealed class ModuleSqlExecutor
         }
     }
 
-    /// <summary>判断是否为建表结构脚本（不做外键关闭）。</summary>
-    private static bool IsSchemaInstallScript(string path)
-    {
-        var name = Path.GetFileName(path);
-        return name.Equals("install.sql", StringComparison.OrdinalIgnoreCase)
-               || name.Equals("schema.sql", StringComparison.OrdinalIgnoreCase);
-    }
-
     private static async Task ExecuteNonQueryInTxAsync(
         DbConnection conn, DbTransaction tx, string sql, CancellationToken ct, int commandTimeout = 0)
     {
@@ -157,18 +149,15 @@ public sealed class ModuleSqlExecutor
         await cmd.ExecuteNonQueryAsync(ct);
     }
 
-    /// <summary>执行单个 SQL 脚本文件（独立事务）。</summary>
+    /// <summary>执行单个 SQL 脚本文件（独立事务；全程关闭外键检查以避免建表/导数据顺序问题）。</summary>
     private async Task ExecuteSingleScriptFileAsync(DbConnection conn, string path, CancellationToken ct)
     {
-        var isSchema = IsSchemaInstallScript(path);
-        var disableFk = !isSchema;
         var useStream = new FileInfo(path).Length >= LargeScriptStreamThresholdBytes;
 
         using var tx = await conn.BeginTransactionAsync(ct);
         try
         {
-            if (disableFk)
-                await ExecuteNonQueryInTxAsync(conn, tx, "SET FOREIGN_KEY_CHECKS=0", ct);
+            await ExecuteNonQueryInTxAsync(conn, tx, "SET FOREIGN_KEY_CHECKS=0", ct);
 
             var batchIndex = 0;
             if (useStream)
@@ -191,8 +180,7 @@ public sealed class ModuleSqlExecutor
                 }
             }
 
-            if (disableFk)
-                await ExecuteNonQueryInTxAsync(conn, tx, "SET FOREIGN_KEY_CHECKS=1", ct);
+            await ExecuteNonQueryInTxAsync(conn, tx, "SET FOREIGN_KEY_CHECKS=1", ct);
 
             await tx.CommitAsync(ct);
         }
@@ -1058,6 +1046,8 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
         public async Task<string> ExportTableSchemaAsync(List<string> tableNames, CancellationToken ct)
         {
             if (tableNames == null || tableNames.Count == 0) return string.Empty;
+
+            tableNames = await SortTablesForDataExportAsync(tableNames, ct);
 
             using var scope = _services.CreateScope();
             var conn = GetSqlSugarConnection(scope.ServiceProvider);

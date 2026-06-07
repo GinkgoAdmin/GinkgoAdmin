@@ -561,6 +561,9 @@ public sealed class ModulePackageService
 
                 if (tableNames.Count > 0)
                 {
+                    tableNames = await _sqlExecutor.SortTablesForDataExportAsync(tableNames, ct);
+                    Step($"  表顺序: 已按外键依赖排序（{tableNames.Count} 张）");
+
                     // 2. 导出表结构
                     var schemaSql = await _sqlExecutor.ExportTableSchemaAsync(tableNames, ct);
                     if (!string.IsNullOrWhiteSpace(schemaSql))
