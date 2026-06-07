@@ -154,7 +154,8 @@ public sealed class ModulePackageService
     /// <param name="exportDbData">是否从真实数据库导出表数据（需同时开启 exportDbSchema）</param>
     /// <param name="sanitizeConfig">是否对插件配置文件做脱敏处理（清空 items[].value 真实值，仅保留键和结构），默认 true</param>
     /// <param name="ct">取消令牌</param>
-    public async Task<ModulePackageResult> PackageModuleAsync(string moduleId, string packageType = "source", bool exportDbSchema = false, bool exportDbData = false, bool sanitizeConfig = true, CancellationToken ct = default)
+    /// <param name="progress">可选进度回调（供打包插件实时写入步骤日志）</param>
+    public async Task<ModulePackageResult> PackageModuleAsync(string moduleId, string packageType = "source", bool exportDbSchema = false, bool exportDbData = false, bool sanitizeConfig = true, CancellationToken ct = default, IProgress<string>? progress = null)
     {
         var result = new ModulePackageResult { PackageType = packageType };
 
@@ -393,7 +394,7 @@ public sealed class ModulePackageService
             // 步骤 8: 数据库导出（表结构 + 可选数据 + 菜单同步）
             // ============================================================
             result.Steps.Add("[8/10] 数据库导出...");
-            await ExportDatabaseAsync(moduleDir, moduleId, stagingDir, exportDbSchema, exportDbData, manifest, result, ct);
+            await ExportDatabaseAsync(moduleDir, moduleId, stagingDir, exportDbSchema, exportDbData, manifest, result, progress, ct);
 
             // ============================================================
             // 步骤 9: 生成 install-manifest.json
@@ -510,14 +511,20 @@ public sealed class ModulePackageService
     /// <summary>
     /// 导出数据库（三种模式：源文件直接复制 / 真实结构导出 / 真实结构+数据导出）
     /// </summary>
-    private async Task ExportDatabaseAsync(string moduleDir, string moduleId, string stagingDir, bool exportDbSchema, bool exportDbData, ModuleManifest manifest, ModulePackageResult result, CancellationToken ct)
+    private async Task ExportDatabaseAsync(string moduleDir, string moduleId, string stagingDir, bool exportDbSchema, bool exportDbData, ModuleManifest manifest, ModulePackageResult result, IProgress<string>? progress, CancellationToken ct)
     {
+        void Step(string msg)
+        {
+            result.Steps.Add(msg);
+            progress?.Report(msg);
+        }
+
         var serverDir = Path.Combine(moduleDir, "server");
 
         if (!exportDbSchema)
         {
             // 模式 A：不导出数据库 — SQL 文件已由 CollectFiles 递归收集到暂存区，无需额外处理
-            result.Steps.Add("  数据库导出: 跳过（使用源码中的 SQL 文件）");
+            Step("  数据库导出: 跳过（使用源码中的 SQL 文件）");
         }
         else
         {
@@ -532,7 +539,7 @@ public sealed class ModulePackageService
                 {
                     // 按前缀从数据库中查找所有匹配的表
                     tableNames = await _sqlExecutor.FindTablesByPrefixAsync(tablePrefix, ct);
-                    result.Steps.Add($"  按前缀 [{tablePrefix}] 查找表: {tableNames.Count} 张");
+                    Step($"  按前缀 [{tablePrefix}] 查找表: {tableNames.Count} 张");
                 }
                 else
                 {
@@ -547,9 +554,9 @@ public sealed class ModulePackageService
                     // 去重
                     tableNames = tableNames.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
                     if (tableNames.Count > 0)
-                        result.Steps.Add($"  从 install.sql 提取表名: {tableNames.Count} 张（未配置 tablePrefix，使用回退策略）");
+                        Step($"  从 install.sql 提取表名: {tableNames.Count} 张（未配置 tablePrefix，使用回退策略）");
                     else
-                        result.Steps.Add("  数据库导出: 跳过（未配置 tablePrefix 且未找到 install.sql）");
+                        Step("  数据库导出: 跳过（未配置 tablePrefix 且未找到 install.sql）");
                 }
 
                 if (tableNames.Count > 0)
@@ -565,34 +572,48 @@ public sealed class ModulePackageService
                         if (targetDir != null && !Directory.Exists(targetDir))
                             Directory.CreateDirectory(targetDir);
                         await File.WriteAllTextAsync(targetPath, schemaSql, System.Text.Encoding.UTF8, ct);
-                        result.Steps.Add($"  导出表结构: {tableNames.Count} 张表 → {installSqlRelPath}");
+                        Step($"  导出表结构: {tableNames.Count} 张表 → {installSqlRelPath}");
                     }
 
-                    // 3. 导出表数据（模式 C）
+                    // 3. 导出表数据（模式 C：全量流式写入，支持百万级）
                     if (exportDbData)
                     {
-                        var dataSql = await _sqlExecutor.ExportTableDataAsync(tableNames, ct, rowLimit: 100, orderByPkDesc: true);
-                        if (!string.IsNullOrWhiteSpace(dataSql))
+                        Step($"  开始全量导出表数据（{tableNames.Count} 张表，数据量大时可能耗时较长，请耐心等待）...");
+
+                        var installSqlRelPath = DetermineInstallSqlRelativePath(serverDir);
+                        var sqlDir = Path.GetDirectoryName(installSqlRelPath) ?? "sql";
+                        var dataRelPath = Path.Combine(sqlDir, "init_data.sql");
+                        var dataTargetPath = Path.Combine(stagingDir, "server", dataRelPath);
+                        var dataTargetDir = Path.GetDirectoryName(dataTargetPath);
+                        if (dataTargetDir != null && !Directory.Exists(dataTargetDir))
+                            Directory.CreateDirectory(dataTargetDir);
+
+                        var exportStats = await _sqlExecutor.ExportTableDataToFileAsync(
+                            tableNames,
+                            dataTargetPath,
+                            ct,
+                            rowLimit: null,
+                            onProgress: Step);
+
+                        if (exportStats.TotalRows > 0 || exportStats.TotalBytes > 0)
                         {
-                            // init_data.sql 放在与 install.sql 同级目录
-                            var installSqlRelPath = DetermineInstallSqlRelativePath(serverDir);
-                            var sqlDir = Path.GetDirectoryName(installSqlRelPath) ?? "sql";
-                            var dataRelPath = Path.Combine(sqlDir, "init_data.sql");
-                            var dataTargetPath = Path.Combine(stagingDir, "server", dataRelPath);
-                            var dataTargetDir = Path.GetDirectoryName(dataTargetPath);
-                            if (dataTargetDir != null && !Directory.Exists(dataTargetDir))
-                                Directory.CreateDirectory(dataTargetDir);
-                            await File.WriteAllTextAsync(dataTargetPath, dataSql, System.Text.Encoding.UTF8, ct);
                             result.IncludedFiles.Add($"server/{dataRelPath.Replace('\\', '/')}");
 
-                            var fileSize = new FileInfo(dataTargetPath).Length;
-                            _logger.LogInformation("init_data.sql 已写入: {Path}, 大小: {Size} bytes", dataTargetPath, fileSize);
-                            result.Steps.Add($"  导出表数据: OK → {dataRelPath}（{fileSize} bytes）");
+                            _logger.LogInformation(
+                                "init_data.sql 已写入: {Path}, 行数: {Rows}, 大小: {Size} bytes",
+                                dataTargetPath, exportStats.TotalRows, exportStats.TotalBytes);
+                            Step($"  导出表数据: {exportStats.TotalRows:N0} 行 → {dataRelPath}（{exportStats.TotalBytes:N0} bytes）");
 
                             // 立即将 init_data.sql 注册到暂存区 install.json 的 SqlScripts 中（不依赖后续文件检测）
                             var dataRelPathNormalized = dataRelPath.Replace('\\', '/');
                             await RegisterSqlScriptInInstallJsonAsync(stagingDir, serverDir, dataRelPathNormalized, ct);
-                            result.Steps.Add($"  已注册 SqlScript: {dataRelPathNormalized}");
+                            Step($"  已注册 SqlScript: {dataRelPathNormalized}");
+                        }
+                        else
+                        {
+                            Step("  导出表数据: 无数据行（已跳过 init_data.sql 注册）");
+                            if (File.Exists(dataTargetPath))
+                                File.Delete(dataTargetPath);
                         }
                     }
                 }
@@ -600,7 +621,7 @@ public sealed class ModulePackageService
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "导出数据库表结构/数据失败");
-                result.Steps.Add($"  导出数据库失败: {ex.Message}");
+                Step($"  导出数据库失败: {ex.Message}");
             }
         }
 

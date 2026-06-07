@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Text;
 using System.Text.Json;
 using Ginkgo.Domain.Utils;
 using Ginkgo.Infrastructure.Abstractions;
@@ -8,8 +9,28 @@ using Microsoft.Extensions.Logging;
 
 namespace Ginkgo.Api.Modules;
 
+/// <summary>表数据导出统计（流式写入文件）。</summary>
+public sealed class TableDataExportStats
+{
+    public long TotalRows { get; set; }
+    public long TotalBytes { get; set; }
+    public int TableCount { get; set; }
+    public int TablesWithData { get; set; }
+}
+
 public sealed class ModuleSqlExecutor
 {
+    /// <summary>分批读取行数，兼顾内存与查询效率。</summary>
+    private const int DefaultExportBatchSize = 2000;
+
+    /// <summary>进度汇报间隔（行）。</summary>
+    private const long ProgressReportRowInterval = 50_000;
+
+    /// <summary>大体积数据脚本流式执行阈值（5MB）。</summary>
+    private const long LargeScriptStreamThresholdBytes = 5 * 1024 * 1024;
+
+    /// <summary>进度汇报间隔（秒）。</summary>
+    private const double ProgressReportSeconds = 3;
     private readonly IServiceProvider _services;
     private readonly IDatabaseDialect _dialect;
 
@@ -101,8 +122,8 @@ public sealed class ModuleSqlExecutor
     }
 
     /// <summary>
-    /// 在事务中按顺序执行所有脚本批次。任意批次失败 → 整体回滚 → 抛出异常。
-    /// 同时对每个批次做危险关键字黑名单预检（P1-4），命中即拒绝执行。
+    /// 在事务中按顺序执行所有脚本。每个脚本文件独立事务（避免 MySQL DDL 隐式提交污染数据脚本回滚）。
+    /// 数据脚本（非 install.sql）安装时临时关闭外键检查，并支持大文件流式执行，无行数限制。
     /// </summary>
     public async Task ExecuteScriptsAsync(IEnumerable<string> scriptPaths, CancellationToken ct)
     {
@@ -111,36 +132,67 @@ public sealed class ModuleSqlExecutor
         if (conn.State != System.Data.ConnectionState.Open)
             await conn.OpenAsync(ct);
 
-        // P1-4：所有模块安装 SQL 在单一事务中执行；任何一步失败立即回滚，
-        // 避免出现"前 3 个批次成功落库、第 4 个失败"留下不一致的中间状态。
+        foreach (var path in scriptPaths)
+        {
+            if (!File.Exists(path)) continue;
+            await ExecuteSingleScriptFileAsync(conn, path, ct);
+        }
+    }
+
+    /// <summary>判断是否为建表结构脚本（不做外键关闭）。</summary>
+    private static bool IsSchemaInstallScript(string path)
+    {
+        var name = Path.GetFileName(path);
+        return name.Equals("install.sql", StringComparison.OrdinalIgnoreCase)
+               || name.Equals("schema.sql", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static async Task ExecuteNonQueryInTxAsync(
+        DbConnection conn, DbTransaction tx, string sql, CancellationToken ct, int commandTimeout = 0)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = sql;
+        if (commandTimeout >= 0) cmd.CommandTimeout = commandTimeout;
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    /// <summary>执行单个 SQL 脚本文件（独立事务）。</summary>
+    private async Task ExecuteSingleScriptFileAsync(DbConnection conn, string path, CancellationToken ct)
+    {
+        var isSchema = IsSchemaInstallScript(path);
+        var disableFk = !isSchema;
+        var useStream = new FileInfo(path).Length >= LargeScriptStreamThresholdBytes;
+
         using var tx = await conn.BeginTransactionAsync(ct);
         try
         {
-            foreach (var path in scriptPaths)
+            if (disableFk)
+                await ExecuteNonQueryInTxAsync(conn, tx, "SET FOREIGN_KEY_CHECKS=0", ct);
+
+            var batchIndex = 0;
+            if (useStream)
             {
-                if (!File.Exists(path)) continue;
+                await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true);
+                using var reader = new StreamReader(fs, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 65536);
+                foreach (var raw in EnumerateSqlBatches(reader))
+                {
+                    batchIndex++;
+                    await ExecuteSqlBatchAsync(conn, tx, path, batchIndex, raw, ct);
+                }
+            }
+            else
+            {
                 var sql = await File.ReadAllTextAsync(path, ct);
-                var batchIndex = 0;
                 foreach (var raw in _dialect.SplitBatches(sql))
                 {
                     batchIndex++;
-                    var batch = (raw ?? string.Empty).Trim();
-                    if (string.IsNullOrWhiteSpace(batch)) continue;
-                    var forbidden = FindForbiddenKeyword(batch);
-                    if (forbidden != null)
-                    {
-                        throw new InvalidOperationException(
-                            $"模块安装 SQL 触发危险关键字黑名单 '{forbidden}'，已拒绝执行（脚本: {Path.GetFileName(path)}, 批次 {batchIndex}）。");
-                    }
-
-                    // MySQL → 目标方言转写 hook（内置方言恒等返回）
-                    var executed = _dialect.TranslateMySqlDDL(batch);
-                    using var cmd = conn.CreateCommand();
-                    cmd.Transaction = tx;
-                    cmd.CommandText = executed;
-                    await cmd.ExecuteNonQueryAsync(ct);
+                    await ExecuteSqlBatchAsync(conn, tx, path, batchIndex, raw, ct);
                 }
             }
+
+            if (disableFk)
+                await ExecuteNonQueryInTxAsync(conn, tx, "SET FOREIGN_KEY_CHECKS=1", ct);
 
             await tx.CommitAsync(ct);
         }
@@ -149,6 +201,66 @@ public sealed class ModuleSqlExecutor
             try { await tx.RollbackAsync(ct); } catch { /* 回滚失败仅记录到上层异常 */ }
             throw;
         }
+    }
+
+    private async Task ExecuteSqlBatchAsync(
+        DbConnection conn, DbTransaction tx, string scriptPath, int batchIndex, string? raw, CancellationToken ct)
+    {
+        var batch = (raw ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(batch)) return;
+
+        var forbidden = FindForbiddenKeyword(batch);
+        if (forbidden != null)
+        {
+            throw new InvalidOperationException(
+                $"模块安装 SQL 触发危险关键字黑名单 '{forbidden}'，已拒绝执行（脚本: {Path.GetFileName(scriptPath)}, 批次 {batchIndex}）。");
+        }
+
+        var executed = _dialect.TranslateMySqlDDL(batch);
+        await ExecuteNonQueryInTxAsync(conn, tx, executed, ct);
+    }
+
+    /// <summary>从文本流按语句边界（分号）切分 SQL 批次，逻辑与方言 SplitBatches 一致。</summary>
+    private static IEnumerable<string> EnumerateSqlBatches(TextReader reader)
+    {
+        var sb = new StringBuilder();
+        var inString = false;
+        char quote = '\0';
+        var escape = false;
+
+        int ch;
+        while ((ch = reader.Read()) >= 0)
+        {
+            var c = (char)ch;
+            if (inString)
+            {
+                sb.Append(c);
+                if (escape) { escape = false; continue; }
+                if (c == '\\') { escape = true; continue; }
+                if (c == quote) { inString = false; quote = '\0'; }
+                continue;
+            }
+
+            if (c == '\'' || c == '"')
+            {
+                inString = true;
+                quote = c;
+                sb.Append(c);
+                continue;
+            }
+
+            if (c == ';')
+            {
+                yield return sb.ToString();
+                sb.Clear();
+                continue;
+            }
+
+            sb.Append(c);
+        }
+
+        if (sb.Length > 0)
+            yield return sb.ToString();
     }
 
     /// <summary>
@@ -833,6 +945,95 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
         }
 
         /// <summary>
+        /// 按外键依赖拓扑排序表名（父表在前、子表在后），避免 init_data.sql 安装时因插入顺序触发外键失败。
+        /// </summary>
+        public async Task<List<string>> SortTablesForDataExportAsync(List<string> tableNames, CancellationToken ct)
+        {
+            if (tableNames == null || tableNames.Count <= 1)
+                return tableNames ?? new List<string>();
+
+            using var scope = _services.CreateScope();
+            var conn = GetSqlSugarConnection(scope.ServiceProvider);
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync(ct);
+
+            var tableSet = new HashSet<string>(tableNames, StringComparer.OrdinalIgnoreCase);
+            var parentDeps = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in tableNames)
+                parentDeps[t] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            using (var cmd = conn.CreateCommand())
+            {
+                var paramNames = new List<string>();
+                for (var i = 0; i < tableNames.Count; i++)
+                {
+                    var p = cmd.CreateParameter();
+                    p.ParameterName = "@t" + i;
+                    p.Value = tableNames[i];
+                    cmd.Parameters.Add(p);
+                    paramNames.Add(p.ParameterName);
+                }
+
+                cmd.CommandText =
+                    "SELECT TABLE_NAME, REFERENCED_TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL " +
+                    $"AND TABLE_NAME IN ({string.Join(", ", paramNames)})";
+
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                {
+                    var child = reader.GetString(0);
+                    var parent = reader.GetString(1);
+                    if (tableSet.Contains(child) && tableSet.Contains(parent))
+                        parentDeps[child].Add(parent);
+                }
+            }
+
+            var inDegree = tableNames.ToDictionary(
+                t => t,
+                t => parentDeps[t].Count,
+                StringComparer.OrdinalIgnoreCase);
+
+            var dependents = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var child in tableNames)
+            {
+                foreach (var parent in parentDeps[child])
+                {
+                    if (!dependents.TryGetValue(parent, out var list))
+                    {
+                        list = new List<string>();
+                        dependents[parent] = list;
+                    }
+                    list.Add(child);
+                }
+            }
+
+            var sorted = new List<string>();
+            var queue = new PriorityQueue<string, string>(
+                tableNames.Where(t => inDegree[t] == 0).Select(t => (t, t)),
+                StringComparer.OrdinalIgnoreCase);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                sorted.Add(current);
+                if (!dependents.TryGetValue(current, out var children)) continue;
+                foreach (var child in children.OrderBy(c => c, StringComparer.OrdinalIgnoreCase))
+                {
+                    inDegree[child]--;
+                    if (inDegree[child] == 0)
+                        queue.Enqueue(child, child);
+                }
+            }
+
+            foreach (var t in tableNames.Where(t => !sorted.Contains(t, StringComparer.OrdinalIgnoreCase))
+                         .OrderBy(t => t, StringComparer.OrdinalIgnoreCase))
+                sorted.Add(t);
+
+            return sorted;
+        }
+
+        /// <summary>
         /// 从 SQL 文件内容中提取表名（支持 CREATE TABLE IF NOT EXISTS `xxx` 和 CREATE TABLE `xxx` 语法）
         /// </summary>
         public static List<string> ExtractTableNamesFromSql(string sqlContent)
@@ -1040,7 +1241,271 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
         }
 
         /// <summary>
-        /// 导出指定表的数据为 INSERT 语句
+        /// 将字段值格式化为 SQL 字面量。
+        /// </summary>
+        private static string FormatSqlValue(object val)
+        {
+            if (val is string s)
+                return $"'{s.Replace("'", "''").Replace("\\", "\\\\")}'";
+            if (val is DateTime dt)
+                return $"'{dt:yyyy-MM-dd HH:mm:ss.ffffff}'";
+            if (val is bool b)
+                return b ? "1" : "0";
+            if (val is byte[] bytes)
+                return $"0x{BitConverter.ToString(bytes).Replace("-", "")}";
+            return val.ToString() ?? "NULL";
+        }
+
+        /// <summary>
+        /// 查询表行数（失败时返回 null）。
+        /// </summary>
+        private async Task<long?> GetTableRowCountAsync(DbConnection conn, string tableName, CancellationToken ct)
+        {
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"SELECT COUNT(*) FROM {_dialect.QuoteIdentifier(tableName)}";
+                var result = await cmd.ExecuteScalarAsync(ct);
+                if (result == null || result is DBNull) return null;
+                return Convert.ToInt64(result);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static void AddKeyParameter(DbCommand cmd, string name, object value)
+        {
+            var p = cmd.CreateParameter();
+            p.ParameterName = name;
+            p.Value = value;
+            cmd.Parameters.Add(p);
+        }
+
+        private static string FormatByteSize(long bytes)
+        {
+            if (bytes < 1024) return $"{bytes} B";
+            if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+            if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
+            return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+        }
+
+        /// <summary>
+        /// 流式导出指定表的数据为 INSERT 语句并写入文件（支持百万级全量导出，避免内存溢出）。
+        /// </summary>
+        public async Task<TableDataExportStats> ExportTableDataToFileAsync(
+            List<string> tableNames,
+            string filePath,
+            CancellationToken ct,
+            int? rowLimit = null,
+            Action<string>? onProgress = null,
+            int batchSize = DefaultExportBatchSize)
+        {
+            var stats = new TableDataExportStats { TableCount = tableNames?.Count ?? 0 };
+            if (tableNames == null || tableNames.Count == 0) return stats;
+
+            tableNames = await SortTablesForDataExportAsync(tableNames, ct);
+
+            var dir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            await using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+            await using var writer = new StreamWriter(fs, new UTF8Encoding(false), 65536);
+
+            await writer.WriteLineAsync("-- ============================================================");
+            await writer.WriteLineAsync("-- 模块表数据导出（自动生成，请勿手动修改）");
+            await writer.WriteLineAsync($"-- 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            await writer.WriteLineAsync("-- 采用幂等插入：与插件既有种子脚本(seed_*.sql)写入相同主键、或重复安装时自动跳过，不会因主键冲突中断安装");
+            if (rowLimit.HasValue)
+                await writer.WriteLineAsync($"-- 每表最多导出 {rowLimit.Value} 行");
+            else
+                await writer.WriteLineAsync("-- 全量导出（无行数限制）");
+            await writer.WriteLineAsync("-- ============================================================");
+            await writer.WriteLineAsync();
+
+            using var scope = _services.CreateScope();
+            var conn = GetSqlSugarConnection(scope.ServiceProvider);
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync(ct);
+
+            var lastProgressTime = DateTime.Now;
+            long rowsSinceLastReport = 0;
+
+            void ReportProgress(string msg, bool force = false)
+            {
+                if (onProgress == null) return;
+                var now = DateTime.Now;
+                if (!force && rowsSinceLastReport < ProgressReportRowInterval &&
+                    (now - lastProgressTime).TotalSeconds < ProgressReportSeconds)
+                    return;
+                onProgress(msg);
+                lastProgressTime = now;
+                rowsSinceLastReport = 0;
+            }
+
+            onProgress?.Invoke($"  [数据导出] 开始：共 {tableNames.Count} 张表（已按外键依赖排序），分批 {batchSize} 行/批");
+
+            for (var ti = 0; ti < tableNames.Count; ti++)
+            {
+                var tableName = tableNames[ti];
+                ct.ThrowIfCancellationRequested();
+
+                try
+                {
+                    var estimatedRows = await GetTableRowCountAsync(conn, tableName, ct);
+                    onProgress?.Invoke($"  [数据导出] ({ti + 1}/{tableNames.Count}) 表 {tableName}：约 {estimatedRows?.ToString() ?? "?"} 行");
+
+                    var exported = await ExportSingleTableDataToWriterAsync(
+                        conn, tableName, writer, ct, rowLimit, batchSize,
+                        (batchRows, totalForTable) =>
+                        {
+                            stats.TotalRows += batchRows;
+                            rowsSinceLastReport += batchRows;
+                            var totalHint = estimatedRows.HasValue
+                                ? $"{totalForTable}/{estimatedRows.Value}"
+                                : totalForTable.ToString();
+                            ReportProgress($"  [数据导出] 表 {tableName}：已导出 {totalHint} 行（累计 {stats.TotalRows:N0} 行）");
+                        });
+
+                    if (exported > 0)
+                        stats.TablesWithData++;
+                }
+                catch (Exception ex)
+                {
+                    await writer.WriteLineAsync($"-- 导出表 {tableName} 数据失败: {ex.Message}");
+                    await writer.WriteLineAsync();
+                    onProgress?.Invoke($"  [数据导出] 表 {tableName} 失败：{ex.Message}");
+                }
+            }
+
+            await writer.FlushAsync();
+            stats.TotalBytes = fs.Length;
+            onProgress?.Invoke($"  [数据导出] 完成：{stats.TotalRows:N0} 行 / {stats.TablesWithData} 张有数据表，文件 {FormatByteSize(stats.TotalBytes)}");
+            return stats;
+        }
+
+        /// <summary>
+        /// 单表流式导出到 Writer（主键 keyset 分页；无主键时 OFFSET 分页）。
+        /// </summary>
+        private async Task<long> ExportSingleTableDataToWriterAsync(
+            DbConnection conn,
+            string tableName,
+            StreamWriter writer,
+            CancellationToken ct,
+            int? rowLimit,
+            int batchSize,
+            Action<long, long>? onBatchExported)
+        {
+            var pk = await GetPrimaryKeyColumnAsync(conn, tableName, ct);
+            var quotedName = _dialect.QuoteIdentifier(tableName);
+            long totalExported = 0;
+            List<string>? columnNames = null;
+            var headerWritten = false;
+
+            async Task WriteRowAsync(DbDataReader reader)
+            {
+                if (columnNames == null)
+                {
+                    columnNames = new List<string>(reader.FieldCount);
+                    for (var i = 0; i < reader.FieldCount; i++)
+                        columnNames.Add(reader.GetName(i));
+                }
+
+                if (!headerWritten)
+                {
+                    await writer.WriteLineAsync($"-- 表: {tableName}");
+                    headerWritten = true;
+                }
+
+                var values = new List<string>(reader.FieldCount);
+                for (var i = 0; i < reader.FieldCount; i++)
+                    values.Add(reader.IsDBNull(i) ? "NULL" : FormatSqlValue(reader.GetValue(i)));
+
+                var insertPrefix = _dialect.ToIdempotentInsert($"INSERT INTO {quotedName}");
+                var cols = string.Join(", ", columnNames.Select(c => _dialect.QuoteIdentifier(c)));
+                await writer.WriteLineAsync($"{insertPrefix} ({cols}) VALUES ({string.Join(", ", values)});");
+                totalExported++;
+            }
+
+            if (!string.IsNullOrEmpty(pk))
+            {
+                var quotedPk = _dialect.QuoteIdentifier(pk);
+                object? lastKey = null;
+                var pkOrd = -1;
+
+                while (true)
+                {
+                    if (rowLimit.HasValue && totalExported >= rowLimit.Value) break;
+                    var take = rowLimit.HasValue
+                        ? Math.Min(batchSize, (int)(rowLimit.Value - totalExported))
+                        : batchSize;
+                    if (take <= 0) break;
+
+                    using var cmd = conn.CreateCommand();
+                    var orderClause = $" ORDER BY {quotedPk} ASC";
+                    var limitClause = " " + _dialect.BuildLimitClause(0, take);
+                    if (lastKey == null)
+                        cmd.CommandText = $"SELECT * FROM {quotedName}{orderClause}{limitClause}";
+                    else
+                    {
+                        cmd.CommandText = $"SELECT * FROM {quotedName} WHERE {quotedPk} > @lastKey{orderClause}{limitClause}";
+                        AddKeyParameter(cmd, "@lastKey", lastKey);
+                    }
+
+                    using var reader = await cmd.ExecuteReaderAsync(ct);
+                    var batchCount = 0;
+                    object? batchLastKey = null;
+                    while (await reader.ReadAsync(ct))
+                    {
+                        if (pkOrd < 0) pkOrd = reader.GetOrdinal(pk);
+                        await WriteRowAsync(reader);
+                        batchLastKey = reader.GetValue(pkOrd);
+                        batchCount++;
+                    }
+
+                    if (batchCount == 0) break;
+                    lastKey = batchLastKey;
+                    onBatchExported?.Invoke(batchCount, totalExported);
+                }
+            }
+            else
+            {
+                long offset = 0;
+                while (true)
+                {
+                    if (rowLimit.HasValue && totalExported >= rowLimit.Value) break;
+                    var take = rowLimit.HasValue
+                        ? Math.Min(batchSize, (int)(rowLimit.Value - totalExported))
+                        : batchSize;
+                    if (take <= 0) break;
+
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = $"SELECT * FROM {quotedName} ORDER BY 1 ASC {_dialect.BuildLimitClause((int)offset, take)}";
+
+                    using var reader = await cmd.ExecuteReaderAsync(ct);
+                    var batchCount = 0;
+                    while (await reader.ReadAsync(ct))
+                    {
+                        await WriteRowAsync(reader);
+                        batchCount++;
+                    }
+
+                    if (batchCount == 0) break;
+                    offset += batchCount;
+                    onBatchExported?.Invoke(batchCount, totalExported);
+                }
+            }
+
+            if (headerWritten)
+                await writer.WriteLineAsync();
+
+            return totalExported;
+        }
+
+        /// <summary>
+        /// 导出指定表的数据为 INSERT 语句（小数据量场景；大数据请使用 ExportTableDataToFileAsync）。
         /// </summary>
         public async Task<string> ExportTableDataAsync(List<string> tableNames, CancellationToken ct, int? rowLimit = null, bool orderByPkDesc = false)
         {

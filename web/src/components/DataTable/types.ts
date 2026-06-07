@@ -105,6 +105,8 @@ export interface DataTableProps {
   importConfig?: ImportConfig | boolean
   printConfig?: PrintConfig | boolean
   defaultExpandSearch?: boolean
+  /** 搜索区初始值（如路由参数带入的筛选条件） */
+  defaultSearchValues?: Record<string, any>
   compactMode?: boolean
   paginationSize?: 'default' | 'small'
   rowClassName?: string | ((data: { row: any; rowIndex: number }) => string)

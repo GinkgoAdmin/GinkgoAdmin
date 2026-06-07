@@ -691,6 +691,15 @@ watch(() => props.searchConfig, () => {
   remoteLoading.value = {}
 }, { deep: true })
 
+watch(
+  () => props.defaultSearchValues,
+  (val) => {
+    if (!val || typeof val !== 'object') return
+    internalSearch.value = { ...internalSearch.value, ...val }
+  },
+  { immediate: true, deep: true }
+)
+
 const storageKey = 'dt-advanced-search-expanded'
 const isAdvancedSearchExpanded = ref(!!props.defaultExpandSearch)
 
