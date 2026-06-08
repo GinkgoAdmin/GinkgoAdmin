@@ -85,6 +85,19 @@ public interface IDictionaryAppService
     /// <param name="codes">分类编码集合。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     Task<Dictionary<string, List<DictionaryItemListItemDto>>> GetItemsByCodesAsync(string[] codes, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 导出指定分类及其全部条目（JSON 包）。
+    /// </summary>
+    Task<DictionaryCategoryExportDto> ExportCategoryAsync(long categoryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 导入字典分类导出包；分类按 Code 匹配，条目按 ItemKey 匹配。
+    /// </summary>
+    /// <param name="package">导出包。</param>
+    /// <param name="overwriteIfExists">分类 Code 已存在时是否覆盖（分类元数据 + 条目全量同步）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    Task<DictionaryImportResultDto> ImportCategoryAsync(DictionaryCategoryExportDto package, bool overwriteIfExists = true, CancellationToken cancellationToken = default);
 }
 
 

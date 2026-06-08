@@ -11,6 +11,9 @@
               <el-button v-permission="'/system/dictionaries:cat:add'" type="primary" size="small" @click="onAddCategory">
                 <i class="bi bi-plus-lg" style="margin-right: 4px;"></i>新增
               </el-button>
+              <el-button v-permission="'/system/dictionaries:cat:add'" size="small" @click="triggerImport">
+                <i class="bi bi-upload" style="margin-right: 4px;"></i>导入
+              </el-button>
             </div>
           </template>
 
@@ -54,6 +57,9 @@
                 <el-tag v-if="currentCategory?.name" type="primary" size="default">{{ currentCategory?.name }}</el-tag>
               </div>
               <div v-if="currentCategory" class="card-actions">
+                <el-button v-permission="'/system/dictionaries:cat:edit'" size="small" @click="onExportCategory">
+                  <i class="bi bi-download" style="margin-right: 4px;"></i>导出
+                </el-button>
                 <el-button v-permission="'/system/dictionaries:item:add'" size="small" @click="onAddItem"><i class="bi bi-plus-lg" style="margin-right: 4px;"></i>新增条目</el-button>
                 <el-tooltip content="复制 C# 后端调用代码" placement="top">
                   <el-button size="small" @click="copyCSharpUsage"><i class="bi bi-filetype-cs" style="margin-right: 4px;"></i>C#</el-button>
@@ -164,6 +170,8 @@
         <el-button type="primary" @click="saveItem">保存</el-button>
       </template>
     </el-dialog>
+
+    <input ref="importFileRef" type="file" accept=".json,application/json" style="display:none" @change="onImportFileChange" />
   </div>
 </template>
 
@@ -176,8 +184,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getDefaultLang, useMultiLangEnabled } from '@/utils/lang'
 
 const multiLangEnabled = useMultiLangEnabled()
-import type { DictionaryCategoryListItem, DictionaryCategoryDetail, CreateDictionaryCategoryInput, UpdateDictionaryCategoryInput, DictItemListItem, CreateDictItemInput } from '../../../api/dictionary'
-import { getDictionaryCategories, getDictionaryCategoryDetail, createDictionaryCategory, updateDictionaryCategory, deleteDictionaryCategory, getDictionaryItems, getDictionaryItemDetail, createDictionaryItem, updateDictionaryItem, deleteDictionaryItem } from '../../../api/dictionary'
+import type { DictionaryCategoryListItem, DictionaryCategoryDetail, CreateDictionaryCategoryInput, UpdateDictionaryCategoryInput, DictItemListItem, CreateDictItemInput, DictionaryExportPackage, DictionaryImportResult } from '../../../api/dictionary'
+import { getDictionaryCategories, getDictionaryCategoryDetail, createDictionaryCategory, updateDictionaryCategory, deleteDictionaryCategory, getDictionaryItems, getDictionaryItemDetail, createDictionaryItem, updateDictionaryItem, deleteDictionaryItem, exportDictionaryCategory, importDictionaryCategory } from '../../../api/dictionary'
 
 const loadingCats = ref(false)
 const categories = ref<DictionaryCategoryListItem[]>([])
@@ -330,11 +338,25 @@ function onAddItem() {
   buildParentTree()
 }
 
+function buildValueI18nFromItem(valueI18n: string | null | undefined, itemValue: string): string {
+  if (valueI18n?.trim()) return valueI18n
+  if (!itemValue?.trim()) return ''
+  return JSON.stringify({ [getDefaultLang()]: itemValue })
+}
+
 async function onEditItem(row: DictItemListItem) {
   if (!currentCategory.value) return
   itemDialogTitle.value = '编辑条目'
   const detail = await getDictionaryItemDetail(row.id)
-  itemForm.value = { categoryId: currentCategory.value.id, itemKey: detail.itemKey, itemValue: detail.itemValue, valueI18n: detail.valueI18n || '', order: detail.order, enabled: detail.enabled, parentId: detail.parentId }
+  itemForm.value = {
+    categoryId: currentCategory.value.id,
+    itemKey: detail.itemKey,
+    itemValue: detail.itemValue,
+    valueI18n: buildValueI18nFromItem(detail.valueI18n, detail.itemValue),
+    order: detail.order,
+    enabled: detail.enabled,
+    parentId: detail.parentId,
+  }
   ;(itemForm.value as any)._id = detail.id
   itemDialogVisible.value = true
   buildParentTree(detail.id)
@@ -441,6 +463,88 @@ async function copyToClipboard(text: string, successMsg: string) {
     document.execCommand('copy')
     document.body.removeChild(ta)
     ElMessage.success(successMsg)
+  }
+}
+
+const importFileRef = ref<HTMLInputElement | null>(null)
+
+function downloadJsonFile(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+async function onExportCategory() {
+  if (!currentCategory.value) return
+  try {
+    const pkg = await exportDictionaryCategory(currentCategory.value.id)
+    const code = pkg.category?.code || currentCategory.value.code || 'dictionary'
+    const date = new Date().toISOString().slice(0, 10)
+    downloadJsonFile(pkg, `dict-${code}-${date}.json`)
+    ElMessage.success(`已导出「${pkg.category?.name || currentCategory.value.name}」共 ${pkg.items?.length ?? 0} 条`)
+  } catch (e: any) {
+    ElMessage.error(e?.message || '导出失败')
+  }
+}
+
+function triggerImport() {
+  importFileRef.value?.click()
+}
+
+function parseImportPackage(raw: unknown): DictionaryExportPackage {
+  const obj = raw as DictionaryExportPackage
+  if (!obj || typeof obj !== 'object' || !obj.category?.code || !obj.category?.name) {
+    throw new Error('文件格式无效：需包含 category.code 与 category.name')
+  }
+  if (!Array.isArray(obj.items)) obj.items = []
+  return obj
+}
+
+async function onImportFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  try {
+    const text = await file.text()
+    const pkg = parseImportPackage(JSON.parse(text))
+    const code = pkg.category.code
+    const exists = categories.value.some(c => c.code === code)
+
+    let overwrite = true
+    if (exists) {
+      await ElMessageBox.confirm(
+        `分类编码「${code}」已存在，导入将覆盖该分类元数据并全量同步条目（删除包中未包含的旧条目）。是否继续？`,
+        '导入确认',
+        { type: 'warning', confirmButtonText: '覆盖导入', cancelButtonText: '取消' },
+      )
+      overwrite = true
+    } else {
+      await ElMessageBox.confirm(
+        `将导入分类「${pkg.category.name}」（${code}），共 ${pkg.items.length} 条条目。是否继续？`,
+        '导入确认',
+        { type: 'info', confirmButtonText: '导入', cancelButtonText: '取消' },
+      )
+    }
+
+    const result: DictionaryImportResult = await importDictionaryCategory(pkg, overwrite)
+    const msg = result.createdCategory
+      ? `已新建分类，写入 ${result.itemsCreated} 条`
+      : `已更新分类，新增 ${result.itemsCreated} 条、更新 ${result.itemsUpdated} 条、删除 ${result.itemsDeleted} 条`
+    ElMessage.success(msg)
+    await loadCategories()
+    const imported = categories.value.find(c => c.code === code)
+    if (imported) await onOpenItems(imported)
+  } catch (err: any) {
+    if (err === 'cancel') return
+    ElMessage.error(err?.message || '导入失败')
   }
 }
 

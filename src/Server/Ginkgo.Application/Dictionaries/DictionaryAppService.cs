@@ -83,6 +83,9 @@ public sealed class DictionaryAppService : IDictionaryAppService
                 CategoryId = x.CategoryId,
                 ItemKey = x.ItemKey,
                 ItemValue = x.ItemValue,
+                ValueI18n = x.ValueI18n,
+                Order = x.Order,
+                Enabled = x.Enabled,
                 ParentId = x.ParentId
             })
             .ToList();
@@ -140,6 +143,7 @@ public sealed class DictionaryAppService : IDictionaryAppService
             throw new InvalidOperationException("该分类下已存在相同键，请更换后再保存。");
         }
         var entity = DictionaryItem.Create(input.CategoryId, input.ItemKey.Trim(), input.ItemValue.Trim(), input.ParentId);
+        entity.ValueI18n = input.ValueI18n;
         entity.ExtraJson = input.ExtraJson;
         await _itemRepository.AddAsync(entity, cancellationToken);
 
@@ -180,6 +184,7 @@ public sealed class DictionaryAppService : IDictionaryAppService
         }
         entity.RenameKey(input.ItemKey);
         entity.UpdateValue(input.ItemValue);
+        entity.ValueI18n = input.ValueI18n;
         entity.MoveTo(input.ParentId);
         entity.SetOrder(input.Order);
         if (input.Enabled) entity.Enable(); else entity.Disable();
@@ -211,6 +216,7 @@ public sealed class DictionaryAppService : IDictionaryAppService
                 CategoryId = x.CategoryId,
                 ItemKey = x.ItemKey,
                 ItemValue = x.ItemValue,
+                ValueI18n = x.ValueI18n,
                 Order = x.Order,
                 Enabled = x.Enabled,
                 ParentId = x.ParentId
@@ -264,6 +270,9 @@ public sealed class DictionaryAppService : IDictionaryAppService
                     CategoryId = x.CategoryId,
                     ItemKey = x.ItemKey,
                     ItemValue = x.ItemValue,
+                    ValueI18n = x.ValueI18n,
+                    Order = x.Order,
+                    Enabled = x.Enabled,
                     ParentId = x.ParentId
                 })
                 .ToList());
@@ -290,6 +299,159 @@ public sealed class DictionaryAppService : IDictionaryAppService
         }
 
         return result;
+    }
+
+    /// <inheritdoc />
+    public Task<DictionaryCategoryExportDto> ExportCategoryAsync(long categoryId, CancellationToken cancellationToken = default)
+    {
+        var category = _categoryRepository.Query().FirstOrDefault(x => x.Id == categoryId);
+        if (category == null)
+            throw new InvalidOperationException("分类不存在");
+
+        var items = _itemRepository.Query()
+            .Where(x => x.CategoryId == categoryId)
+            .OrderBy(x => x.Order)
+            .ThenBy(x => x.ItemKey)
+            .ToList();
+
+        var itemIdToKey = items.ToDictionary(x => x.Id, x => x.ItemKey);
+
+        var package = new DictionaryCategoryExportDto
+        {
+            FormatVersion = 1,
+            ExportedAt = DateTime.Now,
+            Category = new DictionaryCategoryExportCategoryDto
+            {
+                Code = category.Code,
+                Name = category.Name,
+                NameI18n = category.NameI18n,
+                Category = category.Category,
+                SourceType = category.SourceType,
+                Enabled = category.Enabled,
+                Description = category.Description,
+                DescriptionI18n = category.DescriptionI18n,
+                ExtraJson = category.ExtraJson,
+                Module = category.Module
+            },
+            Items = items.Select(x => new DictionaryCategoryExportItemDto
+            {
+                ItemKey = x.ItemKey,
+                ItemValue = x.ItemValue,
+                ValueI18n = x.ValueI18n,
+                Order = x.Order,
+                Enabled = x.Enabled,
+                ParentItemKey = x.ParentId.HasValue && itemIdToKey.TryGetValue(x.ParentId.Value, out var pk) ? pk : null,
+                ExtraJson = x.ExtraJson
+            }).ToList()
+        };
+
+        return Task.FromResult(package);
+    }
+
+    /// <inheritdoc />
+    public async Task<DictionaryImportResultDto> ImportCategoryAsync(
+        DictionaryCategoryExportDto package,
+        bool overwriteIfExists = true,
+        CancellationToken cancellationToken = default)
+    {
+        if (package?.Category == null)
+            throw new InvalidOperationException("导入包格式无效：缺少 category");
+        if (string.IsNullOrWhiteSpace(package.Category.Code))
+            throw new InvalidOperationException("导入包格式无效：分类编码不能为空");
+        if (string.IsNullOrWhiteSpace(package.Category.Name))
+            throw new InvalidOperationException("导入包格式无效：分类名称不能为空");
+
+        var code = package.Category.Code.Trim();
+        var result = new DictionaryImportResultDto { CategoryCode = code };
+
+        var existing = _categoryRepository.Query().FirstOrDefault(x => x.Code == code);
+        DictionaryCategory categoryEntity;
+        if (existing == null)
+        {
+            categoryEntity = DictionaryCategory.Create(code, package.Category.Name.Trim());
+            ApplyExportedCategoryMeta(categoryEntity, package.Category);
+            await _categoryRepository.AddAsync(categoryEntity, cancellationToken);
+            result.CreatedCategory = true;
+        }
+        else
+        {
+            if (!overwriteIfExists)
+                throw new InvalidOperationException($"分类编码 [{code}] 已存在，请勾选覆盖或修改编码后重试");
+            categoryEntity = existing;
+            categoryEntity.Rename(package.Category.Name.Trim());
+            ApplyExportedCategoryMeta(categoryEntity, package.Category);
+            await _categoryRepository.UpdateAsync(categoryEntity, cancellationToken);
+            _cache.Remove($"DictItems_{code}");
+        }
+
+        result.CategoryId = categoryEntity.Id;
+
+        var importItems = package.Items ?? new List<DictionaryCategoryExportItemDto>();
+        var existingItems = _itemRepository.Query().Where(x => x.CategoryId == categoryEntity.Id).ToList();
+        var existingByKey = existingItems.ToDictionary(x => x.ItemKey, StringComparer.OrdinalIgnoreCase);
+        var importKeys = new HashSet<string>(importItems.Select(x => x.ItemKey.Trim()), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var row in importItems)
+        {
+            if (string.IsNullOrWhiteSpace(row.ItemKey)) continue;
+            var key = row.ItemKey.Trim();
+            if (existingByKey.TryGetValue(key, out var entity))
+            {
+                entity.RenameKey(key);
+                entity.UpdateValue(row.ItemValue?.Trim() ?? string.Empty);
+                entity.ValueI18n = row.ValueI18n;
+                entity.SetOrder(row.Order);
+                if (row.Enabled) entity.Enable(); else entity.Disable();
+                entity.ExtraJson = row.ExtraJson;
+                entity.ParentId = null;
+                await _itemRepository.UpdateAsync(entity, cancellationToken);
+                result.ItemsUpdated++;
+            }
+            else
+            {
+                var newEntity = DictionaryItem.Create(categoryEntity.Id, key, row.ItemValue?.Trim() ?? string.Empty, null);
+                newEntity.ValueI18n = row.ValueI18n;
+                newEntity.SetOrder(row.Order);
+                if (row.Enabled) newEntity.Enable(); else newEntity.Disable();
+                newEntity.ExtraJson = row.ExtraJson;
+                await _itemRepository.AddAsync(newEntity, cancellationToken);
+                existingByKey[key] = newEntity;
+                result.ItemsCreated++;
+            }
+        }
+
+        // 第二遍：恢复层级 parentItemKey
+        foreach (var row in importItems)
+        {
+            if (string.IsNullOrWhiteSpace(row.ItemKey) || string.IsNullOrWhiteSpace(row.ParentItemKey)) continue;
+            if (!existingByKey.TryGetValue(row.ItemKey.Trim(), out var entity)) continue;
+            if (!existingByKey.TryGetValue(row.ParentItemKey.Trim(), out var parent)) continue;
+            if (entity.ParentId != parent.Id)
+            {
+                entity.MoveTo(parent.Id);
+                await _itemRepository.UpdateAsync(entity, cancellationToken);
+            }
+        }
+
+        // 删除导出包中不存在的旧条目（全量同步）
+        foreach (var orphan in existingItems.Where(x => !importKeys.Contains(x.ItemKey)))
+        {
+            await _itemRepository.DeleteAsync(orphan.Id, cancellationToken);
+            result.ItemsDeleted++;
+        }
+
+        _cache.Remove($"DictItems_{code}");
+        return result;
+    }
+
+    private static void ApplyExportedCategoryMeta(DictionaryCategory entity, DictionaryCategoryExportCategoryDto src)
+    {
+        if (src.Enabled) entity.Enable(); else entity.Disable();
+        entity.ChangeMeta(src.Category, src.SourceType, src.Description, src.ExtraJson);
+        entity.NameI18n = src.NameI18n;
+        entity.DescriptionI18n = src.DescriptionI18n;
+        if (!string.IsNullOrWhiteSpace(src.Module))
+            entity.Module = src.Module.Trim();
     }
 }
 

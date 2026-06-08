@@ -168,6 +168,42 @@ public sealed class DictionariesController : ControllerBase
         if (data == null) return Result<DictionaryItemDetailDto>.Fail(404, "条目不存在");
         return Result<DictionaryItemDetailDto>.Success(data);
     }
+
+    /// <summary>
+    /// 导出指定分类及其全部条目（JSON）。
+    /// </summary>
+    [HttpGet("categories/{id:long}/export")]
+    public async Task<Result<DictionaryCategoryExportDto>> ExportCategoryAsync(long id)
+    {
+        try
+        {
+            var data = await _service.ExportCategoryAsync(id);
+            return Result<DictionaryCategoryExportDto>.Success(data);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<DictionaryCategoryExportDto>.Fail(404, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// 导入字典分类导出包。
+    /// </summary>
+    [HttpPost("import")]
+    public async Task<Result<DictionaryImportResultDto>> ImportCategoryAsync(
+        [FromBody] DictionaryCategoryExportDto package,
+        [FromQuery] bool overwriteIfExists = true)
+    {
+        try
+        {
+            var data = await _service.ImportCategoryAsync(package, overwriteIfExists);
+            return Result<DictionaryImportResultDto>.Success(data, "导入成功");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<DictionaryImportResultDto>.Fail(400, ex.Message);
+        }
+    }
 }
 
 

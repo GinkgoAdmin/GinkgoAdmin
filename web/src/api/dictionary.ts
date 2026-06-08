@@ -122,3 +122,61 @@ export async function getDictionariesByCodes(codes: string[]): Promise<Record<st
   const res = await http.get<any, Record<string, DictItemListItem[]> | { data?: Record<string, DictItemListItem[]> }>(url)
   return (res as any)?.data ?? res
 }
+
+/** 导出包：分类 + 全部条目 */
+export interface DictionaryExportCategory {
+  code: string
+  name: string
+  nameI18n?: string | null
+  category?: string | null
+  sourceType?: string | null
+  enabled: boolean
+  description?: string | null
+  descriptionI18n?: string | null
+  extraJson?: string | null
+  module?: string
+}
+
+export interface DictionaryExportItem {
+  itemKey: string
+  itemValue: string
+  valueI18n?: string | null
+  order?: number
+  enabled?: boolean
+  parentItemKey?: string | null
+  extraJson?: string | null
+}
+
+export interface DictionaryExportPackage {
+  formatVersion: number
+  exportedAt: string
+  category: DictionaryExportCategory
+  items: DictionaryExportItem[]
+}
+
+export interface DictionaryImportResult {
+  categoryId: string
+  categoryCode: string
+  createdCategory: boolean
+  itemsCreated: number
+  itemsUpdated: number
+  itemsDeleted: number
+}
+
+export async function exportDictionaryCategory(categoryId: string): Promise<DictionaryExportPackage> {
+  const res = await http.get<any, DictionaryExportPackage | { data?: DictionaryExportPackage }>(
+    `/v1/dictionaries/categories/${encodeURIComponent(categoryId)}/export`,
+  )
+  return (res as any)?.data ?? (res as DictionaryExportPackage)
+}
+
+export async function importDictionaryCategory(
+  pkg: DictionaryExportPackage,
+  overwriteIfExists = true,
+): Promise<DictionaryImportResult> {
+  const res = await http.post<any, DictionaryImportResult | { data?: DictionaryImportResult }>(
+    `/v1/dictionaries/import?overwriteIfExists=${overwriteIfExists ? 'true' : 'false'}`,
+    pkg,
+  )
+  return (res as any)?.data ?? (res as DictionaryImportResult)
+}

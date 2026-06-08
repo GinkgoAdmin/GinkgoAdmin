@@ -120,6 +120,21 @@ public sealed class DictionaryItemListItemDto
     public string ItemValue { get; set; } = string.Empty;
 
     /// <summary>
+    /// 值-多语言 JSON。
+    /// </summary>
+    public string? ValueI18n { get; set; }
+
+    /// <summary>
+    /// 排序。
+    /// </summary>
+    public int Order { get; set; }
+
+    /// <summary>
+    /// 是否启用。
+    /// </summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>
     /// 上级条目 Id（层级型使用，Snowflake ID）。
     /// </summary>
     public long? ParentId { get; set; }
@@ -149,6 +164,7 @@ public sealed class DictionaryItemDetailDto
     public long CategoryId { get; set; }
     public string ItemKey { get; set; } = string.Empty;
     public string ItemValue { get; set; } = string.Empty;
+    public string? ValueI18n { get; set; }
     public int Order { get; set; }
     public bool Enabled { get; set; }
     public long? ParentId { get; set; }
@@ -177,6 +193,11 @@ public sealed class CreateDictionaryItemInput
     [Required]
     [MaxLength(256)]
     public string ItemValue { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 值-多语言 JSON。
+    /// </summary>
+    public string? ValueI18n { get; set; }
 
     /// <summary>
     /// 上级条目 Id（层级型可选，Snowflake ID）。
@@ -209,6 +230,11 @@ public sealed class UpdateDictionaryItemInput
     public string ItemValue { get; set; } = string.Empty;
 
     /// <summary>
+    /// 值-多语言 JSON。
+    /// </summary>
+    public string? ValueI18n { get; set; }
+
+    /// <summary>
     /// 排序。
     /// </summary>
     public int Order { get; set; }
@@ -229,4 +255,65 @@ public sealed class UpdateDictionaryItemInput
     public string? ExtraJson { get; set; }
 }
 
+/// <summary>
+/// 字典分类导出包（JSON 文件格式）。
+/// </summary>
+public sealed class DictionaryCategoryExportDto
+{
+    /// <summary>格式版本，便于后续兼容升级。</summary>
+    public int FormatVersion { get; set; } = 1;
+
+    /// <summary>导出时间（本地时间）。</summary>
+    public DateTime ExportedAt { get; set; }
+
+    /// <summary>分类信息。</summary>
+    public DictionaryCategoryExportCategoryDto Category { get; set; } = new();
+
+    /// <summary>条目列表。</summary>
+    public List<DictionaryCategoryExportItemDto> Items { get; set; } = new();
+}
+
+/// <summary>
+/// 导出包中的分类信息（不含数据库 Id）。
+/// </summary>
+public sealed class DictionaryCategoryExportCategoryDto
+{
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? NameI18n { get; set; }
+    public string? Category { get; set; }
+    public string? SourceType { get; set; }
+    public bool Enabled { get; set; } = true;
+    public string? Description { get; set; }
+    public string? DescriptionI18n { get; set; }
+    public string? ExtraJson { get; set; }
+    public string Module { get; set; } = "sys";
+}
+
+/// <summary>
+/// 导出包中的条目信息（层级关系用 parentItemKey 表达，便于跨环境导入）。
+/// </summary>
+public sealed class DictionaryCategoryExportItemDto
+{
+    public string ItemKey { get; set; } = string.Empty;
+    public string ItemValue { get; set; } = string.Empty;
+    public string? ValueI18n { get; set; }
+    public int Order { get; set; }
+    public bool Enabled { get; set; } = true;
+    public string? ParentItemKey { get; set; }
+    public string? ExtraJson { get; set; }
+}
+
+/// <summary>
+/// 字典分类导入结果。
+/// </summary>
+public sealed class DictionaryImportResultDto
+{
+    public long CategoryId { get; set; }
+    public string CategoryCode { get; set; } = string.Empty;
+    public bool CreatedCategory { get; set; }
+    public int ItemsCreated { get; set; }
+    public int ItemsUpdated { get; set; }
+    public int ItemsDeleted { get; set; }
+}
 
