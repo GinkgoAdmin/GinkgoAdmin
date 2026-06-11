@@ -92,6 +92,7 @@ public sealed class SettingsController : ControllerBase
                 "Upload.ImageCompress.KeepOriginal",
                 // 移动端（UNIAPP）公开配置
                 "App.HomePlugin",
+                "App.UniappHomePath",
                 "App.Privacy.ShowPopup",
                 "App.Privacy.PolicyVersion",
                 "App.Privacy.PolicyContent",

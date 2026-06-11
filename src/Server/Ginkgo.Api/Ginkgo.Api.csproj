@@ -49,6 +49,16 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <!-- PostgreSQL 14+ 版本 -->
+    <!-- 结构补丁脚本（历史实例升级用） -->
+    <Content Include="..\..\..\resource\mysql_patch_add_module_scope_columns.sql" Link="resource\mysql_patch_add_module_scope_columns.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\resource\pg_patch_add_module_scope_columns.sql" Link="resource\pg_patch_add_module_scope_columns.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\resource\mssql_patch_add_module_scope_columns.sql" Link="resource\mssql_patch_add_module_scope_columns.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <!--
     发布时自动收集已安装的 DLL 编译包模块到 $(PublishDir)modules/<id>/<version>/server/

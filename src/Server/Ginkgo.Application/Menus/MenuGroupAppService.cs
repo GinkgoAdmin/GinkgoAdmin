@@ -5,6 +5,7 @@ using Ginkgo.Domain;
 using Ginkgo.Domain.Menus;
 using Ginkgo.Domain.Roles;
 using Ginkgo.Domain.Users;
+using Ginkgo.Application.Settings;
 
 namespace Ginkgo.Application.Menus;
 
@@ -13,6 +14,9 @@ namespace Ginkgo.Application.Menus;
 /// </summary>
 public sealed class MenuGroupAppService : IMenuGroupAppService
 {
+    private const string DefaultUniappGroupSlug = "default-uniapp";
+    private const string UniappHomePathSettingKey = "App.UniappHomePath";
+
     private readonly IRepository<MenuGroup> _groupRepo;
     private readonly IRepository<MenuGroupItem> _itemRepo;
     private readonly IRepository<RoleMenuGroup> _roleMenuGroupRepo;
@@ -21,6 +25,7 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
     private readonly IRepository<Role> _roleRepo;
     private readonly IRepository<RolePermission> _rolePermRepo;
     private readonly IRepository<RoleMenuGroupItem> _roleMenuGroupItemRepo;
+    private readonly ISettingsAppService _settingsService;
 
     public MenuGroupAppService(
         IRepository<MenuGroup> groupRepo,
@@ -30,7 +35,8 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
         IRepository<UserRole> userRoleRepo,
         IRepository<Role> roleRepo,
         IRepository<RolePermission> rolePermRepo,
-        IRepository<RoleMenuGroupItem> roleMenuGroupItemRepo)
+        IRepository<RoleMenuGroupItem> roleMenuGroupItemRepo,
+        ISettingsAppService settingsService)
     {
         _groupRepo = groupRepo;
         _itemRepo = itemRepo;
@@ -40,6 +46,7 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
         _roleRepo = roleRepo;
         _rolePermRepo = rolePermRepo;
         _roleMenuGroupItemRepo = roleMenuGroupItemRepo;
+        _settingsService = settingsService;
     }
 
     // ===== 菜单组管理 =====
@@ -67,6 +74,7 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
             Location = g.Location,
             ClientType = g.ClientType,
             IsSystem = g.IsSystem,
+            IsDefault = g.IsDefault,
             Enabled = g.Enabled,
             MaxDepth = g.MaxDepth,
             Version = g.Version,
@@ -87,6 +95,7 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
             Location = entity.Location,
             ClientType = entity.ClientType,
             IsSystem = entity.IsSystem,
+            IsDefault = entity.IsDefault,
             Enabled = entity.Enabled,
             MaxDepth = entity.MaxDepth,
             Version = entity.Version
@@ -217,7 +226,8 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
             Order = x.Order,
             Enabled = x.Enabled,
             Module = x.Module,
-            RequireGrant = x.RequireGrant
+            RequireGrant = x.RequireGrant,
+            IsUniappHome = x.IsUniappHome
         }).ToList();
 
         return Task.FromResult(BuildTree(dtos));
@@ -258,8 +268,46 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
             Order = entity.Order,
             Enabled = entity.Enabled,
             Module = entity.Module,
-            RequireGrant = entity.RequireGrant
+            RequireGrant = entity.RequireGrant,
+            IsUniappHome = entity.IsUniappHome
         };
+    }
+
+    public async Task SetUniappHomeAsync(long groupId, long itemId, bool enabled, long? operatorId, CancellationToken ct = default)
+    {
+        var group = await _groupRepo.GetByIdAsync(groupId, ct)
+            ?? throw new InvalidOperationException("菜单组不存在");
+        if (!IsDefaultUniappGroup(group))
+            throw new InvalidOperationException("仅默认 UNIAPP 菜单组（default-uniapp）可设置框架启动首页");
+
+        var entity = await _itemRepo.GetByIdAsync(itemId, ct);
+        if (entity == null || entity.MenuGroupId != groupId)
+            throw new InvalidOperationException("菜单项不存在");
+
+        if (enabled)
+        {
+            if (string.IsNullOrWhiteSpace(entity.Url))
+                throw new InvalidOperationException("该菜单项未配置链接地址，无法设为框架首页");
+
+            var siblings = _itemRepo.Query()
+                .Where(x => x.MenuGroupId == groupId && x.IsUniappHome)
+                .ToList();
+            foreach (var sibling in siblings)
+            {
+                if (sibling.Id == itemId) continue;
+                sibling.SetUniappHome(false);
+                await _itemRepo.UpdateAsync(sibling, ct);
+            }
+
+            entity.SetUniappHome(true);
+            await _itemRepo.UpdateAsync(entity, ct);
+            await SyncUniappHomePathSettingAsync(entity.Url!.Trim(), operatorId, ct);
+            return;
+        }
+
+        entity.SetUniappHome(false);
+        await _itemRepo.UpdateAsync(entity, ct);
+        await ClearUniappHomePathSettingIfMatchAsync(entity.Url, operatorId, ct);
     }
 
     public async Task<long> CreateItemAsync(long groupId, CreateMenuGroupItemInput input, CancellationToken ct = default)
@@ -339,6 +387,11 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
         if (roleItemIds.Count > 0)
         {
             await _roleMenuGroupItemRepo.DeleteRangeAsync(roleItemIds, ct);
+        }
+
+        if (entity.IsUniappHome)
+        {
+            await ClearUniappHomePathSettingIfMatchAsync(entity.Url, null, ct);
         }
 
         await _itemRepo.DeleteAsync(id, ct);
@@ -942,7 +995,8 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
             Order = x.Order,
             Enabled = x.Enabled,
             Module = x.Module,
-            RequireGrant = x.RequireGrant
+            RequireGrant = x.RequireGrant,
+            IsUniappHome = x.IsUniappHome
         }).ToList();
 
         return Task.FromResult(dtos);
@@ -1013,6 +1067,45 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (segments.Length != 1) return null;
         return NormalizeClientType(segments[0]);
+    }
+
+    /// <summary>
+    /// 判定是否为默认 UNIAPP 菜单组（slug=default-uniapp 且 IsDefault=1 且 ClientType 为单一 UNIAPP）。
+    /// </summary>
+    private static bool IsDefaultUniappGroup(MenuGroup group)
+    {
+        if (!group.IsDefault) return false;
+        if (!string.Equals(group.Slug, DefaultUniappGroupSlug, StringComparison.OrdinalIgnoreCase)) return false;
+        return string.Equals(ExtractSingleClientType(group.ClientType), "UNIAPP", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task SyncUniappHomePathSettingAsync(string path, long? operatorId, CancellationToken ct)
+    {
+        await _settingsService.UpsertAsync(new SettingDto
+        {
+            Key = UniappHomePathSettingKey,
+            Value = path,
+            Type = "string",
+            Description = "UNIAPP 框架启动首页路径（由默认移动端菜单项开关同步）"
+        }, operatorId, ct);
+    }
+
+    private async Task ClearUniappHomePathSettingIfMatchAsync(string? path, long? operatorId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var all = await _settingsService.GetAllAsync(ct);
+        var current = all.FirstOrDefault(x =>
+            string.Equals(x.Key, UniappHomePathSettingKey, StringComparison.OrdinalIgnoreCase));
+        if (current == null) return;
+        if (!string.Equals(current.Value?.Trim(), path.Trim(), StringComparison.OrdinalIgnoreCase)) return;
+
+        await _settingsService.UpsertAsync(new SettingDto
+        {
+            Key = UniappHomePathSettingKey,
+            Value = string.Empty,
+            Type = "string",
+            Description = current.Description
+        }, operatorId, ct);
     }
 
     /// <summary>

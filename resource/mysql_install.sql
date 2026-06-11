@@ -318,6 +318,7 @@ CREATE TABLE `ginkgo_Sys_MenuGroup` (
   `Location` VARCHAR(64) NULL COMMENT '展示位置标识（site-header/mobile-tabbar/site-footer）',
   `ClientType` VARCHAR(64) NULL COMMENT '适用终端（WEB_ADMIN/WEB_PORTAL/WPF/UNIAPP，逗号分隔）',
   `IsSystem` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否系统内置（不可删除）',
+  `IsDefault` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否为该终端类型的默认菜单组',
   `Enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
   `MaxDepth` INT NOT NULL DEFAULT 3 COMMENT '最大嵌套层级（0=不限）',
   `Version` VARCHAR(32) NULL COMMENT '版本标识（v1/v2/beta，同Location可多版本）',
@@ -356,6 +357,9 @@ CREATE TABLE `ginkgo_Sys_MenuGroupItem` (
   `ExtraData` JSON NULL COMMENT '扩展数据',
   `OrderNo` INT NOT NULL DEFAULT 0 COMMENT '排序号',
   `Enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
+  `Module` VARCHAR(128) NOT NULL DEFAULT 'sys' COMMENT '模块归属（sys 或插件ModuleId）',
+  `RequireGrant` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否需要授权（0=公共可见 1=需授权）',
+  `IsUniappHome` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否设为UNIAPP框架启动首页',
   `CreatedAt` DATETIME(6) NOT NULL COMMENT '创建时间',
   `CreatedBy` BIGINT NULL COMMENT '创建人',
   `UpdatedAt` DATETIME(6) NULL COMMENT '更新时间',
@@ -363,7 +367,8 @@ CREATE TABLE `ginkgo_Sys_MenuGroupItem` (
   `IsDeleted` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '软删除',
   `DeletedAt` DATETIME(6) NULL COMMENT '删除时间',
   `DeletedBy` BIGINT NULL COMMENT '删除人',
-  PRIMARY KEY (`Id`)
+  PRIMARY KEY (`Id`),
+  KEY `IX_MenuGroupItem_Module` (`Module`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='菜单组项表';
 
 
@@ -398,6 +403,20 @@ CREATE TABLE `ginkgo_Sys_RoleMenuGroup` (
   `CreatedBy` BIGINT NULL COMMENT '创建人',
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色菜单组权限表';
+
+
+-- ----------------------------
+-- Table structure for ginkgo_Sys_RoleMenuGroupItem
+-- ----------------------------
+DROP TABLE IF EXISTS `ginkgo_Sys_RoleMenuGroupItem`;
+CREATE TABLE `ginkgo_Sys_RoleMenuGroupItem` (
+  `Id` BIGINT NOT NULL COMMENT '主键（Snowflake ID）',
+  `RoleId` BIGINT NOT NULL COMMENT '角色Id',
+  `MenuGroupItemId` BIGINT NOT NULL COMMENT '菜单组项Id',
+  `CreatedAt` DATETIME(6) NOT NULL COMMENT '创建时间',
+  `CreatedBy` BIGINT NULL COMMENT '创建人',
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色菜单组项授权表';
 
 
 
@@ -1052,6 +1071,9 @@ CREATE INDEX `IX_ginkgo_Sys_MenuLog_At` ON `ginkgo_Sys_MenuLog` (`At`);
 -- ginkgo_Sys_RoleMenuGroup
 CREATE UNIQUE INDEX `UX_ginkgo_Sys_RoleMenuGroup` ON `ginkgo_Sys_RoleMenuGroup` (`RoleId`, `MenuGroupId`);
 
+-- ginkgo_Sys_RoleMenuGroupItem
+CREATE UNIQUE INDEX `UK_RoleMenuGroupItem` ON `ginkgo_Sys_RoleMenuGroupItem` (`RoleId`, `MenuGroupItemId`);
+
 -- ginkgo_Sys_NotifyMessage (无额外索引，主键即可)
 
 -- ginkgo_Sys_NotifyAttachment
@@ -1260,44 +1282,44 @@ VALUES (200000000000004, '注册用户', 'REGUSER', 'OwnOnly', 1, '2025-08-09 06
 -- ----------------------------
 -- Records of ginkgo_Sys_Dictionary (13 条)
 -- ----------------------------
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (300000000000001, 'city', '城市', NULL, 'HIERARCHY', '', NULL, 1, '2025-08-10 15:29:26', NULL, 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (300000000000001, 'sys', 'city', '城市', NULL, 'HIERARCHY', '', NULL, 1, '2025-08-10 15:29:26', NULL, 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (300000000000002, 'sysconfig', '系统配置', NULL, 'STATIC', '', NULL, 1, '2025-08-11 06:31:26', NULL, 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (300000000000002, 'sys', 'sysconfig', '系统配置', NULL, 'STATIC', '', NULL, 1, '2025-08-11 06:31:26', NULL, 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (300000000000003, 'file', '文件类型', NULL, 'STATIC', '', NULL, 1, '2025-08-10 17:09:27', NULL, 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (300000000000003, 'sys', 'file', '文件类型', NULL, 'STATIC', '', NULL, 1, '2025-08-10 17:09:27', NULL, 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (300000000000004, 'SYS_LANGUAGES', '系统语言', NULL, 'STATIC', '', NULL, 1, '2025-08-10 17:09:27', NULL, 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (300000000000004, 'sys', 'SYS_LANGUAGES', '系统语言', NULL, 'STATIC', '', NULL, 1, '2025-08-10 17:09:27', NULL, 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (1000000000000001, 'gender', '性别', '用户性别枚举', 'STATIC', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (1000000000000001, 'sys', 'gender', '性别', '用户性别枚举', 'STATIC', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (1000000000000002, 'enabled_status', '启用状态', '通用启用/禁用状态', 'STATIC', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (1000000000000002, 'sys', 'enabled_status', '启用状态', '通用启用/禁用状态', 'STATIC', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (1000000000000003, 'priority_level', '优先级', '任务/工单优先级', 'STATIC', 'Static', NULL, 0, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (1000000000000003, 'sys', 'priority_level', '优先级', '任务/工单优先级', 'STATIC', 'Static', NULL, 0, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (1000000000000004, 'order_status', '订单状态', '电商/业务订单状态映射', 'MAPPING', 'Static', NULL, 0, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (1000000000000004, 'sys', 'order_status', '订单状态', '电商/业务订单状态映射', 'MAPPING', 'Static', NULL, 0, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (1000000000000005, 'http_method', 'HTTP方法', 'RESTful HTTP 请求方法', 'MAPPING', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (1000000000000005, 'sys', 'http_method', 'HTTP方法', 'RESTful HTTP 请求方法', 'MAPPING', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (1000000000000006, 'log_level', '日志级别', '系统日志级别', 'STATIC', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (1000000000000006, 'sys', 'log_level', '日志级别', '系统日志级别', 'STATIC', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (1000000000000008, 'notification_type', '通知类型', '系统通知消息类型', 'STATIC', 'Static', NULL, 0, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (1000000000000008, 'sys', 'notification_type', '通知类型', '系统通知消息类型', 'STATIC', 'Static', NULL, 0, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (1000000000000009, 'sys_config', '系统配置', '全局系统配置项', 'CONFIG', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (1000000000000009, 'sys', 'sys_config', '系统配置', '全局系统配置项', 'CONFIG', 'Static', NULL, 1, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
 
-INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
-VALUES (1000000000000010, 'app_theme', '主题风格', '应用界面主题', 'STATIC', 'Static', NULL, 0, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
+INSERT INTO `ginkgo_Sys_Dictionary` (`Id`, `Module`, `Code`, `Name`, `Description`, `Category`, `SourceType`, `ExtraJson`, `IsSystem`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`, `Enabled`) 
+VALUES (1000000000000010, 'sys', 'app_theme', '主题风格', '应用界面主题', 'STATIC', 'Static', NULL, 0, '2026-04-16 11:24:14', '2026-04-16 11:24:14', 0, NULL, NULL, 1);
 
 
 -- ----------------------------
@@ -1305,122 +1327,122 @@ VALUES (1000000000000010, 'app_theme', '主题风格', '应用界面主题', 'ST
 -- ----------------------------
 
 -- 城市 (city) - 层级字典
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000001, 300000000000001, NULL, '087', '云南', 0, 1, NULL, '2025-08-10 15:37:25', NULL, 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000002, 300000000000001, 400000000000001, '0871', '昆明', 0, 1, NULL, '2025-08-10 15:37:32', NULL, 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000003, 300000000000001, 400000000000001, '0872', '玉溪市', 0, 1, NULL, '2025-08-10 15:45:31', NULL, 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000004, 300000000000001, 400000000000001, '0873', '红河州', 0, 1, NULL, '2025-08-10 15:38:03', NULL, 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000005, 300000000000001, 400000000000001, '曲靖', '0877', 0, 1, NULL, '2025-08-10 15:38:03', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000001, 'sys', 300000000000001, NULL, '087', '云南', 0, 1, NULL, '2025-08-10 15:37:25', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000002, 'sys', 300000000000001, 400000000000001, '0871', '昆明', 0, 1, NULL, '2025-08-10 15:37:32', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000003, 'sys', 300000000000001, 400000000000001, '0872', '玉溪市', 0, 1, NULL, '2025-08-10 15:45:31', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000004, 'sys', 300000000000001, 400000000000001, '0873', '红河州', 0, 1, NULL, '2025-08-10 15:38:03', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000005, 'sys', 300000000000001, 400000000000001, '曲靖', '0877', 0, 1, NULL, '2025-08-10 15:38:03', NULL, 0, NULL, NULL);
 
 -- 文件类型 (file) - 排除用户创建的"user/用户附件"(ID=303101644998967300)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000006, 300000000000003, NULL, 'default', '默认附件', 0, 1, NULL, '2025-08-10 17:10:28', NULL, 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000007, 300000000000003, NULL, 'system', '系统附件', 0, 1, NULL, '2025-08-10 17:10:40', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000006, 'sys', 300000000000003, NULL, 'default', '默认附件', 0, 1, NULL, '2025-08-10 17:10:28', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000007, 'sys', 300000000000003, NULL, 'system', '系统附件', 0, 1, NULL, '2025-08-10 17:10:40', NULL, 0, NULL, NULL);
 
 -- 系统语言 (SYS_LANGUAGES)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000008, 300000000000004, NULL, 'zh-CN', '简体中文', 1, 1, NULL, '2025-08-10 17:10:40', NULL, 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000009, 300000000000004, NULL, 'en-US', 'English', 2, 1, NULL, '2025-08-10 17:10:40', NULL, 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000010, 300000000000004, NULL, 'ja-JP', '日本語', 3, 1, NULL, '2025-08-10 17:10:40', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000008, 'sys', 300000000000004, NULL, 'zh-CN', '简体中文', 1, 1, NULL, '2025-08-10 17:10:40', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000009, 'sys', 300000000000004, NULL, 'en-US', 'English', 2, 1, NULL, '2025-08-10 17:10:40', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000010, 'sys', 300000000000004, NULL, 'ja-JP', '日本語', 3, 1, NULL, '2025-08-10 17:10:40', NULL, 0, NULL, NULL);
 
 -- 性别 (gender)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010001, 1000000000000001, NULL, 'male', '男', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010002, 1000000000000001, NULL, 'female', '女', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010003, 1000000000000001, NULL, 'unknown', '未知', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010001, 'sys', 1000000000000001, NULL, 'male', '男', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010002, 'sys', 1000000000000001, NULL, 'female', '女', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010003, 'sys', 1000000000000001, NULL, 'unknown', '未知', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
 
 -- 启用状态 (enabled_status)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010011, 1000000000000002, NULL, '1', '启用', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010012, 1000000000000002, NULL, '0', '禁用', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010011, 'sys', 1000000000000002, NULL, '1', '启用', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010012, 'sys', 1000000000000002, NULL, '0', '禁用', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
 
 -- 优先级 (priority_level)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010021, 1000000000000003, NULL, 'low', '低', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010022, 1000000000000003, NULL, 'medium', '中', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010023, 1000000000000003, NULL, 'high', '高', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010024, 1000000000000003, NULL, 'critical', '紧急', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010021, 'sys', 1000000000000003, NULL, 'low', '低', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010022, 'sys', 1000000000000003, NULL, 'medium', '中', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010023, 'sys', 1000000000000003, NULL, 'high', '高', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010024, 'sys', 1000000000000003, NULL, 'critical', '紧急', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
 
 -- 订单状态 (order_status)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010031, 1000000000000004, NULL, '0', '待付款', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010032, 1000000000000004, NULL, '10', '已付款', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010033, 1000000000000004, NULL, '20', '已发货', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010034, 1000000000000004, NULL, '30', '已完成', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010035, 1000000000000004, NULL, '40', '已取消', 5, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010036, 1000000000000004, NULL, '50', '已退款', 6, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010031, 'sys', 1000000000000004, NULL, '0', '待付款', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010032, 'sys', 1000000000000004, NULL, '10', '已付款', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010033, 'sys', 1000000000000004, NULL, '20', '已发货', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010034, 'sys', 1000000000000004, NULL, '30', '已完成', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010035, 'sys', 1000000000000004, NULL, '40', '已取消', 5, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010036, 'sys', 1000000000000004, NULL, '50', '已退款', 6, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
 
 -- HTTP方法 (http_method)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010041, 1000000000000005, NULL, 'GET', 'GET', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010042, 1000000000000005, NULL, 'POST', 'POST', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010043, 1000000000000005, NULL, 'PUT', 'PUT', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010044, 1000000000000005, NULL, 'DELETE', 'DELETE', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010045, 1000000000000005, NULL, 'PATCH', 'PATCH', 5, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010041, 'sys', 1000000000000005, NULL, 'GET', 'GET', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010042, 'sys', 1000000000000005, NULL, 'POST', 'POST', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010043, 'sys', 1000000000000005, NULL, 'PUT', 'PUT', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010044, 'sys', 1000000000000005, NULL, 'DELETE', 'DELETE', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010045, 'sys', 1000000000000005, NULL, 'PATCH', 'PATCH', 5, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
 
 -- 日志级别 (log_level)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010051, 1000000000000006, NULL, 'trace', 'Trace', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010052, 1000000000000006, NULL, 'debug', 'Debug', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010053, 1000000000000006, NULL, 'info', 'Info', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010054, 1000000000000006, NULL, 'warn', 'Warning', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010055, 1000000000000006, NULL, 'error', 'Error', 5, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010056, 1000000000000006, NULL, 'fatal', 'Fatal', 6, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010051, 'sys', 1000000000000006, NULL, 'trace', 'Trace', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010052, 'sys', 1000000000000006, NULL, 'debug', 'Debug', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010053, 'sys', 1000000000000006, NULL, 'info', 'Info', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010054, 'sys', 1000000000000006, NULL, 'warn', 'Warning', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010055, 'sys', 1000000000000006, NULL, 'error', 'Error', 5, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010056, 'sys', 1000000000000006, NULL, 'fatal', 'Fatal', 6, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
 
 -- 通知类型 (notification_type)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010101, 1000000000000008, NULL, 'system', '系统通知', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010102, 1000000000000008, NULL, 'alert', '告警通知', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010103, 1000000000000008, NULL, 'promotion', '营销通知', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010104, 1000000000000008, NULL, 'task', '任务通知', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010101, 'sys', 1000000000000008, NULL, 'system', '系统通知', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010102, 'sys', 1000000000000008, NULL, 'alert', '告警通知', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010103, 'sys', 1000000000000008, NULL, 'promotion', '营销通知', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010104, 'sys', 1000000000000008, NULL, 'task', '任务通知', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
 
 -- 系统配置 (sys_config)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010111, 1000000000000009, NULL, 'site_name', 'Ginkgo Admin', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010112, 1000000000000009, NULL, 'max_upload_size', '10485760', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010113, 1000000000000009, NULL, 'session_timeout', '1800', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010114, 1000000000000009, NULL, 'enable_register', 'true', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010111, 'sys', 1000000000000009, NULL, 'site_name', 'Ginkgo Admin', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010112, 'sys', 1000000000000009, NULL, 'max_upload_size', '10485760', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010113, 'sys', 1000000000000009, NULL, 'session_timeout', '1800', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010114, 'sys', 1000000000000009, NULL, 'enable_register', 'true', 4, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
 
 -- 主题风格 (app_theme)
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010121, 1000000000000010, NULL, 'light', '浅色模式', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010122, 1000000000000010, NULL, 'dark', '深色模式', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (1000000000010123, 1000000000000010, NULL, 'auto', '跟随系统', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010121, 'sys', 1000000000000010, NULL, 'light', '浅色模式', 1, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010122, 'sys', 1000000000000010, NULL, 'dark', '深色模式', 2, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (1000000000010123, 'sys', 1000000000000010, NULL, 'auto', '跟随系统', 3, 1, NULL, '2026-04-16 11:24:30', '2026-04-16 11:24:30', 0, NULL, NULL);
 
 
 
@@ -1434,224 +1456,224 @@ VALUES (1000000000010123, 1000000000000010, NULL, 'auto', '跟随系统', 3, 1, 
 -- ----------------------------
 
 -- Site 站点配置
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Name', 'GinkgoAdmin', 'String', '站点名称', 1, '2025-08-10 08:45:05.679973', NULL, 'Site', 500000000000001);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Name', 'sys', 'GinkgoAdmin', 'String', '站点名称', 1, '2025-08-10 08:45:05.679973', NULL, 'Site', 500000000000001);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.BaseUrl', 'http://localhost:5288', 'String', '站点基础URL', 1, '2025-08-10 08:45:05.700552', NULL, 'Site', 500000000000002);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.BaseUrl', 'sys', 'http://localhost:5288', 'String', '站点基础URL', 1, '2025-08-10 08:45:05.700552', NULL, 'Site', 500000000000002);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.DefaultLanguage', 'zh-CN', 'String', '默认语言', 1, '2025-08-10 08:45:05.745875', NULL, 'Site', 500000000000003);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.DefaultLanguage', 'sys', 'zh-CN', 'String', '默认语言', 1, '2025-08-10 08:45:05.745875', NULL, 'Site', 500000000000003);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.TimeZone', 'Asia/Shanghai', 'String', '时区', 1, '2025-08-10 08:45:05.766512', NULL, 'Site', 500000000000004);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.TimeZone', 'sys', 'Asia/Shanghai', 'String', '时区', 1, '2025-08-10 08:45:05.766512', NULL, 'Site', 500000000000004);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Logo', '/uploads/logo/logo128.png', 'String', '站点LOGO URL', 1, '2025-08-10 08:45:05.766512', NULL, 'Site', 279178454597894140);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Logo', 'sys', '/uploads/logo/logo128.png', 'String', '站点LOGO URL', 1, '2025-08-10 08:45:05.766512', NULL, 'Site', 279178454597894140);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Branding.Favicon', '', 'String', '站点Favicon', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454635642880);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Branding.Favicon', 'sys', '', 'String', '站点Favicon', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454635642880);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Theme.PrimaryColor', '#3b82f6', 'String', '主题主色', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454660808700);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Theme.PrimaryColor', 'sys', '#3b82f6', 'String', '主题主色', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454660808700);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Theme.SecondaryColor', '#2563eb', 'String', '主题辅色', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454685974530);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Theme.SecondaryColor', 'sys', '#2563eb', 'String', '主题辅色', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454685974530);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Maintenance.Enabled', 'false', 'Bool', '是否启用维护模式', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454715334660);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Maintenance.Enabled', 'sys', 'false', 'Bool', '是否启用维护模式', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454715334660);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Footer.Text', '', 'String', '页脚文字', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454807609340);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Footer.Text', 'sys', '', 'String', '页脚文字', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454807609340);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Subtitle', '欢迎使用GinkgoAdmin', 'String', '站点副标题', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454836969470);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Subtitle', 'sys', '欢迎使用GinkgoAdmin', 'String', '站点副标题', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454836969470);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Login.WelcomeText', '', 'String', '登录欢迎语', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454862135300);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Login.WelcomeText', 'sys', '', 'String', '登录欢迎语', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454862135300);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Login.LeftPanelBackground', '', 'String', '登录页左侧面板背景', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454887301120);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Login.LeftPanelBackground', 'sys', '', 'String', '登录页左侧面板背景', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454887301120);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Animation.Enabled', 'true', 'Bool', '是否启用动画', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454912466940);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Animation.Enabled', 'sys', 'true', 'Bool', '是否启用动画', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454912466940);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Animation.Intensity', 'medium', 'String', '动画强度', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454933438460);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Animation.Intensity', 'sys', 'medium', 'String', '动画强度', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178454933438460);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.ICP', '', 'String', 'ICP备案号', 1, '2025-08-10 08:45:05.766512', NULL, 'Site', 294179549183213600);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.ICP', 'sys', '', 'String', 'ICP备案号', 1, '2025-08-10 08:45:05.766512', NULL, 'Site', 294179549183213600);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.PoliceICP', '', 'String', '公安备案号', 1, '2025-08-10 08:45:05.766512', NULL, 'Site', 294179549225156600);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.PoliceICP', 'sys', '', 'String', '公安备案号', 1, '2025-08-10 08:45:05.766512', NULL, 'Site', 294179549225156600);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Site.Cors.AllowedOrigins', '', 'String', 'CORS允许的来源', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178455415783420);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Site.Cors.AllowedOrigins', 'sys', '', 'String', 'CORS允许的来源', 1, '2025-08-10 08:45:05.766512', NULL, NULL, 279178455415783420);
 
 -- Auth 认证配置
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Auth.Jwt.AccessTokenMinutes', '120', 'Number', '访问令牌有效分钟数', 1, '2025-08-10 08:45:05.823963', NULL, NULL, 500000000000005);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Auth.Jwt.AccessTokenMinutes', 'sys', '120', 'Number', '访问令牌有效分钟数', 1, '2025-08-10 08:45:05.823963', NULL, NULL, 500000000000005);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Auth.Jwt.RefreshTokenDays', '7', 'Number', '刷新令牌有效天数', 1, '2025-08-10 08:45:05.828027', NULL, NULL, 500000000000006);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Auth.Jwt.RefreshTokenDays', 'sys', '7', 'Number', '刷新令牌有效天数', 1, '2025-08-10 08:45:05.828027', NULL, NULL, 500000000000006);
 
 -- Security 安全配置
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Security.Login.MaxFailedAttempts', '5', 'Number', '登录最大失败次数(触发锁定)', 1, '2025-08-10 08:45:05.811749', NULL, NULL, 500000000000007);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Security.Login.MaxFailedAttempts', 'sys', '5', 'Number', '登录最大失败次数(触发锁定)', 1, '2025-08-10 08:45:05.811749', NULL, NULL, 500000000000007);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Security.Login.LockoutMinutes', '15', 'Number', '登录锁定分钟数', 1, '2025-08-10 08:45:05.815818', NULL, NULL, 500000000000008);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Security.Login.LockoutMinutes', 'sys', '15', 'Number', '登录锁定分钟数', 1, '2025-08-10 08:45:05.815818', NULL, NULL, 500000000000008);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Security.PasswordPolicy', '{"minLen":8,"upper":true,"lower":true,"digit":true,"special":false}', 'Json', '密码策略', 1, '2025-08-10 08:45:05.815818', NULL, NULL, 500000000000009);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Security.PasswordPolicy', 'sys', '{"minLen":8,"upper":true,"lower":true,"digit":true,"special":false}', 'Json', '密码策略', 1, '2025-08-10 08:45:05.815818', NULL, NULL, 500000000000009);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Security.BlockedIPs', '[]', 'Json', '封禁IP列表', 1, '2025-08-10 08:45:05.815818', NULL, NULL, 279178455059267600);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Security.BlockedIPs', 'sys', '[]', 'Json', '封禁IP列表', 1, '2025-08-10 08:45:05.815818', NULL, NULL, 279178455059267600);
 
 -- Mail 邮件配置（敏感值使用占位符）
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Mail.Smtp.Host', '', 'String', 'SMTP服务器地址', 1, '2025-08-10 08:45:05.856743', NULL, NULL, 500000000000010);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Mail.Smtp.Host', 'sys', '', 'String', 'SMTP服务器地址', 1, '2025-08-10 08:45:05.856743', NULL, NULL, 500000000000010);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Mail.Smtp.Port', '465', 'Number', 'SMTP端口', 1, '2025-08-10 08:45:05.881520', NULL, NULL, 500000000000011);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Mail.Smtp.Port', 'sys', '465', 'Number', 'SMTP端口', 1, '2025-08-10 08:45:05.881520', NULL, NULL, 500000000000011);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Mail.Ssl.Enable', 'true', 'Bool', '启用SSL', 1, '2025-08-10 08:45:05.889927', NULL, NULL, 500000000000012);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Mail.Ssl.Enable', 'sys', 'true', 'Bool', '启用SSL', 1, '2025-08-10 08:45:05.889927', NULL, NULL, 500000000000012);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Mail.From.Address', '', 'String', '发件人地址', 1, '2025-08-10 08:45:05.926896', NULL, NULL, 500000000000013);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Mail.From.Address', 'sys', '', 'String', '发件人地址', 1, '2025-08-10 08:45:05.926896', NULL, NULL, 500000000000013);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Mail.From.DisplayName', 'GinkgoAdmin', 'String', '发件人显示名', 1, '2025-08-10 08:45:05.935055', NULL, NULL, 500000000000014);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Mail.From.DisplayName', 'sys', 'GinkgoAdmin', 'String', '发件人显示名', 1, '2025-08-10 08:45:05.935055', NULL, NULL, 500000000000014);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Mail.Smtp.UserName', '', 'String', 'SMTP用户名', 1, '2025-08-10 08:45:05.935055', NULL, NULL, 279178455268982800);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Mail.Smtp.UserName', 'sys', '', 'String', 'SMTP用户名', 1, '2025-08-10 08:45:05.935055', NULL, NULL, 279178455268982800);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Mail.Smtp.Password', '', 'String', 'SMTP密码', 1, '2025-08-10 08:45:05.935055', NULL, NULL, 279178455298342900);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Mail.Smtp.Password', 'sys', '', 'String', 'SMTP密码', 1, '2025-08-10 08:45:05.935055', NULL, NULL, 279178455298342900);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Mail.Smtp.AuthType', 'Login', 'String', 'SMTP认证类型', 1, '2025-08-10 08:45:05.935055', NULL, NULL, 279178455319314430);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Mail.Smtp.AuthType', 'sys', 'Login', 'String', 'SMTP认证类型', 1, '2025-08-10 08:45:05.935055', NULL, NULL, 279178455319314430);
 
 -- Storage 存储配置
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Storage.Provider', 'Local', 'String', '存储提供者：Local/S3/OSS', 1, '2025-08-10 08:45:05.844291', NULL, NULL, 500000000000015);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Storage.Provider', 'sys', 'Local', 'String', '存储提供者：Local/S3/OSS', 1, '2025-08-10 08:45:05.844291', NULL, NULL, 500000000000015);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Storage.Local.BasePath', 'uploads', 'String', '本地存储根路径', 1, '2025-08-10 08:45:05.844291', NULL, NULL, 500000000000016);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Storage.Local.BasePath', 'sys', 'uploads', 'String', '本地存储根路径', 1, '2025-08-10 08:45:05.844291', NULL, NULL, 500000000000016);
 
 -- Upload 上传配置
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Upload.MaxSizeMB', '20', 'Number', '上传文件最大大小(MB)', 1, '2025-08-10 08:45:05.963768', NULL, NULL, 500000000000017);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Upload.MaxSizeMB', 'sys', '20', 'Number', '上传文件最大大小(MB)', 1, '2025-08-10 08:45:05.963768', NULL, NULL, 500000000000017);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Upload.AllowedExtensions', '.jpg,.png,.pdf,.xlsx,.mp3,.mp4,.zip,.rar,.doc,.docx,.webm,.m4a,.wav,.pem', 'String', '允许上传的文件扩展名', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 500000000000018);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Upload.AllowedExtensions', 'sys', '.jpg,.png,.pdf,.xlsx,.mp3,.mp4,.zip,.rar,.doc,.docx,.webm,.m4a,.wav,.pem', 'String', '允许上传的文件扩展名', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 500000000000018);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Upload.BasePath', '/uploads', 'String', '默认上传目录', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 500000000000019);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Upload.BasePath', 'sys', '/uploads', 'String', '默认上传目录', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 500000000000019);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Upload.ImageCompress.Enabled', 'false', 'Bool', '上传图片时是否启用后端压缩', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 301262667660656640);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Upload.ImageCompress.Enabled', 'sys', 'false', 'Bool', '上传图片时是否启用后端压缩', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 301262667660656640);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Upload.ImageCompress.Quality', '75', 'Number', '图片压缩质量（10-100）', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 301262667698405400);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Upload.ImageCompress.Quality', 'sys', '75', 'Number', '图片压缩质量（10-100）', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 301262667698405400);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Upload.ImageCompress.KeepOriginal', 'false', 'Bool', '压缩后是否保留原图', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 301262667727765500);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Upload.ImageCompress.KeepOriginal', 'sys', 'false', 'Bool', '压缩后是否保留原图', 1, '2025-08-10 08:45:05.971987', NULL, NULL, 301262667727765500);
 
 -- Logging & Audit
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Logging.Level', 'Information', 'String', '日志级别：Trace/Debug/Information/Warning/Error/Critical', 1, '2025-08-10 08:45:05.848414', NULL, NULL, 500000000000019);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Logging.Level', 'sys', 'Information', 'String', '日志级别：Trace/Debug/Information/Warning/Error/Critical', 1, '2025-08-10 08:45:05.848414', NULL, NULL, 500000000000019);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Audit.RetentionDays', '90', 'Number', '审计/操作日志保留天数', 1, '2025-08-10 08:45:05.848414', NULL, NULL, 500000000000020);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Audit.RetentionDays', 'sys', '90', 'Number', '审计/操作日志保留天数', 1, '2025-08-10 08:45:05.848414', NULL, NULL, 500000000000020);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Menus.CacheMinutes', '10', 'Number', '菜单缓存分钟数(客户端可用)', 1, '2025-08-10 08:45:05.848414', NULL, NULL, 500000000000021);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Menus.CacheMinutes', 'sys', '10', 'Number', '菜单缓存分钟数(客户端可用)', 1, '2025-08-10 08:45:05.848414', NULL, NULL, 500000000000021);
 
 -- Feature Flags
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('FeatureFlags.Captcha', 'true', 'Bool', '启用图形验证码', 1, '2025-08-10 08:45:05.852482', NULL, NULL, 500000000000022);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('FeatureFlags.Captcha', 'sys', 'true', 'Bool', '启用图形验证码', 1, '2025-08-10 08:45:05.852482', NULL, NULL, 500000000000022);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('FeatureFlags.ConfigCenter', 'true', 'Bool', '启用系统配置中心页面', 1, '2025-08-10 08:45:05.852482', NULL, NULL, 500000000000023);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('FeatureFlags.ConfigCenter', 'sys', 'true', 'Bool', '启用系统配置中心页面', 1, '2025-08-10 08:45:05.852482', NULL, NULL, 500000000000023);
 
 -- Registration 注册配置
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Registration.Enabled', 'true', 'Bool', '启用用户注册', 1, '2025-08-10 08:45:05.787186', NULL, NULL, 500000000000024);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Registration.Enabled', 'sys', 'true', 'Bool', '启用用户注册', 1, '2025-08-10 08:45:05.787186', NULL, NULL, 500000000000024);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Registration.RequireCaptcha', 'true', 'Bool', '注册需要验证码', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 500000000000025);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Registration.RequireCaptcha', 'sys', 'true', 'Bool', '注册需要验证码', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 500000000000025);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Registration.Mode', 'free', 'String', '注册模式', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 302799073730101250);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Registration.Mode', 'sys', 'free', 'String', '注册模式', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 302799073730101250);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Registration.LoginCaptcha', 'true', 'Bool', '登录验证码', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 302799073914650600);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Registration.LoginCaptcha', 'sys', 'true', 'Bool', '登录验证码', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 302799073914650600);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Registration.LoginMethods', '["password","email_code"]', 'Json', '允许的登录方式', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 302799073977565200);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Registration.LoginMethods', 'sys', '["password","email_code"]', 'Json', '允许的登录方式', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 302799073977565200);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Registration.DefaultDepartmentId', '100000000000004', 'String', '注册用户默认部门ID', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 279178455013130240);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Registration.DefaultDepartmentId', 'sys', '100000000000004', 'String', '注册用户默认部门ID', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 279178455013130240);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Registration.DefaultRoleIds', '["200000000000004"]', 'Json', '注册用户默认角色ID列表', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 279178455038296060);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Registration.DefaultRoleIds', 'sys', '["200000000000004"]', 'Json', '注册用户默认角色ID列表', 1, '2025-08-10 08:45:05.795353', NULL, NULL, 279178455038296060);
 
 -- DataPermission 数据权限
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('DataPermission.DefaultScope', 'Self', 'String', '默认数据权限范围', 1, '2025-08-10 08:45:05.819828', NULL, NULL, 500000000000026);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('DataPermission.DefaultScope', 'sys', 'Self', 'String', '默认数据权限范围', 1, '2025-08-10 08:45:05.819828', NULL, NULL, 500000000000026);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('DataPermission.AllowCrossLevel', 'false', 'Bool', '允许跨级数据访问', 1, '2025-08-10 08:45:05.827997', NULL, NULL, 500000000000027);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('DataPermission.AllowCrossLevel', 'sys', 'false', 'Bool', '允许跨级数据访问', 1, '2025-08-10 08:45:05.827997', NULL, NULL, 500000000000027);
 
 -- UI
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('UI.Theme', 'Light', 'String', '主题：Light/Dark', 1, '2025-08-10 08:45:05.844291', NULL, NULL, 500000000000028);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('UI.Theme', 'sys', 'Light', 'String', '主题：Light/Dark', 1, '2025-08-10 08:45:05.844291', NULL, NULL, 500000000000028);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('System.AdminEmail', 'admin@example.com', 'String', '系统管理员通知邮箱', 1, '2025-08-10 08:45:05.803590', NULL, NULL, 500000000000029);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('System.AdminEmail', 'sys', 'admin@example.com', 'String', '系统管理员通知邮箱', 1, '2025-08-10 08:45:05.803590', NULL, NULL, 500000000000029);
 
 -- Language 多语言配置
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Language.MultiLang.Enabled', 'false', 'Bool', '是否启用多语言', 1, '2025-08-10 08:45:05.803590', NULL, 'Language', 292218005469790200);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Language.MultiLang.Enabled', 'sys', 'false', 'Bool', '是否启用多语言', 1, '2025-08-10 08:45:05.803590', NULL, 'Language', 292218005469790200);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Language.MultiLang.Default', 'zh-CN', 'String', '默认语言代码', 1, '2025-08-10 08:45:05.803590', NULL, 'Language', 292218005499150340);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Language.MultiLang.Default', 'sys', 'zh-CN', 'String', '默认语言代码', 1, '2025-08-10 08:45:05.803590', NULL, 'Language', 292218005499150340);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Language.MultiLang.Languages', '[{"code":"zh-CN","urlCode":"zh","label":"中文","flag":"🇨🇳","required":true},{"code":"en","urlCode":"en","label":"English","flag":"🇺🇸","required":false},{"code":"ja","urlCode":"ja","label":"日本語","flag":"🇯🇵","required":false}]', 'Json', '可用语言列表', 1, '2025-08-10 08:45:05.803590', NULL, 'Language', 292218005520121860);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Language.MultiLang.Languages', 'sys', '[{"code":"zh-CN","urlCode":"zh","label":"中文","flag":"🇨🇳","required":true},{"code":"en","urlCode":"en","label":"English","flag":"🇺🇸","required":false},{"code":"ja","urlCode":"ja","label":"日本語","flag":"🇯🇵","required":false}]', 'Json', '可用语言列表', 1, '2025-08-10 08:45:05.803590', NULL, 'Language', 292218005520121860);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('Language.MultiLang.PluginOverrides', '{}', 'Json', '插件多语言覆盖配置', 1, '2025-08-10 08:45:05.803590', NULL, 'Language', 292218005549482000);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('Language.MultiLang.PluginOverrides', 'sys', '{}', 'Json', '插件多语言覆盖配置', 1, '2025-08-10 08:45:05.803590', NULL, 'Language', 292218005549482000);
 
 -- Mobile 移动端（UNIAPP）配置
-INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
-VALUES (400000000000099, 300000000000002, NULL, 'Mobile', '移动端', 90, 1, NULL, '2026-06-04 00:00:00', NULL, 0, NULL, NULL);
+INSERT INTO `ginkgo_Sys_DictionaryItem` (`Id`, `Module`, `DictId`, `ParentId`, `Code`, `Value`, `SortOrder`, `IsActive`, `ExtraJson`, `CreatedAt`, `UpdatedAt`, `IsDeleted`, `CreatedBy`, `UpdatedBy`) 
+VALUES (400000000000099, 'sys', 300000000000002, NULL, 'Mobile', '移动端', 90, 1, NULL, '2026-06-04 00:00:00', NULL, 0, NULL, NULL);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('App.HomePlugin', '', 'String', 'UNIAPP端首页替换插件ID', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000080);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('App.HomePlugin', 'sys', '', 'String', 'UNIAPP端首页替换插件ID', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000080);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('App.Privacy.ShowPopup', 'true', 'Bool', '首次启动弹出隐私政策', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000081);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('App.Privacy.ShowPopup', 'sys', 'true', 'Bool', '首次启动弹出隐私政策', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000081);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('App.Privacy.PolicyVersion', '1.0.0', 'String', '隐私政策版本号', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000082);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('App.Privacy.PolicyVersion', 'sys', '1.0.0', 'String', '隐私政策版本号', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000082);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('App.Privacy.PolicyContent', '<h2>隐私政策</h2><p><strong>更新日期：</strong>2026年1月1日&nbsp;|&nbsp;<strong>生效日期：</strong>2026年1月1日</p><p>感谢您使用本应用（以下简称「我们」）。我们深知个人信息对您的重要性，并会尽全力保护您的个人信息安全。请在注册、登录或使用本应用前，仔细阅读并充分理解本政策。</p><h3>一、我们如何收集和使用个人信息</h3><p>为向您提供账户注册、登录验证、消息通知、业务办理等基础功能，我们可能收集以下信息：</p><ul><li><strong>帐号信息：</strong>用户名、昵称、密码（加密存储）</li><li><strong>联系信息：</strong>手机号码、电子邮箱（由您自愿填写）</li><li><strong>头像与简介：</strong>用于个人资料展示（可选）</li><li><strong>设备信息：</strong>设备型号、操作系统版本、应用版本号</li><li><strong>日志信息：</strong>登录时间、操作记录（用于安全审计与故障排查）</li></ul><h3>二、我们如何使用 Cookie 和同类技术</h3><p>为保障登录状态与安全，我们可能在本地存储必要的令牌与偏好设置（如字体大小、隐私同意记录），不会用于与提供服务无关的目的。</p><h3>三、信息的存储与保护</h3><p>您的个人信息存储于中华人民共和国境内服务器。我们采取加密传输、权限隔离、访问日志审计等安全措施保护您的数据。</p><h3>四、您的权利</h3><p>您依法享有以下权利，可在应用<strong>「我的」→「隐私与合规」</strong>中操作：</p><ul><li>查阅、更正您的个人信息</li><li>删除非必要的个人信息（邮箱、手机、头像、个人简介等）</li><li>注销用户帐号</li><li>撤回对本隐私政策的同意</li></ul><h3>五、未成年人保护</h3><p>若您未满 18 周岁，请在监护人陪同下阅读本政策，并在取得监护人同意后再使用本应用。</p><h3>六、政策更新</h3><p>我们可能适时修订本政策。重大变更将以应用内弹窗或公告方式通知您；若您继续使用，即视为同意修订后的政策。</p><h3>七、联系我们</h3><p>如对本政策有任何疑问、意见或投诉，请通过应用内「帮助中心」或联系系统管理员，我们将在合理期限内回复。</p>', 'RichText', '隐私政策内容（示例，可在后台「系统配置-移动端」修改）', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000083);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('App.Privacy.PolicyContent', 'sys', '<h2>隐私政策</h2><p><strong>更新日期：</strong>2026年1月1日&nbsp;|&nbsp;<strong>生效日期：</strong>2026年1月1日</p><p>感谢您使用本应用（以下简称「我们」）。我们深知个人信息对您的重要性，并会尽全力保护您的个人信息安全。请在注册、登录或使用本应用前，仔细阅读并充分理解本政策。</p><h3>一、我们如何收集和使用个人信息</h3><p>为向您提供账户注册、登录验证、消息通知、业务办理等基础功能，我们可能收集以下信息：</p><ul><li><strong>帐号信息：</strong>用户名、昵称、密码（加密存储）</li><li><strong>联系信息：</strong>手机号码、电子邮箱（由您自愿填写）</li><li><strong>头像与简介：</strong>用于个人资料展示（可选）</li><li><strong>设备信息：</strong>设备型号、操作系统版本、应用版本号</li><li><strong>日志信息：</strong>登录时间、操作记录（用于安全审计与故障排查）</li></ul><h3>二、我们如何使用 Cookie 和同类技术</h3><p>为保障登录状态与安全，我们可能在本地存储必要的令牌与偏好设置（如字体大小、隐私同意记录），不会用于与提供服务无关的目的。</p><h3>三、信息的存储与保护</h3><p>您的个人信息存储于中华人民共和国境内服务器。我们采取加密传输、权限隔离、访问日志审计等安全措施保护您的数据。</p><h3>四、您的权利</h3><p>您依法享有以下权利，可在应用<strong>「我的」→「隐私与合规」</strong>中操作：</p><ul><li>查阅、更正您的个人信息</li><li>删除非必要的个人信息（邮箱、手机、头像、个人简介等）</li><li>注销用户帐号</li><li>撤回对本隐私政策的同意</li></ul><h3>五、未成年人保护</h3><p>若您未满 18 周岁，请在监护人陪同下阅读本政策，并在取得监护人同意后再使用本应用。</p><h3>六、政策更新</h3><p>我们可能适时修订本政策。重大变更将以应用内弹窗或公告方式通知您；若您继续使用，即视为同意修订后的政策。</p><h3>七、联系我们</h3><p>如对本政策有任何疑问、意见或投诉，请通过应用内「帮助中心」或联系系统管理员，我们将在合理期限内回复。</p>', 'RichText', '隐私政策内容（示例，可在后台「系统配置-移动端」修改）', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000083);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('App.Privacy.UserAgreementContent', '<h2>用户服务协议</h2><p><strong>更新日期：</strong>2026年1月1日&nbsp;|&nbsp;<strong>生效日期：</strong>2026年1月1日</p><p>欢迎您使用本应用。本协议是您与运营方之间关于使用本应用服务所订立的协议，请您仔细阅读。</p><h3>一、服务说明</h3><p>本应用提供企业级移动办公、业务管理与消息通知等能力。您完成注册并登录，即表示您已阅读、理解并同意受本协议及《隐私政策》约束。</p><h3>二、帐号注册与安全</h3><p>您应提供真实、准确、完整的信息完成注册，并妥善保管帐号与密码。因帐号保管不善导致的损失，由您自行承担相应责任。</p><h3>三、用户行为规范</h3><p>您在使用本应用时，不得从事以下行为：</p><ul><li>违反法律法规、公序良俗或本协议约定</li><li>传播违法、虚假、侵权或骚扰性信息</li><li>以任何方式干扰、破坏系统或他人正常使用</li><li>未经授权访问、抓取或篡改系统数据</li></ul><h3>四、隐私保护</h3><p>我们重视您的隐私保护，个人信息处理规则详见《隐私政策》。使用本应用即表示您同时同意《隐私政策》。</p><h3>五、知识产权</h3><p>本应用的界面设计、程序代码、文档资料等知识产权归运营方或相关权利人所有。未经授权，不得复制、修改、传播或用于商业用途。</p><h3>六、免责声明</h3><p>因不可抗力、网络故障、第三方服务异常等非我们可控原因导致的服务中断，我们将在合理范围内协助恢复，但不承担由此产生的间接损失。</p><h3>七、协议变更与终止</h3><p>我们有权根据业务需要更新本协议，更新后将通过应用内公告或弹窗告知。您可随时通过「隐私与合规」申请注销帐号以终止服务。</p><h3>八、联系我们</h3><p>如对本协议有任何疑问，请通过应用内「帮助中心」联系我们。</p>', 'RichText', '用户协议内容（示例，可在后台「系统配置-移动端」修改）', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000084);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('App.Privacy.UserAgreementContent', 'sys', '<h2>用户服务协议</h2><p><strong>更新日期：</strong>2026年1月1日&nbsp;|&nbsp;<strong>生效日期：</strong>2026年1月1日</p><p>欢迎您使用本应用。本协议是您与运营方之间关于使用本应用服务所订立的协议，请您仔细阅读。</p><h3>一、服务说明</h3><p>本应用提供企业级移动办公、业务管理与消息通知等能力。您完成注册并登录，即表示您已阅读、理解并同意受本协议及《隐私政策》约束。</p><h3>二、帐号注册与安全</h3><p>您应提供真实、准确、完整的信息完成注册，并妥善保管帐号与密码。因帐号保管不善导致的损失，由您自行承担相应责任。</p><h3>三、用户行为规范</h3><p>您在使用本应用时，不得从事以下行为：</p><ul><li>违反法律法规、公序良俗或本协议约定</li><li>传播违法、虚假、侵权或骚扰性信息</li><li>以任何方式干扰、破坏系统或他人正常使用</li><li>未经授权访问、抓取或篡改系统数据</li></ul><h3>四、隐私保护</h3><p>我们重视您的隐私保护，个人信息处理规则详见《隐私政策》。使用本应用即表示您同时同意《隐私政策》。</p><h3>五、知识产权</h3><p>本应用的界面设计、程序代码、文档资料等知识产权归运营方或相关权利人所有。未经授权，不得复制、修改、传播或用于商业用途。</p><h3>六、免责声明</h3><p>因不可抗力、网络故障、第三方服务异常等非我们可控原因导致的服务中断，我们将在合理范围内协助恢复，但不承担由此产生的间接损失。</p><h3>七、协议变更与终止</h3><p>我们有权根据业务需要更新本协议，更新后将通过应用内公告或弹窗告知。您可随时通过「隐私与合规」申请注销帐号以终止服务。</p><h3>八、联系我们</h3><p>如对本协议有任何疑问，请通过应用内「帮助中心」联系我们。</p>', 'RichText', '用户协议内容（示例，可在后台「系统配置-移动端」修改）', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000084);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('App.Privacy.EnableCorrectInfo', 'true', 'Bool', '开启更正/删除个人信息', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000085);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('App.Privacy.EnableCorrectInfo', 'sys', 'true', 'Bool', '开启更正/删除个人信息', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000085);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('App.Privacy.EnableDeleteAccount', 'true', 'Bool', '开启注销用户帐号', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000086);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('App.Privacy.EnableDeleteAccount', 'sys', 'true', 'Bool', '开启注销用户帐号', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000086);
 
-INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
-VALUES ('App.Privacy.EnableWithdrawConsent', 'true', 'Bool', '开启撤回同意隐私协议', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000087);
+INSERT INTO `ginkgo_Sys_Settings` (`Key`, `Module`, `Value`, `Type`, `Description`, `Version`, `UpdatedAt`, `UpdatedBy`, `class`, `Id`) 
+VALUES ('App.Privacy.EnableWithdrawConsent', 'sys', 'true', 'Bool', '开启撤回同意隐私协议', 1, '2026-06-04 00:00:00', NULL, 'Mobile', 500000000000087);
 
 
 

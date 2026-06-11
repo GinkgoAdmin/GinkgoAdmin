@@ -230,9 +230,11 @@ export async function packageModule(
   packageType: string = 'source',
   exportDbSchema: boolean = false,
   exportDbData: boolean = false,
-  sanitizeConfig: boolean = true
+  sanitizeConfig: boolean = true,
+  exportClientMenus: boolean = false,
+  exportDictionary: boolean = false
 ): Promise<PackageResult> {
-  return http.post('/v1/modules/package', { moduleId, packageType, exportDbSchema, exportDbData, sanitizeConfig })
+  return http.post('/v1/modules/package', { moduleId, packageType, exportDbSchema, exportDbData, sanitizeConfig, exportClientMenus, exportDictionary })
 }
 
 // 获取可打包的模块列表
@@ -263,9 +265,11 @@ export function getPackageDownloadUrl(
   moduleId: string,
   packageType: string = 'source',
   exportDbSchema: boolean = false,
-  exportDbData: boolean = false
+  exportDbData: boolean = false,
+  exportClientMenus: boolean = false,
+  exportDictionary: boolean = false
 ): string {
-  return `/api/v1/modules/package/download?moduleId=${encodeURIComponent(moduleId)}&packageType=${packageType}&exportDbSchema=${exportDbSchema}&exportDbData=${exportDbData}`
+  return `/api/v1/modules/package/download?moduleId=${encodeURIComponent(moduleId)}&packageType=${packageType}&exportDbSchema=${exportDbSchema}&exportDbData=${exportDbData}&exportClientMenus=${exportClientMenus}&exportDictionary=${exportDictionary}`
 }
 
 // 下载模块包（带认证）
@@ -276,9 +280,11 @@ export async function downloadPackage(
   packageType: string = 'source',
   exportDbSchema: boolean = false,
   exportDbData: boolean = false,
-  sanitizeConfig: boolean = true
+  sanitizeConfig: boolean = true,
+  exportClientMenus: boolean = false,
+  exportDictionary: boolean = false
 ): Promise<ArrayBuffer> {
-  const qs = `moduleId=${encodeURIComponent(moduleId)}&packageType=${encodeURIComponent(packageType)}&exportDbSchema=${exportDbSchema}&exportDbData=${exportDbData}&sanitizeConfig=${sanitizeConfig}`
+  const qs = `moduleId=${encodeURIComponent(moduleId)}&packageType=${encodeURIComponent(packageType)}&exportDbSchema=${exportDbSchema}&exportDbData=${exportDbData}&sanitizeConfig=${sanitizeConfig}&exportClientMenus=${exportClientMenus}&exportDictionary=${exportDictionary}`
   return http.get(`/v1/modules/package/download?${qs}`, {
     responseType: 'arraybuffer'
   })

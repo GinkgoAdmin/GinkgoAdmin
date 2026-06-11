@@ -10,6 +10,7 @@ export interface MenuGroupListItem {
   location?: string
   clientType?: string
   isSystem: boolean
+  isDefault: boolean
   enabled: boolean
   maxDepth: number
   version?: string
@@ -24,6 +25,7 @@ export interface MenuGroupDetail {
   location?: string
   clientType?: string
   isSystem: boolean
+  isDefault: boolean
   enabled: boolean
   maxDepth: number
   version?: string
@@ -66,6 +68,7 @@ export interface MenuGroupItemNode {
   extraData?: string
   order: number
   enabled: boolean
+  isUniappHome?: boolean
   children?: MenuGroupItemNode[]
 }
 
@@ -234,6 +237,10 @@ export async function sortMenuGroupItems(groupId: string, items: MenuGroupItemSo
 export async function importFromSystemMenu(groupId: string, menuIds: string[], parentId?: string | null): Promise<string[]> {
   const resp = await http.post<any, string[]>(`/v1/menu-groups/${groupId}/items/import-from-system`, { menuIds, parentId })
   return (resp as any)?.data ?? resp ?? []
+}
+
+export async function setMenuGroupItemUniappHome(groupId: string, id: string, enabled: boolean): Promise<void> {
+  await http.put(`/v1/menu-groups/${groupId}/items/${id}/set-uniapp-home`, { enabled })
 }
 
 // ===== 角色菜单组权限 API =====

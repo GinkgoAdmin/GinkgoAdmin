@@ -1698,5 +1698,173 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
             };
         }
 
+        /// <summary>
+        /// 从数据库导出指定模块的多客户端入口项，用于打包时写入 install.json 的 ClientMenus 段。
+        /// 仅导出 Module=moduleId 且所属菜单组 ClientType 合法的项；ParentPath 由父项 Url 解析。
+        /// </summary>
+        public async Task<List<ClientMenusSpec>> ExportClientMenusAsync(string moduleId, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(moduleId)) return new List<ClientMenusSpec>();
+
+            var allowedClientTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "WEB_PORTAL", "WPF", "UNIAPP"
+            };
+
+            using var scope = _services.CreateScope();
+            var conn = GetSqlSugarConnection(scope.ServiceProvider);
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync(ct);
+
+            var rows = new List<(long Id, long? ParentId, string Title, string? Icon, string? Url, string? Badge, int OrderNo, bool RequireGrant, string? ClientType)>();
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = @"
+SELECT i.Id, i.ParentId, i.Title, i.Icon, i.Url, i.Badge, i.OrderNo, i.RequireGrant, g.ClientType
+FROM ginkgo_Sys_MenuGroupItem i
+INNER JOIN ginkgo_Sys_MenuGroup g ON g.Id = i.MenuGroupId
+WHERE i.Module = @m AND (i.IsDeleted = 0 OR i.IsDeleted IS NULL) AND (g.IsDeleted = 0 OR g.IsDeleted IS NULL)
+ORDER BY g.ClientType, i.OrderNo, i.Id";
+                var p = cmd.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; cmd.Parameters.Add(p);
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                {
+                    rows.Add((
+                        reader.GetInt64(0),
+                        reader.IsDBNull(1) ? null : reader.GetInt64(1),
+                        reader.IsDBNull(2) ? "" : reader.GetString(2),
+                        reader.IsDBNull(3) ? null : reader.GetString(3),
+                        reader.IsDBNull(4) ? null : reader.GetString(4),
+                        reader.IsDBNull(5) ? null : reader.GetString(5),
+                        reader.IsDBNull(6) ? 0 : reader.GetInt32(6),
+                        !reader.IsDBNull(7) && reader.GetBoolean(7),
+                        reader.IsDBNull(8) ? null : reader.GetString(8)
+                    ));
+                }
+            }
+
+            if (rows.Count == 0) return new List<ClientMenusSpec>();
+
+            var idToUrl = rows
+                .Where(r => !string.IsNullOrWhiteSpace(r.Url))
+                .ToDictionary(r => r.Id, r => r.Url!.Trim(), comparer: EqualityComparer<long>.Default);
+
+            var grouped = new Dictionary<string, List<ClientMenuItemSpec>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var r in rows)
+            {
+                var clientType = r.ClientType?.Trim();
+                if (string.IsNullOrWhiteSpace(clientType) || !allowedClientTypes.Contains(clientType))
+                    continue;
+                var normalized = clientType.ToUpperInvariant();
+                if (!grouped.TryGetValue(normalized, out var list))
+                {
+                    list = new List<ClientMenuItemSpec>();
+                    grouped[normalized] = list;
+                }
+
+                string? parentPath = null;
+                if (r.ParentId.HasValue && idToUrl.TryGetValue(r.ParentId.Value, out var pu))
+                    parentPath = pu;
+
+                list.Add(new ClientMenuItemSpec
+                {
+                    Title = r.Title,
+                    Icon = r.Icon,
+                    Path = r.Url ?? string.Empty,
+                    Badge = r.Badge,
+                    RequireGrant = r.RequireGrant,
+                    Order = r.OrderNo,
+                    ParentPath = parentPath
+                });
+            }
+
+            return grouped
+                .OrderBy(kv => kv.Key, StringComparer.Ordinal)
+                .Select(kv => new ClientMenusSpec
+                {
+                    ClientType = kv.Key,
+                    Items = kv.Value.OrderBy(x => x.Order).ThenBy(x => x.Path, StringComparer.Ordinal).ToList()
+                })
+                .ToList();
+        }
+
+        /// <summary>
+        /// 导出指定模块在主框架共享字典表中的数据为幂等 INSERT SQL（写入 ini_data.sql）。
+        /// </summary>
+        public async Task<string> ExportModuleDictionarySqlAsync(string moduleId, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(moduleId)) return string.Empty;
+
+            using var scope = _services.CreateScope();
+            var conn = GetSqlSugarConnection(scope.ServiceProvider);
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync(ct);
+
+            var sb = new System.Text.StringBuilder();
+            var dictCount = 0;
+            var itemCount = 0;
+
+            // 字典分类
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT * FROM ginkgo_Sys_Dictionary WHERE Module=@m AND (IsDeleted=0 OR IsDeleted IS NULL) ORDER BY Id";
+                var p = cmd.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; cmd.Parameters.Add(p);
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                var fieldCount = reader.FieldCount;
+                var columns = Enumerable.Range(0, fieldCount).Select(i => reader.GetName(i)).ToList();
+                while (await reader.ReadAsync(ct))
+                {
+                    if (dictCount == 0) sb.AppendLine("-- 字典分类");
+                    dictCount++;
+                    sb.AppendLine(BuildInsertLine("ginkgo_Sys_Dictionary", columns, reader, fieldCount));
+                }
+            }
+
+            if (dictCount > 0) sb.AppendLine();
+
+            // 字典条目（含挂在该模块分类下的项）
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = @"
+SELECT * FROM ginkgo_Sys_DictionaryItem
+WHERE (Module=@m OR DictId IN (SELECT Id FROM ginkgo_Sys_Dictionary WHERE Module=@m))
+  AND (IsDeleted=0 OR IsDeleted IS NULL)
+ORDER BY DictId, SortOrder, Id";
+                var p = cmd.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; cmd.Parameters.Add(p);
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                var fieldCount = reader.FieldCount;
+                var columns = Enumerable.Range(0, fieldCount).Select(i => reader.GetName(i)).ToList();
+                while (await reader.ReadAsync(ct))
+                {
+                    if (itemCount == 0) sb.AppendLine("-- 字典条目");
+                    itemCount++;
+                    sb.AppendLine(BuildInsertLine("ginkgo_Sys_DictionaryItem", columns, reader, fieldCount));
+                }
+            }
+
+            return dictCount + itemCount == 0 ? string.Empty : sb.ToString().TrimEnd();
+        }
+
+        private string BuildInsertLine(string tableName, List<string> columnNames, System.Data.Common.DbDataReader reader, int fieldCount)
+        {
+            var values = new List<string>();
+            for (int i = 0; i < fieldCount; i++)
+                values.Add(FormatSqlLiteral(reader.IsDBNull(i) ? null : reader.GetValue(i)));
+
+            var quotedCols = columnNames.Select(c => _dialect.QuoteIdentifier(c));
+            var insert = $"INSERT INTO {_dialect.QuoteIdentifier(tableName)} ({string.Join(", ", quotedCols)}) VALUES ({string.Join(", ", values)})";
+            return _dialect.ToIdempotentInsert(insert) + ";";
+        }
+
+        private static string FormatSqlLiteral(object? val)
+        {
+            if (val == null || val is DBNull) return "NULL";
+            if (val is string s) return $"'{s.Replace("'", "''").Replace("\\", "\\\\")}'";
+            if (val is DateTime dt) return $"'{dt:yyyy-MM-dd HH:mm:ss.ffffff}'";
+            if (val is bool b) return b ? "1" : "0";
+            if (val is byte[] bytes) return $"0x{BitConverter.ToString(bytes).Replace("-", "")}";
+            return val.ToString() ?? "NULL";
+        }
+
     }
 

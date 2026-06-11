@@ -139,6 +139,12 @@ public sealed class MenuGroupItem : AuditableEntity
     [SugarColumn(ColumnDescription = "是否需要授权（0=公共可见 1=需授权）")]
     public bool RequireGrant { get; set; }
 
+    /// <summary>
+    /// 是否设为 UNIAPP 框架启动首页（仅 default-uniapp 默认菜单组内互斥生效，全局至多一项为 true）。
+    /// </summary>
+    [SugarColumn(ColumnDescription = "是否设为UNIAPP框架启动首页")]
+    public bool IsUniappHome { get; set; }
+
     // ===== 领域行为 =====
 
     /// <summary>
@@ -207,6 +213,11 @@ public sealed class MenuGroupItem : AuditableEntity
     /// 设置排序号。
     /// </summary>
     public void SetOrder(int order) => Order = order;
+
+    /// <summary>
+    /// 设置/取消 UNIAPP 框架启动首页标记。
+    /// </summary>
+    public void SetUniappHome(bool enabled) => IsUniappHome = enabled;
 
     /// <summary>
     /// 启用。

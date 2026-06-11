@@ -101,6 +101,16 @@ public sealed class UserDetailDto
     /// 手机号。
     /// </summary>
     public string? Phone { get; set; }
+
+    /// <summary>
+    /// 部门名称集合。
+    /// </summary>
+    public List<string> DepartmentNames { get; set; } = new();
+
+    /// <summary>
+    /// 角色名称集合。
+    /// </summary>
+    public List<string> RoleNames { get; set; } = new();
 }
 
 /// <summary>

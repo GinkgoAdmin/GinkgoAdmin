@@ -759,6 +759,10 @@
             <el-text type="info" size="small" style="margin-left: 24px;">勾选后将根据 module.json 的 tablePrefix 从真实数据库导出最新表结构，覆盖打包内 install.sql；不勾选则沿用磁盘上的 install.sql</el-text>
             <el-checkbox v-model="packageForm.exportDbData" :disabled="!packageForm.exportDbSchema" style="margin-top: 4px;">真实数据内容</el-checkbox>
             <el-text type="info" size="small" style="margin-left: 24px;">需先勾选“真实数据结构”。将按主键降序每表最多导出 100 行数据，生成 init_data.sql 并注入 install.json 的 SqlScripts</el-text>
+            <el-checkbox v-model="packageForm.exportClientMenus" style="margin-top: 4px;">导出多客户端菜单</el-checkbox>
+            <el-text type="info" size="small" style="margin-left: 24px;">写入 install.json 的 ClientMenus 段（安装注入、卸载按 Module 清理）</el-text>
+            <el-checkbox v-model="packageForm.exportDictionary" style="margin-top: 4px;">导出字典</el-checkbox>
+            <el-text type="info" size="small" style="margin-left: 24px;">导出至 sql/ini_data.sql 并注册 SqlScripts</el-text>
             <el-text type="warning" size="small" style="margin-top: 4px;">以上操作仅影响生成的 ZIP 内容，不会修改磁盘上插件的任何原始文件</el-text>
           </div>
         </el-form-item>
@@ -1883,7 +1887,7 @@ const installChannel = ref<string>('stable')
 const installGrayscaleTenants = ref<string>('')
 
 const showPackageDialog = ref(false)
-const packageForm = reactive({ moduleId: '', packageType: 'compiled', exportDbSchema: false, exportDbData: false, sanitizeConfig: true })
+const packageForm = reactive({ moduleId: '', packageType: 'compiled', exportDbSchema: false, exportDbData: false, exportClientMenus: false, exportDictionary: false, sanitizeConfig: true })
 const packageableModules = ref<PackageableModule[]>([])
 const loadingPackageable = ref(false)
 const packaging = ref(false)
@@ -2665,7 +2669,7 @@ const loadPackageableModules = async () => {
   try { const result = await moduleApi.getPackageableModules(); packageableModules.value = result.modules || [] } catch (error: unknown) { ElMessage.error(`加载可打包模块失败: ${error instanceof Error ? error.message : '加载失败'}`) } finally { loadingPackageable.value = false }
 }
 
-const resetPackageForm = () => { packageForm.moduleId = ''; packageForm.packageType = 'compiled'; packageForm.exportDbSchema = false; packageForm.exportDbData = false; packageForm.sanitizeConfig = true; packageProgress.value = 0; packageResult.value = null; packaging.value = false }
+const resetPackageForm = () => { packageForm.moduleId = ''; packageForm.packageType = 'compiled'; packageForm.exportDbSchema = false; packageForm.exportDbData = false; packageForm.exportClientMenus = false; packageForm.exportDictionary = false; packageForm.sanitizeConfig = true; packageProgress.value = 0; packageResult.value = null; packaging.value = false }
 
 // 当前选中的可打包模块是否为源码版（server 目录有 .csproj）。
 // 只有源码版才能打"源码包"，已编译 DLL 版只能重新打"编译包"。
@@ -2693,7 +2697,7 @@ const handlePackage = async () => {
   if (!packageForm.moduleId) return
   packaging.value = true; packageProgress.value = 0
   const progressInterval = setInterval(() => { if (packageProgress.value < 90) packageProgress.value += 10 }, 200)
-  try { packageResult.value = await moduleApi.packageModule(packageForm.moduleId, packageForm.packageType, packageForm.exportDbSchema, packageForm.exportDbData, packageForm.sanitizeConfig); packageProgress.value = 100 } catch (error: unknown) { packageResult.value = { ok: false, message: error instanceof Error ? error.message : '打包失败' } } finally { clearInterval(progressInterval); packaging.value = false }
+  try { packageResult.value = await moduleApi.packageModule(packageForm.moduleId, packageForm.packageType, packageForm.exportDbSchema, packageForm.exportDbData, packageForm.sanitizeConfig, packageForm.exportClientMenus, packageForm.exportDictionary); packageProgress.value = 100 } catch (error: unknown) { packageResult.value = { ok: false, message: error instanceof Error ? error.message : '打包失败' } } finally { clearInterval(progressInterval); packaging.value = false }
 }
 
 const handleDownloadPackage = async () => {
@@ -2705,7 +2709,9 @@ const handleDownloadPackage = async () => {
       packageForm.packageType,
       packageForm.exportDbSchema,
       packageForm.exportDbData,
-      packageForm.sanitizeConfig
+      packageForm.sanitizeConfig,
+      packageForm.exportClientMenus,
+      packageForm.exportDictionary
     )
     const blob = new Blob([response], { type: 'application/zip' })
     const url = window.URL.createObjectURL(blob)

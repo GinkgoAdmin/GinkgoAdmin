@@ -137,6 +137,11 @@ public interface IMenuGroupAppService
     /// </summary>
     Task SetRoleMenuGroupItemsAsync(SetRoleMenuGroupItemsInput input, CancellationToken ct = default);
 
+    /// <summary>
+    /// 设置/取消菜单项为 UNIAPP 框架启动首页（仅 default-uniapp 默认组可用，组内互斥）。
+    /// </summary>
+    Task SetUniappHomeAsync(long groupId, long itemId, bool enabled, long? operatorId, CancellationToken ct = default);
+
     // ===== 安装链路客户端入口注入 / 清理 =====
 
     /// <summary>

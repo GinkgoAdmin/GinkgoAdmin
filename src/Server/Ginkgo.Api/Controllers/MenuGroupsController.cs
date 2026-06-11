@@ -5,6 +5,7 @@ using Ginkgo.Application.Menus;
 using Ginkgo.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Ginkgo.Api.Controllers;
 
@@ -17,11 +18,14 @@ namespace Ginkgo.Api.Controllers;
 [ApiVersion("1.0")]
 public sealed class MenuGroupsController : ControllerBase
 {
+    private const string PublicSettingsCacheKey = "settings:public-list";
     private readonly IMenuGroupAppService _service;
+    private readonly IMemoryCache _memoryCache;
 
-    public MenuGroupsController(IMenuGroupAppService service)
+    public MenuGroupsController(IMenuGroupAppService service, IMemoryCache memoryCache)
     {
         _service = service;
+        _memoryCache = memoryCache;
     }
 
     /// <summary>
@@ -264,6 +268,24 @@ public sealed class MenuGroupsController : ControllerBase
     {
         await _service.SetRoleMenuGroupItemsAsync(input);
         return Result.Success("设置成功");
+    }
+
+    /// <summary>
+    /// 设置菜单项为 UNIAPP 框架启动首页（仅 default-uniapp 默认组可用，组内互斥）。
+    /// </summary>
+    [HttpPut("{groupId}/items/{id}/set-uniapp-home")]
+    public async Task<Result> SetUniappHomeAsync(long groupId, long id, [FromBody] SetUniappHomeInput input)
+    {
+        try
+        {
+            await _service.SetUniappHomeAsync(groupId, id, input.Enabled, GetCurrentUserId());
+            _memoryCache.Remove(PublicSettingsCacheKey);
+            return Result.Success(input.Enabled ? "已设为 UNIAPP 框架首页" : "已取消 UNIAPP 框架首页");
+        }
+        catch (InvalidOperationException ioe)
+        {
+            return Result.Fail(400, ioe.Message);
+        }
     }
 
     /// <summary>

@@ -156,10 +156,17 @@ public sealed class ModuleInstaller
                     _logger.LogInformation("[UninstallAsync] 读取到 install.json, RootCode: {RootCode}, 菜单项数: {Count}", 
                         spec.Menus?.RootCode ?? "(无)", spec.Menus?.Items?.Count ?? 0);
                     
-                    // 通过 install.json 清理菜单
+                    // 通过 install.json 清理后台 RBAC 菜单
                     await _sql.RemoveMenusAsync(spec, ct);
                     menusRemoved = true;
-                    _logger.LogInformation("[UninstallAsync] 已通过 install.json 删除菜单");
+                    _logger.LogInformation("[UninstallAsync] 已通过 install.json 删除后台菜单");
+
+                    // 若 install.json 声明了 ClientMenus，同步清理多客户端入口（MenuGroupItem）
+                    if (spec.ClientMenus != null && spec.ClientMenus.Count > 0)
+                    {
+                        await _sql.RemoveClientMenusByModuleAsync(moduleId, ct);
+                        _logger.LogInformation("[UninstallAsync] 已按 install.json ClientMenus 配置清理多客户端入口（Module={ModuleId}）", moduleId);
+                    }
                     
                     // 执行卸载 SQL 脚本
                     if (spec.UninstallSql != null && spec.UninstallSql.Length > 0)

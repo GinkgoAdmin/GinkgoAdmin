@@ -1618,8 +1618,10 @@ public sealed class ModulesController : ControllerBase
     /// <param name="IncludeData">（旧参数，保持向后兼容）是否包含数据库数据</param>
     /// <param name="ExportDbSchema">是否从真实数据库导出表结构替代安装SQL</param>
     /// <param name="ExportDbData">是否从真实数据库导出表数据</param>
+    /// <param name="ExportClientMenus">是否导出多客户端菜单到 install.json</param>
+    /// <param name="ExportDictionary">是否导出插件字典到 ini_data.sql</param>
     /// <param name="SanitizeConfig">是否对插件配置文件做脱敏处理（清空 items[].value 真实值），默认 true</param>
-    public sealed record PackageRequest(string ModuleId, string PackageType = "source", bool IncludeData = false, bool ExportDbSchema = false, bool ExportDbData = false, bool SanitizeConfig = true);
+    public sealed record PackageRequest(string ModuleId, string PackageType = "source", bool IncludeData = false, bool ExportDbSchema = false, bool ExportDbData = false, bool ExportClientMenus = false, bool ExportDictionary = false, bool SanitizeConfig = true);
 
     [HttpPost("package")]
     public async Task<IActionResult> PackageModuleAsync(
@@ -1638,7 +1640,7 @@ public sealed class ModulesController : ControllerBase
         if (exportData && !exportSchema)
             return BadRequest(new { ok = false, message = "勾选“真实数据内容”时必须同时勾选“真实数据结构”" });
 
-        var result = await packageService.PackageModuleAsync(req.ModuleId, req.PackageType ?? "source", exportSchema, exportData, req.SanitizeConfig, ct);
+        var result = await packageService.PackageModuleAsync(req.ModuleId, req.PackageType ?? "source", exportSchema, exportData, req.SanitizeConfig, ct, progress: null, exportClientMenus: req.ExportClientMenus, exportDictionary: req.ExportDictionary);
 
         if (!result.Ok)
         {
@@ -1670,6 +1672,8 @@ public sealed class ModulesController : ControllerBase
         [FromQuery] bool includeData = false,
         [FromQuery] bool exportDbSchema = false,
         [FromQuery] bool exportDbData = false,
+        [FromQuery] bool exportClientMenus = false,
+        [FromQuery] bool exportDictionary = false,
         [FromQuery] bool sanitizeConfig = true,
         [FromServices] ModulePackageService packageService = null!,
         CancellationToken ct = default)
@@ -1680,7 +1684,7 @@ public sealed class ModulesController : ControllerBase
         // 向后兼容：旧的 includeData=true 等价于同时导出结构和数据
         var schema = exportDbSchema || includeData;
         var data = exportDbData || includeData;
-        var result = await packageService.PackageModuleAsync(moduleId, packageType, schema, data, sanitizeConfig, ct);
+        var result = await packageService.PackageModuleAsync(moduleId, packageType, schema, data, sanitizeConfig, ct, progress: null, exportClientMenus: exportClientMenus, exportDictionary: exportDictionary);
 
         if (!result.Ok || result.PackagePath == null)
         {

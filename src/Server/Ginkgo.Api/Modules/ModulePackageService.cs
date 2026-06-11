@@ -153,9 +153,11 @@ public sealed class ModulePackageService
     /// <param name="exportDbSchema">是否从真实数据库导出表结构替代安装SQL</param>
     /// <param name="exportDbData">是否从真实数据库导出表数据（需同时开启 exportDbSchema）</param>
     /// <param name="sanitizeConfig">是否对插件配置文件做脱敏处理（清空 items[].value 真实值，仅保留键和结构），默认 true</param>
+    /// <param name="exportClientMenus">是否从数据库导出多客户端菜单（ClientMenus）写入 install.json</param>
+    /// <param name="exportDictionary">是否从数据库导出插件字典写入 ini_data.sql</param>
     /// <param name="ct">取消令牌</param>
     /// <param name="progress">可选进度回调（供打包插件实时写入步骤日志）</param>
-    public async Task<ModulePackageResult> PackageModuleAsync(string moduleId, string packageType = "source", bool exportDbSchema = false, bool exportDbData = false, bool sanitizeConfig = true, CancellationToken ct = default, IProgress<string>? progress = null)
+    public async Task<ModulePackageResult> PackageModuleAsync(string moduleId, string packageType = "source", bool exportDbSchema = false, bool exportDbData = false, bool sanitizeConfig = true, CancellationToken ct = default, IProgress<string>? progress = null, bool exportClientMenus = false, bool exportDictionary = false)
     {
         var result = new ModulePackageResult { PackageType = packageType };
 
@@ -394,7 +396,7 @@ public sealed class ModulePackageService
             // 步骤 8: 数据库导出（表结构 + 可选数据 + 菜单同步）
             // ============================================================
             result.Steps.Add("[8/10] 数据库导出...");
-            await ExportDatabaseAsync(moduleDir, moduleId, stagingDir, exportDbSchema, exportDbData, manifest, result, progress, ct);
+            await ExportDatabaseAsync(moduleDir, moduleId, stagingDir, exportDbSchema, exportDbData, exportClientMenus, exportDictionary, manifest, result, progress, ct);
 
             // ============================================================
             // 步骤 9: 生成 install-manifest.json
@@ -511,7 +513,7 @@ public sealed class ModulePackageService
     /// <summary>
     /// 导出数据库（三种模式：源文件直接复制 / 真实结构导出 / 真实结构+数据导出）
     /// </summary>
-    private async Task ExportDatabaseAsync(string moduleDir, string moduleId, string stagingDir, bool exportDbSchema, bool exportDbData, ModuleManifest manifest, ModulePackageResult result, IProgress<string>? progress, CancellationToken ct)
+    private async Task ExportDatabaseAsync(string moduleDir, string moduleId, string stagingDir, bool exportDbSchema, bool exportDbData, bool exportClientMenus, bool exportDictionary, ModuleManifest manifest, ModulePackageResult result, IProgress<string>? progress, CancellationToken ct)
     {
         void Step(string msg)
         {
@@ -628,8 +630,20 @@ public sealed class ModulePackageService
             }
         }
 
-        // 菜单同步始终执行
+        // 后台 RBAC 菜单同步（install.json Menus 段，始终尝试）
         await SyncMenusToInstallJsonAsync(serverDir, stagingDir, result, ct);
+
+        // 多客户端菜单：勾选后从 ginkgo_Sys_MenuGroupItem 导出到 install.json ClientMenus 段
+        if (exportClientMenus)
+            await SyncClientMenusToInstallJsonAsync(serverDir, stagingDir, moduleId, result, ct);
+        else
+            Step("  多客户端菜单导出: 跳过（未勾选）");
+
+        // 插件字典：勾选后导出到 ini_data.sql 并注册到 install.json SqlScripts
+        if (exportDictionary)
+            await ExportDictionaryToIniDataAsync(serverDir, stagingDir, moduleId, result, ct);
+        else
+            Step("  字典导出: 跳过（未勾选）");
     }
 
     /// <summary>
@@ -842,6 +856,130 @@ public sealed class ModulePackageService
         {
             _logger.LogWarning(ex, "同步菜单数据到 install.json 失败");
             result.Steps.Add($"  菜单同步失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 从数据库导出插件的多客户端入口（MenuGroupItem），写入 install.json 的 ClientMenus 段。
+    /// 安装/卸载时通过 ClientMenus 配置注入与按 Module 清理，无需写入 ini_data.sql。
+    /// </summary>
+    private async Task SyncClientMenusToInstallJsonAsync(string serverDir, string stagingDir, string moduleId, ModulePackageResult result, CancellationToken ct)
+    {
+        var installJsonPath = Path.Combine(stagingDir, "server", "install.json");
+        if (!File.Exists(installJsonPath))
+        {
+            var srcInstallJson = Path.Combine(serverDir, "install.json");
+            if (!File.Exists(srcInstallJson))
+            {
+                result.Steps.Add("  多客户端菜单导出: 跳过（无 install.json）");
+                return;
+            }
+            var targetDir = Path.Combine(stagingDir, "server");
+            if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
+            File.Copy(srcInstallJson, installJsonPath, true);
+        }
+
+        try
+        {
+            var clientMenus = await _sqlExecutor.ExportClientMenusAsync(moduleId, ct);
+            if (clientMenus == null || clientMenus.Count == 0)
+            {
+                result.Steps.Add($"  多客户端菜单导出: 跳过（数据库中无 Module={moduleId} 的客户端入口）");
+                return;
+            }
+
+            var installJson = await File.ReadAllTextAsync(installJsonPath, ct);
+            var installNode = JsonNode.Parse(installJson);
+            if (installNode == null)
+            {
+                result.Steps.Add("  多客户端菜单导出: 跳过（install.json 解析失败）");
+                return;
+            }
+
+            var clientMenusArray = new JsonArray();
+            var totalItems = 0;
+            foreach (var decl in clientMenus)
+            {
+                var declNode = new JsonObject { ["clientType"] = decl.ClientType };
+                var itemsArray = new JsonArray();
+                foreach (var it in decl.Items ?? new List<ModuleSqlExecutor.ClientMenuItemSpec>())
+                {
+                    var itemNode = new JsonObject
+                    {
+                        ["title"] = it.Title,
+                        ["path"] = it.Path,
+                        ["requireGrant"] = it.RequireGrant,
+                        ["order"] = it.Order
+                    };
+                    if (!string.IsNullOrWhiteSpace(it.Icon)) itemNode["icon"] = it.Icon;
+                    if (!string.IsNullOrWhiteSpace(it.Badge)) itemNode["badge"] = it.Badge;
+                    if (!string.IsNullOrWhiteSpace(it.ParentPath)) itemNode["parentPath"] = it.ParentPath;
+                    itemsArray.Add(itemNode);
+                    totalItems++;
+                }
+                declNode["items"] = itemsArray;
+                clientMenusArray.Add(declNode);
+            }
+            installNode["ClientMenus"] = clientMenusArray;
+
+            var formattedJson = JsonSerializer.Serialize(installNode, CreateReadableJsonOptions());
+            await File.WriteAllTextAsync(installJsonPath, formattedJson, System.Text.Encoding.UTF8, ct);
+            result.Steps.Add($"  多客户端菜单导出: OK（{clientMenus.Count} 个终端，共 {totalItems} 个入口 → install.json ClientMenus）");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "导出多客户端菜单到 install.json 失败");
+            result.Steps.Add($"  多客户端菜单导出失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 从数据库导出插件字典（ginkgo_Sys_Dictionary / DictionaryItem），写入 ini_data.sql 并注册到 SqlScripts。
+    /// </summary>
+    private async Task ExportDictionaryToIniDataAsync(string serverDir, string stagingDir, string moduleId, ModulePackageResult result, CancellationToken ct)
+    {
+        try
+        {
+            var dictSql = await _sqlExecutor.ExportModuleDictionarySqlAsync(moduleId, ct);
+            if (string.IsNullOrWhiteSpace(dictSql))
+            {
+                result.Steps.Add($"  字典导出: 跳过（数据库中无 Module={moduleId} 的字典数据）");
+                return;
+            }
+
+            const string iniRelPath = "sql/ini_data.sql";
+            var targetPath = Path.Combine(stagingDir, "server", iniRelPath);
+            var targetDir = Path.GetDirectoryName(targetPath);
+            if (targetDir != null && !Directory.Exists(targetDir))
+                Directory.CreateDirectory(targetDir);
+
+            if (File.Exists(targetPath))
+            {
+                var existing = await File.ReadAllTextAsync(targetPath, ct);
+                var merged = existing.TrimEnd() + Environment.NewLine + Environment.NewLine
+                    + "-- ============================================================" + Environment.NewLine
+                    + "-- 以下内容由打包器自动追加：插件字典导出" + Environment.NewLine
+                    + "-- ============================================================" + Environment.NewLine
+                    + dictSql;
+                await File.WriteAllTextAsync(targetPath, merged, System.Text.Encoding.UTF8, ct);
+            }
+            else
+            {
+                var header = "-- ============================================================" + Environment.NewLine
+                    + "-- 插件初始化数据（字典等，由打包器自动生成）" + Environment.NewLine
+                    + $"-- Module: {moduleId}" + Environment.NewLine
+                    + "-- ============================================================" + Environment.NewLine + Environment.NewLine;
+                await File.WriteAllTextAsync(targetPath, header + dictSql, System.Text.Encoding.UTF8, ct);
+            }
+
+            result.IncludedFiles.Add($"server/{iniRelPath}");
+            await RegisterSqlScriptInInstallJsonAsync(stagingDir, serverDir, iniRelPath, ct);
+            result.Steps.Add($"  字典导出: OK → {iniRelPath}（安装时随 SqlScripts 一并执行；卸载时按 Module 自动清理）");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "导出插件字典失败");
+            result.Steps.Add($"  字典导出失败: {ex.Message}");
         }
     }
 

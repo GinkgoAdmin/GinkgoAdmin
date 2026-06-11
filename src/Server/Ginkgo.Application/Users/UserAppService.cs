@@ -332,6 +332,26 @@ public sealed class UserAppService : IUserAppService
     {
         var entity = await _userRepoBasic.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
+
+        var roleIds = await _userRoleRepository.GetRoleIdsAsync(id, cancellationToken);
+        var deptIds = await _userDepartmentRepository.GetDepartmentIdsAsync(id, cancellationToken);
+
+        var roleMap = roleIds.Count == 0
+            ? new Dictionary<long, string>()
+            : _roleRepoBasic.Query()
+                .Where(r => roleIds.Contains(r.Id))
+                .Select(r => new { r.Id, r.Name })
+                .ToList()
+                .ToDictionary(x => x.Id, x => x.Name);
+
+        var deptMap = deptIds.Count == 0
+            ? new Dictionary<long, string>()
+            : _deptRepoBasic.Query()
+                .Where(d => deptIds.Contains(d.Id))
+                .Select(d => new { d.Id, d.Name })
+                .ToList()
+                .ToDictionary(x => x.Id, x => x.Name);
+
         return new UserDetailDto
         {
             Id = entity.Id,
@@ -341,7 +361,15 @@ public sealed class UserAppService : IUserAppService
             Introduction = entity.Introduction,
             Email = entity.Email,
             Phone = entity.Phone,
-            Enabled = entity.Enabled
+            Enabled = entity.Enabled,
+            RoleNames = roleIds.Select(rid => roleMap.TryGetValue(rid, out var n) ? n : null)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Select(n => n!)
+                .ToList(),
+            DepartmentNames = deptIds.Select(did => deptMap.TryGetValue(did, out var n) ? n : null)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Select(n => n!)
+                .ToList()
         };
     }
 

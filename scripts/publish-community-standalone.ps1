@@ -114,6 +114,132 @@ function Copy-OptionalSubDir {
     Copy-Item -LiteralPath (Join-Path $SourceSubDir "*") -Destination $out -Recurse -Force
 }
 
+function Resolve-ModuleVersion {
+    param(
+        [string]$ManifestPath,
+        [string]$EntryDllPath,
+        [string]$Default = "1.0.0"
+    )
+    $version = Read-ModuleJsonField -JsonPath $ManifestPath -FieldName "version" -Default $Default
+    if (-not (Test-Path -LiteralPath $EntryDllPath)) { return $version }
+    try {
+        $asmVer = [System.Reflection.AssemblyName]::GetAssemblyName($EntryDllPath).Version
+        if ($asmVer -and $asmVer.Build -ge 0) {
+            return "$($asmVer.Major).$($asmVer.Minor).$($asmVer.Build)"
+        }
+    }
+    catch { }
+    return $version
+}
+
+# 写入生产环境标准 manifest：modules/{id}/{version}/module.json
+# entryAssembly 相对版本目录，例如 server/Ginkgo.Module.X.dll 或 server/bin/Ginkgo.Module.X.dll
+function Write-VersionRootModuleManifest {
+    param(
+        [string]$VersionDir,
+        [string]$SourceManifestPath,
+        [string]$ModId,
+        [string]$Version,
+        [string]$EntryAssemblyFromVersionRoot,
+        [bool]$HasWeb
+    )
+
+    $manifestObj = [ordered]@{
+        id        = $ModId
+        version   = $Version
+        hasClient = $HasWeb
+        server    = @{ entryAssembly = $EntryAssemblyFromVersionRoot }
+    }
+
+    if (Test-Path -LiteralPath $SourceManifestPath) {
+        try {
+            $src = Get-Content -LiteralPath $SourceManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            foreach ($field in @("name", "publisher", "description", "homepage", "author", "title", "tablePrefix", "SupportedClients", "dependencies", "minAppVersion")) {
+                if ($null -ne $src.PSObject.Properties[$field] -and $src.$field) {
+                    $manifestObj[$field] = $src.$field
+                }
+            }
+            if (-not $manifestObj.name) { $manifestObj.name = $ModId }
+        }
+        catch { }
+    }
+    if (-not $manifestObj.name) { $manifestObj.name = $ModId }
+
+    $outManifest = Join-Path $VersionDir "module.json"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($outManifest, ($manifestObj | ConvertTo-Json -Depth 6), $utf8NoBom)
+}
+
+function Copy-CompiledModulePackage {
+    param(
+        [string]$ModDirFullName,
+        [string]$ModName,
+        [string]$ServerDir,
+        [string]$ManifestPath,
+        [string]$ModulesOutputDir
+    )
+
+    $modId = Read-ModuleJsonField -JsonPath $ManifestPath -FieldName "id" -Default $modName
+    $modVersion = Read-ModuleJsonField -JsonPath $ManifestPath -FieldName "version" -Default "0.0.0"
+    $versionDir = Join-Path $ModulesOutputDir (Join-Path $modId $modVersion)
+    $targetServerDir = Join-Path $versionDir "server"
+
+    if (Test-Path -LiteralPath $versionDir) {
+        Remove-Item -LiteralPath $versionDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $targetServerDir -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $ServerDir "*") -Destination $targetServerDir -Recurse -Force
+
+    foreach ($rootFile in @("install-manifest.json", "README.md", "LICENSE", "CHANGELOG.md")) {
+        $rootPath = Join-Path $ModDirFullName $rootFile
+        if (Test-Path -LiteralPath $rootPath) {
+            Copy-Item -LiteralPath $rootPath -Destination $versionDir -Force
+        }
+    }
+
+    Copy-OptionalSubDir -SourceSubDir (Join-Path $ModDirFullName "web") -TargetDir $versionDir -SubName "web"
+    $hasWeb = Test-Path -LiteralPath (Join-Path $versionDir "web")
+
+    $entryAssembly = ""
+    try {
+        $srcManifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($srcManifest.server -and $srcManifest.server.entryAssembly) {
+            $entryAssembly = [string]$srcManifest.server.entryAssembly
+        }
+    }
+    catch { }
+
+    if ([string]::IsNullOrWhiteSpace($entryAssembly)) {
+        $entryAssembly = "bin/$modId.dll"
+    }
+    $entryAssembly = $entryAssembly.TrimStart('/', '\').Replace('\', '/')
+    if ($entryAssembly.StartsWith("server/", [StringComparison]::OrdinalIgnoreCase)) {
+        $versionRootEntry = $entryAssembly
+    }
+    else {
+        $versionRootEntry = "server/$entryAssembly"
+    }
+
+    Write-VersionRootModuleManifest `
+        -VersionDir $versionDir `
+        -SourceManifestPath $ManifestPath `
+        -ModId $modId `
+        -Version $modVersion `
+        -EntryAssemblyFromVersionRoot $versionRootEntry `
+        -HasWeb $hasWeb
+
+    # 避免 ScanProductionModules 递归扫描到 server/module.json 后重复加载同一模块
+    $serverManifest = Join-Path $targetServerDir "module.json"
+    if (Test-Path -LiteralPath $serverManifest) {
+        Remove-Item -LiteralPath $serverManifest -Force
+    }
+
+    return @{
+        ModId   = $modId
+        Version = $modVersion
+    }
+}
+
 function Sanitize-DbJson {
     param([string]$DbJsonPath)
     if (-not (Test-Path -LiteralPath $DbJsonPath)) { return }
@@ -229,22 +355,14 @@ else {
             $modId = Read-ModuleJsonField -JsonPath $manifestPath -FieldName "id" -Default $modName
             $modVersion = Read-ModuleJsonField -JsonPath $manifestPath -FieldName "version" -Default "0.0.0"
 
-            $targetServerDir = Join-Path $modulesOutputDir (Join-Path $modId (Join-Path $modVersion "server"))
-            if (Test-Path -LiteralPath $targetServerDir) {
-                Remove-Item -LiteralPath $targetServerDir -Recurse -Force
-            }
-            New-Item -ItemType Directory -Path $targetServerDir -Force | Out-Null
-            Copy-Item -LiteralPath (Join-Path $serverDir "*") -Destination $targetServerDir -Recurse -Force
+            $info = Copy-CompiledModulePackage `
+                -ModDirFullName $modDir.FullName `
+                -ModName $modName `
+                -ServerDir $serverDir `
+                -ManifestPath $manifestPath `
+                -ModulesOutputDir $modulesOutputDir
 
-            $targetVersionDir = Join-Path $modulesOutputDir (Join-Path $modId $modVersion)
-            foreach ($rootFile in @("install-manifest.json", "README.md", "LICENSE", "CHANGELOG.md")) {
-                $rootPath = Join-Path $modDir.FullName $rootFile
-                if (Test-Path -LiteralPath $rootPath) {
-                    Copy-Item -LiteralPath $rootPath -Destination $targetVersionDir -Force
-                }
-            }
-
-            Write-Host "  [compiled] $modId v$modVersion" -ForegroundColor Green
+            Write-Host "  [compiled] $($info.ModId) v$($info.Version) -> modules/$($info.ModId)/$($info.Version)/" -ForegroundColor Green
             $packedCompiled++
             continue
         }
@@ -269,46 +387,37 @@ else {
         }
 
         $modId = Read-ModuleJsonField -JsonPath $manifestPath -FieldName "id" -Default $modName
-        $modOutputDir = Join-Path $modulesOutputDir $modId
-        if (Test-Path -LiteralPath $modOutputDir) {
-            Remove-Item -LiteralPath $modOutputDir -Recurse -Force
-        }
-        New-Item -ItemType Directory -Path $modOutputDir -Force | Out-Null
+        $version = Resolve-ModuleVersion -ManifestPath $manifestPath -EntryDllPath $entryDllPath -Default "1.0.0"
+        $versionDir = Join-Path $modulesOutputDir (Join-Path $modId $version)
+        $targetServerDir = Join-Path $versionDir "server"
 
-        Copy-ModuleDlls -BuildDir $buildDir -EntryDll $entryDll -TargetDir $modOutputDir -HostDllNamesLower $hostDllNamesLower
-        Copy-OptionalSubDir -SourceSubDir (Join-Path $serverDir "sql") -TargetDir $modOutputDir -SubName "sql"
-        Copy-OptionalSubDir -SourceSubDir (Join-Path $serverDir "config") -TargetDir $modOutputDir -SubName "config"
-        Copy-OptionalSubDir -SourceSubDir (Join-Path $serverDir "data") -TargetDir $modOutputDir -SubName "data"
+        if (Test-Path -LiteralPath $versionDir) {
+            Remove-Item -LiteralPath $versionDir -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $targetServerDir -Force | Out-Null
+
+        Copy-ModuleDlls -BuildDir $buildDir -EntryDll $entryDll -TargetDir $targetServerDir -HostDllNamesLower $hostDllNamesLower
+        Copy-OptionalSubDir -SourceSubDir (Join-Path $serverDir "sql") -TargetDir $targetServerDir -SubName "sql"
+        Copy-OptionalSubDir -SourceSubDir (Join-Path $serverDir "config") -TargetDir $targetServerDir -SubName "config"
+        Copy-OptionalSubDir -SourceSubDir (Join-Path $serverDir "data") -TargetDir $targetServerDir -SubName "data"
+        Copy-OptionalSubDir -SourceSubDir (Join-Path $modDir.FullName "web") -TargetDir $versionDir -SubName "web"
 
         $installJson = Join-Path $serverDir "install.json"
         if (Test-Path -LiteralPath $installJson) {
-            Copy-Item -LiteralPath $installJson -Destination $modOutputDir -Force
+            Copy-Item -LiteralPath $installJson -Destination $targetServerDir -Force
         }
 
-        $version = Read-ModuleJsonField -JsonPath $manifestPath -FieldName "version" -Default "1.0.0"
-        try {
-            $asmVer = [System.Reflection.AssemblyName]::GetAssemblyName($entryDllPath).Version
-            if ($asmVer -and $asmVer.Build -ge 0) {
-                $version = "$($asmVer.Major).$($asmVer.Minor).$($asmVer.Build)"
-            }
-        }
-        catch { }
+        $hasWeb = Test-Path -LiteralPath (Join-Path $versionDir "web")
+        $versionRootEntry = "server/$entryDll"
+        Write-VersionRootModuleManifest `
+            -VersionDir $versionDir `
+            -SourceManifestPath $manifestPath `
+            -ModId $modId `
+            -Version $version `
+            -EntryAssemblyFromVersionRoot $versionRootEntry `
+            -HasWeb $hasWeb
 
-        $displayName = Read-ModuleJsonField -JsonPath $manifestPath -FieldName "name" -Default $modId
-        $hasWeb = Test-Path -LiteralPath (Join-Path $modDir.FullName "web")
-
-        $manifestObj = @{
-            id        = $modId
-            name      = $displayName
-            version   = $version
-            hasClient = $hasWeb
-            server    = @{ entryAssembly = $entryDll }
-        }
-        $outManifest = Join-Path $modOutputDir "module.json"
-        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
-        [System.IO.File]::WriteAllText($outManifest, ($manifestObj | ConvertTo-Json -Depth 4), $utf8NoBom)
-
-        Write-Host "  [source] $modId v$version" -ForegroundColor Green
+        Write-Host "  [source] $modId v$version -> modules/$modId/$version/" -ForegroundColor Green
         $packedSource++
     }
 }
@@ -320,13 +429,21 @@ if ($failed.Count -gt 0) {
 }
 
 $manifestCount = @(
-    Get-ChildItem -LiteralPath $modulesOutputDir -Recurse -Filter "module.json" -ErrorAction SilentlyContinue
+    Get-ChildItem -LiteralPath $modulesOutputDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+        Get-ChildItem -LiteralPath $_.FullName -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            Join-Path $_.FullName "module.json"
+        }
+    } | Where-Object { Test-Path -LiteralPath $_ }
 ).Count
 
 if ($manifestCount -eq 0) {
     Write-Host ""
-    Write-Host "  WARN: no module.json under modules/" -ForegroundColor Red
+    Write-Host "  WARN: no modules/{id}/{version}/module.json under modules/" -ForegroundColor Red
     Write-Host "  Install plugins first under src/Module/Ginkgo.Module.*/server/" -ForegroundColor Yellow
+}
+else {
+    Write-Host ""
+    Write-Host "  production layout: modules/{id}/{version}/module.json + server/ + web/" -ForegroundColor DarkCyan
 }
 
 Write-Host ""
@@ -411,10 +528,17 @@ Write-Host "Output: $publishDir" -ForegroundColor Green
 Write-Host "  API + modules/ + resource/ + wwwroot/" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Deploy:" -ForegroundColor Yellow
-Write-Host "  1. Upload entire output folder to server" -ForegroundColor Yellow
+Write-Host "  1. Upload entire output folder to server (keep modules/{id}/{version}/ layout)" -ForegroundColor Yellow
 Write-Host "  2. Edit resource/db.json on server" -ForegroundColor Yellow
 Write-Host "  3. dotnet Ginkgo.Api.dll in publish folder" -ForegroundColor Yellow
-Write-Host "  4. Check log: [Modules] TryLoad ... success=true" -ForegroundColor Yellow
+Write-Host "  4. Check log: [Modules] Module registered: ..." -ForegroundColor Yellow
+Write-Host "  5. First deploy: run module install SQL (install.json SqlScripts) if menus missing" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Module layout example:" -ForegroundColor DarkGray
+Write-Host "  modules/Ginkgo.Module.Evaluate/0.1.0/module.json" -ForegroundColor DarkGray
+Write-Host "  modules/Ginkgo.Module.Evaluate/0.1.0/server/Ginkgo.Module.Evaluate.dll" -ForegroundColor DarkGray
+Write-Host "  modules/Ginkgo.Module.Evaluate/0.1.0/server/install.json" -ForegroundColor DarkGray
+Write-Host "  modules/Ginkgo.Module.Evaluate/0.1.0/server/sql/install.sql" -ForegroundColor DarkGray
 Write-Host ""
 
 if ($manifestCount -eq 0) {

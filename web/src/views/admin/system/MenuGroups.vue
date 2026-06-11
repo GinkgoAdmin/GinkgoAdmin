@@ -89,6 +89,7 @@
                 <span class="col-url">链接地址</span>
                 <span class="col-target">打开方式</span>
                 <span class="col-perm">权限编码</span>
+                <span v-if="canSetUniappHome" class="col-uniapp-home">框架首页</span>
                 <span class="col-enabled">启用</span>
                 <span class="col-actions">操作</span>
               </div>
@@ -129,6 +130,20 @@
                     <span class="col-perm">
                       <code v-if="data.permissionCode" class="perm-code">{{ data.permissionCode }}</code>
                       <span v-else class="text-muted">-</span>
+                    </span>
+                    <span v-if="canSetUniappHome" class="col-uniapp-home">
+                      <el-tooltip
+                        :content="data.url ? '设为 UNIAPP 启动后默认打开的首页' : '请先配置链接地址'"
+                        placement="top"
+                      >
+                        <el-switch
+                          :model-value="!!data.isUniappHome"
+                          size="small"
+                          :disabled="!data.url"
+                          @click.stop
+                          @change="(v: boolean) => toggleUniappHome(data, v)"
+                        />
+                      </el-tooltip>
                     </span>
                     <span class="col-enabled">
                       <el-switch v-model="data.enabled" size="small" @click.stop @change="(v: boolean) => toggleItemEnabled(data, v)" />
@@ -338,6 +353,7 @@ import {
   getMenuGroups, getMenuGroupDetail, createMenuGroup, updateMenuGroup, deleteMenuGroup,
   getMenuGroupItems, createMenuGroupItem, updateMenuGroupItem, deleteMenuGroupItem,
   batchDeleteMenuGroupItems, importFromSystemMenu, sortMenuGroupItems,
+  setMenuGroupItemUniappHome,
   type MenuGroupListItem, type MenuGroupItemNode,
   type CreateMenuGroupInput, type UpdateMenuGroupInput,
   type CreateMenuGroupItemInput, type UpdateMenuGroupItemInput,
@@ -352,6 +368,14 @@ import { resolveResourcePath } from '@/utils/resourceUrl'
 const groups = ref<MenuGroupListItem[]>([])
 const currentGroupId = ref<string>('')
 const currentGroup = computed(() => groups.value.find(g => g.id === currentGroupId.value))
+/** 仅 default-uniapp 默认 UNIAPP 菜单组可设置框架启动首页 */
+const canSetUniappHome = computed(() => {
+  const g = currentGroup.value
+  if (!g) return false
+  return g.isDefault
+    && g.slug === 'default-uniapp'
+    && (g.clientType || '').split(',').map(s => s.trim().toUpperCase()).includes('UNIAPP')
+})
 const groupLoading = ref(false)
 
 // ===== 菜单项状态 =====
@@ -712,6 +736,17 @@ async function toggleItemEnabled(row: MenuGroupItemNode, val: boolean) {
   }
 }
 
+async function toggleUniappHome(row: MenuGroupItemNode, val: boolean) {
+  if (!currentGroupId.value || !row.url) return
+  try {
+    await setMenuGroupItemUniappHome(currentGroupId.value, row.id, val)
+    ElMessage.success(val ? '已设为 UNIAPP 框架首页' : '已取消 UNIAPP 框架首页')
+    await loadItems()
+  } catch (e: any) {
+    ElMessage.error(e.message || '设置失败')
+  }
+}
+
 function onItemSelectionChange(rows: MenuGroupItemNode[]) {
   selectedItemIds.value = rows.map(r => r.id)
 }
@@ -976,6 +1011,7 @@ function linkTypeTagType(type: string) {
 .col-url { width: 180px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-target { width: 70px; flex-shrink: 0; text-align: center; }
 .col-perm { width: 110px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.col-uniapp-home { width: 72px; flex-shrink: 0; text-align: center; }
 .col-enabled { width: 60px; flex-shrink: 0; text-align: center; }
 .col-actions { width: 140px; flex-shrink: 0; text-align: center; }
 

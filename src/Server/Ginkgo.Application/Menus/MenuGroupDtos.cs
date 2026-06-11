@@ -19,6 +19,7 @@ public sealed class MenuGroupListItemDto
     public string? Location { get; set; }
     public string? ClientType { get; set; }
     public bool IsSystem { get; set; }
+    public bool IsDefault { get; set; }
     public bool Enabled { get; set; }
     public int MaxDepth { get; set; }
     public string? Version { get; set; }
@@ -40,6 +41,7 @@ public sealed class MenuGroupDetailDto
     public string? Location { get; set; }
     public string? ClientType { get; set; }
     public bool IsSystem { get; set; }
+    public bool IsDefault { get; set; }
     public bool Enabled { get; set; }
     public int MaxDepth { get; set; }
     public string? Version { get; set; }
@@ -144,6 +146,11 @@ public sealed class MenuGroupItemDto
     /// 是否需要授权：false=对所有登录用户公共可见；true=仅超管或经角色授权用户可见。
     /// </summary>
     public bool RequireGrant { get; set; }
+
+    /// <summary>
+    /// 是否设为 UNIAPP 框架启动首页（仅 default-uniapp 默认菜单组可操作）。
+    /// </summary>
+    public bool IsUniappHome { get; set; }
 
     /// <summary>
     /// 子菜单项列表（树形）。
@@ -260,6 +267,11 @@ public sealed class MenuGroupItemSortInput
     public long Id { get; set; }
     public long? ParentId { get; set; }
     public int Order { get; set; }
+}
+
+public sealed class SetUniappHomeInput
+{
+    public bool Enabled { get; set; }
 }
 
 // ===== 导航查询输出 =====
