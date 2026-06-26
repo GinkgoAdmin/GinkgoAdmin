@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Ginkgo.Domain.Utils;
 using Ginkgo.Infrastructure.Abstractions;
+using Ginkgo.Infrastructure.SqlTranslation;
 using SqlSugar;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -44,6 +45,20 @@ public sealed class ModuleSqlExecutor
         var provider = cfg["Database:Provider"]
             ?? throw new InvalidOperationException("未找到 Database:Provider 配置");
         _dialect = registry.Get(provider);
+    }
+
+    /// <summary>方言转义表名（PG 需双引号驼峰）。</summary>
+    private string T(string table) => _dialect.QuoteTable(null, table);
+
+    /// <summary>方言转义列名。</summary>
+    private string C(string column) => _dialect.QuoteIdentifier(column);
+
+    private async Task ApplyReferentialIntegritySessionAsync(
+        DbConnection conn, DbTransaction tx, bool enable, CancellationToken ct)
+    {
+        var sql = enable ? _dialect.SqlEnableReferentialIntegrity : _dialect.SqlDisableReferentialIntegrity;
+        if (string.IsNullOrWhiteSpace(sql)) return;
+        await ExecuteNonQueryInTxAsync(conn, tx, sql, ct);
     }
 
     /// <summary>
@@ -125,7 +140,14 @@ public sealed class ModuleSqlExecutor
     /// 在事务中按顺序执行所有脚本。每个脚本文件独立事务（避免 MySQL DDL 隐式提交污染数据脚本回滚）。
     /// 模块安装 SQL 统一临时关闭外键检查（建表 + 数据），并支持大文件流式执行，无行数限制。
     /// </summary>
-    public async Task ExecuteScriptsAsync(IEnumerable<string> scriptPaths, CancellationToken ct)
+    public Task ExecuteScriptsAsync(IEnumerable<string> scriptPaths, CancellationToken ct)
+        => ExecuteScriptsAsync(scriptPaths, ct, scriptsAreNativeDialect: false);
+
+    /// <summary>
+    /// 在事务中按顺序执行所有脚本。
+    /// <paramref name="scriptsAreNativeDialect"/> 为 true 时跳过 MySQL→当前方言转写（脚本已是目标方言原生语法）。
+    /// </summary>
+    public async Task ExecuteScriptsAsync(IEnumerable<string> scriptPaths, CancellationToken ct, bool scriptsAreNativeDialect)
     {
         using var scope = _services.CreateScope();
         var conn = GetSqlSugarConnection(scope.ServiceProvider);
@@ -135,7 +157,7 @@ public sealed class ModuleSqlExecutor
         foreach (var path in scriptPaths)
         {
             if (!File.Exists(path)) continue;
-            await ExecuteSingleScriptFileAsync(conn, path, ct);
+            await ExecuteSingleScriptFileAsync(conn, path, ct, scriptsAreNativeDialect);
         }
     }
 
@@ -150,14 +172,14 @@ public sealed class ModuleSqlExecutor
     }
 
     /// <summary>执行单个 SQL 脚本文件（独立事务；全程关闭外键检查以避免建表/导数据顺序问题）。</summary>
-    private async Task ExecuteSingleScriptFileAsync(DbConnection conn, string path, CancellationToken ct)
+    private async Task ExecuteSingleScriptFileAsync(DbConnection conn, string path, CancellationToken ct, bool scriptsAreNativeDialect = false)
     {
         var useStream = new FileInfo(path).Length >= LargeScriptStreamThresholdBytes;
 
         using var tx = await conn.BeginTransactionAsync(ct);
         try
         {
-            await ExecuteNonQueryInTxAsync(conn, tx, "SET FOREIGN_KEY_CHECKS=0", ct);
+            await ApplyReferentialIntegritySessionAsync(conn, tx, enable: false, ct);
 
             var batchIndex = 0;
             if (useStream)
@@ -167,7 +189,7 @@ public sealed class ModuleSqlExecutor
                 foreach (var raw in EnumerateSqlBatches(reader))
                 {
                     batchIndex++;
-                    await ExecuteSqlBatchAsync(conn, tx, path, batchIndex, raw, ct);
+                    await ExecuteSqlBatchAsync(conn, tx, path, batchIndex, raw, ct, scriptsAreNativeDialect);
                 }
             }
             else
@@ -176,11 +198,11 @@ public sealed class ModuleSqlExecutor
                 foreach (var raw in _dialect.SplitBatches(sql))
                 {
                     batchIndex++;
-                    await ExecuteSqlBatchAsync(conn, tx, path, batchIndex, raw, ct);
+                    await ExecuteSqlBatchAsync(conn, tx, path, batchIndex, raw, ct, scriptsAreNativeDialect);
                 }
             }
 
-            await ExecuteNonQueryInTxAsync(conn, tx, "SET FOREIGN_KEY_CHECKS=1", ct);
+            await ApplyReferentialIntegritySessionAsync(conn, tx, enable: true, ct);
 
             await tx.CommitAsync(ct);
         }
@@ -192,7 +214,8 @@ public sealed class ModuleSqlExecutor
     }
 
     private async Task ExecuteSqlBatchAsync(
-        DbConnection conn, DbTransaction tx, string scriptPath, int batchIndex, string? raw, CancellationToken ct)
+        DbConnection conn, DbTransaction tx, string scriptPath, int batchIndex, string? raw, CancellationToken ct,
+        bool scriptsAreNativeDialect = false)
     {
         var batch = (raw ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(batch)) return;
@@ -204,7 +227,11 @@ public sealed class ModuleSqlExecutor
                 $"模块安装 SQL 触发危险关键字黑名单 '{forbidden}'，已拒绝执行（脚本: {Path.GetFileName(scriptPath)}, 批次 {batchIndex}）。");
         }
 
-        var executed = _dialect.TranslateMySqlDDL(batch);
+        var executed = scriptsAreNativeDialect ? batch : _dialect.TranslateMySqlDDL(batch);
+        if (string.IsNullOrWhiteSpace(executed) ||
+            executed.StartsWith("-- skipped", StringComparison.OrdinalIgnoreCase))
+            return;
+
         await ExecuteNonQueryInTxAsync(conn, tx, executed, ct);
     }
 
@@ -319,8 +346,12 @@ public sealed class ModuleSqlExecutor
     {
         public string? ModuleId { get; set; }
         public string? Description { get; set; }
+        /// <summary>为 true 时仅允许在 PostgreSQL 环境下加载/启用。</summary>
+        public bool RequirePostgreSql { get; set; }
         public string? SupportedClients { get; set; }
         public string[]? SqlScripts { get; set; }
+        /// <summary>按数据库方言映射的安装 SQL 脚本（键：mysql / postgresql / sqlserver）。</summary>
+        public Dictionary<string, string[]>? SqlScriptsByDialect { get; set; }
         public string[]? UninstallSql { get; set; }
         public Dictionary<string, object>? Config { get; set; }
         public Dictionary<string, string>? Constants { get; set; }
@@ -369,6 +400,8 @@ public sealed class ModuleSqlExecutor
         public string? RootName { get; set; }
         public string? RootIcon { get; set; }
         public string? RootSupportedClients { get; set; }
+        /// <summary>插件根目录在左侧导航中的排序（写入 ginkgo_Sys_Menu.OrderNo）</summary>
+        public int RootOrderNo { get; set; }
         public List<MenuItemSpec>? Items { get; set; }
     }
     public sealed class MenuItemSpec
@@ -387,7 +420,13 @@ public sealed class ModuleSqlExecutor
         public string? WebDisplayMode { get; set; }
         public string? SupportedClients { get; set; }
         public bool Hidden { get; set; }
+        /// <summary>同层菜单排序（写入 ginkgo_Sys_Menu.OrderNo）</summary>
         public int SortOrder { get; set; }
+        /// <summary>与 SortOrder 同义，兼容 install.json 中的 OrderNo 字段</summary>
+        public int OrderNo { get; set; }
+
+        /// <summary>解析最终排序：SortOrder 优先，其次 OrderNo</summary>
+        public int ResolveSortOrder() => SortOrder != 0 ? SortOrder : OrderNo;
     }
 
     public static InstallSpec? ReadInstallJson(string path)
@@ -422,28 +461,36 @@ public sealed class ModuleSqlExecutor
             long rootId;
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = "select Id from ginkgo_Sys_Menu where Code=@code";
+                cmd.CommandText = $"select {C("Id")} from {T("ginkgo_Sys_Menu")} where {C("Code")}=@code";
                 var p = cmd.CreateParameter(); p.ParameterName = "@code"; p.Value = spec.Menus.RootCode!; cmd.Parameters.Add(p);
                 var r = await cmd.ExecuteScalarAsync(ct);
                 if (r != null && long.TryParse(r.ToString(), out rootId))
                 {
-                    // 根目录已存在，总是更新 SupportedClients、Name、Icon、Module
+                    // 根目录已存在，总是更新 SupportedClients、Name、Icon、Module、OrderNo
+                    var rootOrder = spec.Menus.RootOrderNo > 0 ? spec.Menus.RootOrderNo : 0;
                     using var uc = conn.CreateCommand();
-                    uc.CommandText = $"update ginkgo_Sys_Menu set Module=@Module, SupportedClients=@sc, Name=@Name, Icon=@Icon, UpdatedAt={_dialect.UtcNowExpr} where Id=@Id";
+                    uc.CommandText = rootOrder > 0
+                        ? $"update {T("ginkgo_Sys_Menu")} set {C("Module")}=@Module, {C("SupportedClients")}=@sc, {C("Name")}=@Name, {C("Icon")}=@Icon, {C("OrderNo")}=@OrderNo, {C("UpdatedAt")}={_dialect.UtcNowExpr} where {C("Id")}=@Id"
+                        : $"update {T("ginkgo_Sys_Menu")} set {C("Module")}=@Module, {C("SupportedClients")}=@sc, {C("Name")}=@Name, {C("Icon")}=@Icon, {C("UpdatedAt")}={_dialect.UtcNowExpr} where {C("Id")}=@Id";
                     var u1 = uc.CreateParameter(); u1.ParameterName = "@Id"; u1.Value = rootId; uc.Parameters.Add(u1);
                     var u2 = uc.CreateParameter(); u2.ParameterName = "@sc"; u2.Value = (object?)rootSupportedClients ?? DBNull.Value; uc.Parameters.Add(u2);
                     var rootName = !string.IsNullOrWhiteSpace(spec.Menus.RootName) ? spec.Menus.RootName : moduleName;
                     var u3 = uc.CreateParameter(); u3.ParameterName = "@Name"; u3.Value = rootName; uc.Parameters.Add(u3);
                     var u4 = uc.CreateParameter(); u4.ParameterName = "@Icon"; u4.Value = (object?)spec.Menus.RootIcon ?? DBNull.Value; uc.Parameters.Add(u4);
                     var u5 = uc.CreateParameter(); u5.ParameterName = "@Module"; u5.Value = module; uc.Parameters.Add(u5);
+                    if (rootOrder > 0)
+                    {
+                        var u6 = uc.CreateParameter(); u6.ParameterName = "@OrderNo"; u6.Value = rootOrder; uc.Parameters.Add(u6);
+                    }
                     await uc.ExecuteNonQueryAsync(ct);
                 }
                 else
                 {
                     rootId = SnowflakeIdGenerator.NextId();
+                    var rootOrder = spec.Menus.RootOrderNo > 0 ? spec.Menus.RootOrderNo : 1;
                     using var ic = conn.CreateCommand();
-                    ic.CommandText = $@"insert into ginkgo_Sys_Menu(Id,Module,Name,Route,Type,ItemMode,Icon,Url,ParentId,OrderNo,Visible,Code,CreatedAt,IsDeleted,SupportedClients)
-values(@Id,@Module,@Name,@Route,'Directory',NULL,@Icon,NULL,50,1,1,@Code,{_dialect.UtcNowExpr},0,@SupportedClients)";
+                    ic.CommandText = $@"insert into {T("ginkgo_Sys_Menu")}({C("Id")},{C("Module")},{C("Name")},{C("Route")},{C("Type")},{C("ItemMode")},{C("Icon")},{C("Url")},{C("ParentId")},{C("OrderNo")},{C("Visible")},{C("Code")},{C("CreatedAt")},{C("IsDeleted")},{C("SupportedClients")})
+values(@Id,@Module,@Name,@Route,'Directory',NULL,@Icon,NULL,50,@OrderNo,@Visible,@Code,{_dialect.UtcNowExpr},@IsDeleted,@SupportedClients)";
                     var p1 = ic.CreateParameter(); p1.ParameterName = "@Id"; p1.Value = rootId; ic.Parameters.Add(p1);
                     // 优先使用 RootName，否则使用模块名
                     var rootName = !string.IsNullOrWhiteSpace(spec.Menus.RootName) ? spec.Menus.RootName : moduleName;
@@ -453,6 +500,9 @@ values(@Id,@Module,@Name,@Route,'Directory',NULL,@Icon,NULL,50,1,1,@Code,{_diale
                     var p5 = ic.CreateParameter(); p5.ParameterName = "@Icon"; p5.Value = (object?)spec.Menus.RootIcon ?? DBNull.Value; ic.Parameters.Add(p5);
                     var p6 = ic.CreateParameter(); p6.ParameterName = "@SupportedClients"; p6.Value = (object?)rootSupportedClients ?? DBNull.Value; ic.Parameters.Add(p6);
                     var p7 = ic.CreateParameter(); p7.ParameterName = "@Module"; p7.Value = module; ic.Parameters.Add(p7);
+                    var p8 = ic.CreateParameter(); p8.ParameterName = "@OrderNo"; p8.Value = rootOrder; ic.Parameters.Add(p8);
+                    var p9 = ic.CreateParameter(); p9.ParameterName = "@Visible"; p9.Value = true; ic.Parameters.Add(p9);
+                    var p10 = ic.CreateParameter(); p10.ParameterName = "@IsDeleted"; p10.Value = false; ic.Parameters.Add(p10);
                     await ic.ExecuteNonQueryAsync(ct);
                 }
             }
@@ -464,16 +514,21 @@ values(@Id,@Module,@Name,@Route,'Directory',NULL,@Icon,NULL,50,1,1,@Code,{_diale
                 if (!string.IsNullOrWhiteSpace(it.ParentCode))
                 {
                     using var pc = conn.CreateCommand();
-                    pc.CommandText = "select Id from ginkgo_Sys_Menu where Code=@code";
+                    pc.CommandText = $"select {C("Id")} from {T("ginkgo_Sys_Menu")} where {C("Code")}=@code";
                     var pp = pc.CreateParameter(); pp.ParameterName = "@code"; pp.Value = it.ParentCode!; pc.Parameters.Add(pp);
                     var pr = await pc.ExecuteScalarAsync(ct);
                     if (pr != null && long.TryParse(pr.ToString(), out var pid)) parentId = pid;
+                }
+                // 防止 ParentCode 指向菜单自身（或与 RootCode 相同）时形成 ParentId 自引用环
+                if (!string.IsNullOrWhiteSpace(it.Code) && string.Equals(it.ParentCode, it.Code, StringComparison.OrdinalIgnoreCase))
+                {
+                    parentId = rootId;
                 }
                 // 检查是否已存在（按 Route 匹配），已存在则更新关键字段
                 if (!string.IsNullOrWhiteSpace(it.Route))
                 {
                     using var ec = conn.CreateCommand();
-                    ec.CommandText = "select Id, IsDeleted from ginkgo_Sys_Menu where Route=@route";
+                    ec.CommandText = $"select {C("Id")}, {C("IsDeleted")} from {T("ginkgo_Sys_Menu")} where {C("Route")}=@route";
                     var pr = ec.CreateParameter(); pr.ParameterName = "@route"; pr.Value = it.Route; ec.Parameters.Add(pr);
                     using var reader = await ec.ExecuteReaderAsync(ct);
                     if (await reader.ReadAsync(ct))
@@ -484,21 +539,22 @@ values(@Id,@Module,@Name,@Route,'Directory',NULL,@Icon,NULL,50,1,1,@Code,{_diale
                         
                         // 无论是否软删除，都更新关键字段（SupportedClients、Resource、Method 等）
                         using var uc = conn.CreateCommand();
-                        uc.CommandText = $@"update ginkgo_Sys_Menu set 
-                            IsDeleted=0, Visible=@Visible, Name=@Name, OrderNo=@OrderNo,
-                            WebRouteUrl=@WebRouteUrl, WebDisplayMode=@WebDisplayMode, 
-                            SupportedClients=@SupportedClients, Resource=@Resource, Method=@Method,
-                            ParentId=@ParentId, Module=@Module, UpdatedAt={_dialect.UtcNowExpr} where Id=@Id";
+                        uc.CommandText = $@"update {T("ginkgo_Sys_Menu")} set 
+                            {C("IsDeleted")}=@IsDeleted, {C("Visible")}=@Visible, {C("Name")}=@Name, {C("OrderNo")}=@OrderNo,
+                            {C("WebRouteUrl")}=@WebRouteUrl, {C("WebDisplayMode")}=@WebDisplayMode, 
+                            {C("SupportedClients")}=@SupportedClients, {C("Resource")}=@Resource, {C("Method")}=@Method,
+                            {C("ParentId")}=@ParentId, {C("Module")}=@Module, {C("UpdatedAt")}={_dialect.UtcNowExpr} where {C("Id")}=@Id";
                         var u1 = uc.CreateParameter(); u1.ParameterName = "@Id"; u1.Value = existingId; uc.Parameters.Add(u1);
-                        var u2 = uc.CreateParameter(); u2.ParameterName = "@Visible"; u2.Value = it.Hidden ? 0 : 1; uc.Parameters.Add(u2);
-                        var u3 = uc.CreateParameter(); u3.ParameterName = "@Name"; u3.Value = it.Name; uc.Parameters.Add(u3);
-                        var u4 = uc.CreateParameter(); u4.ParameterName = "@OrderNo"; u4.Value = it.SortOrder; uc.Parameters.Add(u4);
+                        var u2 = uc.CreateParameter(); u2.ParameterName = "@IsDeleted"; u2.Value = false; uc.Parameters.Add(u2);
+                        var u3 = uc.CreateParameter(); u3.ParameterName = "@Visible"; u3.Value = !it.Hidden; uc.Parameters.Add(u3);
+                        var u4n = uc.CreateParameter(); u4n.ParameterName = "@Name"; u4n.Value = it.Name; uc.Parameters.Add(u4n);
+                        var u4 = uc.CreateParameter(); u4.ParameterName = "@OrderNo"; u4.Value = it.ResolveSortOrder(); uc.Parameters.Add(u4);
                         var u5 = uc.CreateParameter(); u5.ParameterName = "@WebRouteUrl"; u5.Value = (object?)it.WebRouteUrl ?? DBNull.Value; uc.Parameters.Add(u5);
                         var u6 = uc.CreateParameter(); u6.ParameterName = "@WebDisplayMode"; u6.Value = (object?)it.WebDisplayMode ?? DBNull.Value; uc.Parameters.Add(u6);
                         var u7 = uc.CreateParameter(); u7.ParameterName = "@SupportedClients"; u7.Value = (object?)it.SupportedClients ?? DBNull.Value; uc.Parameters.Add(u7);
                         var u8 = uc.CreateParameter(); u8.ParameterName = "@Resource"; u8.Value = (object?)it.Resource ?? DBNull.Value; uc.Parameters.Add(u8);
                         var u9 = uc.CreateParameter(); u9.ParameterName = "@Method"; u9.Value = (object?)it.Method ?? DBNull.Value; uc.Parameters.Add(u9);
-                        var u10 = uc.CreateParameter(); u10.ParameterName = "@ParentId"; u10.Value = parentId; uc.Parameters.Add(u10);
+                        var u10 = uc.CreateParameter(); u10.ParameterName = "@ParentId"; u10.Value = parentId == existingId ? rootId : parentId; uc.Parameters.Add(u10);
                         var u11 = uc.CreateParameter(); u11.ParameterName = "@Module"; u11.Value = module; uc.Parameters.Add(u11);
                         await uc.ExecuteNonQueryAsync(ct);
                         continue;
@@ -507,8 +563,8 @@ values(@Id,@Module,@Name,@Route,'Directory',NULL,@Icon,NULL,50,1,1,@Code,{_diale
                 }
                 // Insert（新增菜单，包含 Resource 和 Method）
                 using var ic2 = conn.CreateCommand();
-                ic2.CommandText = $@"insert into ginkgo_Sys_Menu(Id,Module,Name,Route,Type,ItemMode,Icon,Url,ParentId,OrderNo,Visible,Code,CreatedAt,IsDeleted,WebRouteUrl,WebDisplayMode,SupportedClients,Resource,Method)
-values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@Visible,@Code,{_dialect.UtcNowExpr},0,@WebRouteUrl,@WebDisplayMode,@SupportedClients,@Resource,@Method)";
+                ic2.CommandText = $@"insert into {T("ginkgo_Sys_Menu")}({C("Id")},{C("Module")},{C("Name")},{C("Route")},{C("Type")},{C("ItemMode")},{C("Icon")},{C("Url")},{C("ParentId")},{C("OrderNo")},{C("Visible")},{C("Code")},{C("CreatedAt")},{C("IsDeleted")},{C("WebRouteUrl")},{C("WebDisplayMode")},{C("SupportedClients")},{C("Resource")},{C("Method")})
+values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@Visible,@Code,{_dialect.UtcNowExpr},@IsDeleted,@WebRouteUrl,@WebDisplayMode,@SupportedClients,@Resource,@Method)";
                 var q1 = ic2.CreateParameter(); q1.ParameterName = "@Id"; q1.Value = SnowflakeIdGenerator.NextId(); ic2.Parameters.Add(q1);
                 var q2 = ic2.CreateParameter(); q2.ParameterName = "@Name"; q2.Value = it.Name; ic2.Parameters.Add(q2);
                 var q3 = ic2.CreateParameter(); q3.ParameterName = "@Route"; q3.Value = it.Route ?? string.Empty; ic2.Parameters.Add(q3);
@@ -521,12 +577,13 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
                 var q10 = ic2.CreateParameter(); q10.ParameterName = "@WebRouteUrl"; q10.Value = (object?)it.WebRouteUrl ?? DBNull.Value; ic2.Parameters.Add(q10);
                 var q11 = ic2.CreateParameter(); q11.ParameterName = "@WebDisplayMode"; q11.Value = (object?)it.WebDisplayMode ?? DBNull.Value; ic2.Parameters.Add(q11);
                 var q12 = ic2.CreateParameter(); q12.ParameterName = "@SupportedClients"; q12.Value = (object?)it.SupportedClients ?? DBNull.Value; ic2.Parameters.Add(q12);
-                var q13 = ic2.CreateParameter(); q13.ParameterName = "@OrderNo"; q13.Value = it.SortOrder; ic2.Parameters.Add(q13);
+                var q13 = ic2.CreateParameter(); q13.ParameterName = "@OrderNo"; q13.Value = it.ResolveSortOrder(); ic2.Parameters.Add(q13);
                 // Visible=1 表示启用，Hidden=true 时设为 0
-                var q14 = ic2.CreateParameter(); q14.ParameterName = "@Visible"; q14.Value = it.Hidden ? 0 : 1; ic2.Parameters.Add(q14);
-                var q15 = ic2.CreateParameter(); q15.ParameterName = "@Resource"; q15.Value = (object?)it.Resource ?? DBNull.Value; ic2.Parameters.Add(q15);
-                var q16 = ic2.CreateParameter(); q16.ParameterName = "@Method"; q16.Value = (object?)it.Method ?? DBNull.Value; ic2.Parameters.Add(q16);
-                var q17 = ic2.CreateParameter(); q17.ParameterName = "@Module"; q17.Value = module; ic2.Parameters.Add(q17);
+                var q14 = ic2.CreateParameter(); q14.ParameterName = "@Visible"; q14.Value = !it.Hidden; ic2.Parameters.Add(q14);
+                var q15 = ic2.CreateParameter(); q15.ParameterName = "@IsDeleted"; q15.Value = false; ic2.Parameters.Add(q15);
+                var q16 = ic2.CreateParameter(); q16.ParameterName = "@Resource"; q16.Value = (object?)it.Resource ?? DBNull.Value; ic2.Parameters.Add(q16);
+                var q17 = ic2.CreateParameter(); q17.ParameterName = "@Method"; q17.Value = (object?)it.Method ?? DBNull.Value; ic2.Parameters.Add(q17);
+                var q18 = ic2.CreateParameter(); q18.ParameterName = "@Module"; q18.Value = module; ic2.Parameters.Add(q18);
                 await ic2.ExecuteNonQueryAsync(ct);
             }
         }
@@ -551,13 +608,13 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
                     // 1. 删除级联的角色权限记录以免触发外键错误
                     using (var dp = conn.CreateCommand())
                     {
-                        dp.CommandText = $"DELETE FROM ginkgo_Sys_RolePermission WHERE PermissionId IN ({idstr})";
+                        dp.CommandText = $"DELETE FROM {T("ginkgo_Sys_RolePermission")} WHERE {C("PermissionId")} IN ({idstr})";
                         await dp.ExecuteNonQueryAsync(ct);
                     }
                     // 2. 删除菜单记录
                     using (var dm = conn.CreateCommand())
                     {
-                        dm.CommandText = $"DELETE FROM ginkgo_Sys_Menu WHERE Id IN ({idstr})";
+                        dm.CommandText = $"DELETE FROM {T("ginkgo_Sys_Menu")} WHERE {C("Id")} IN ({idstr})";
                         await dm.ExecuteNonQueryAsync(ct);
                     }
                 }
@@ -573,7 +630,7 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
                 long menuId = 0;
                 using (var qc = conn.CreateCommand())
                 {
-                    qc.CommandText = "SELECT Id FROM ginkgo_Sys_Menu WHERE Route = @route";
+                    qc.CommandText = $"SELECT {C("Id")} FROM {T("ginkgo_Sys_Menu")} WHERE {C("Route")} = @route";
                     var pCode = qc.CreateParameter(); pCode.ParameterName = "@route"; pCode.Value = it.Route; qc.Parameters.Add(pCode);
                     var res = await qc.ExecuteScalarAsync(ct);
                     if (res != null) long.TryParse(res.ToString(), out menuId);
@@ -584,14 +641,14 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
                     // 1. 删除该菜单相关的角色权限配置
                     using (var dp = conn.CreateCommand())
                     {
-                        dp.CommandText = "DELETE FROM ginkgo_Sys_RolePermission WHERE PermissionId = @id";
+                        dp.CommandText = $"DELETE FROM {T("ginkgo_Sys_RolePermission")} WHERE {C("PermissionId")} = @id";
                         var pid = dp.CreateParameter(); pid.ParameterName = "@id"; pid.Value = menuId; dp.Parameters.Add(pid);
                         await dp.ExecuteNonQueryAsync(ct);
                     }
                     // 2. 删除菜单本身
                     using (var dc = conn.CreateCommand())
                     {
-                        dc.CommandText = "DELETE FROM ginkgo_Sys_Menu WHERE Id = @id";
+                        dc.CommandText = $"DELETE FROM {T("ginkgo_Sys_Menu")} WHERE {C("Id")} = @id";
                         var pid = dc.CreateParameter(); pid.ParameterName = "@id"; pid.Value = menuId; dc.Parameters.Add(pid);
                         await dc.ExecuteNonQueryAsync(ct);
                     }
@@ -618,13 +675,13 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
                 // 1. 删除级联的角色权限记录
                 using (var dp = conn.CreateCommand())
                 {
-                    dp.CommandText = $"DELETE FROM ginkgo_Sys_RolePermission WHERE PermissionId IN ({idstr})";
+                    dp.CommandText = $"DELETE FROM {T("ginkgo_Sys_RolePermission")} WHERE {C("PermissionId")} IN ({idstr})";
                     await dp.ExecuteNonQueryAsync(ct);
                 }
                 // 2. 删除菜单记录
                 using (var dm = conn.CreateCommand())
                 {
-                    dm.CommandText = $"DELETE FROM ginkgo_Sys_Menu WHERE Id IN ({idstr})";
+                    dm.CommandText = $"DELETE FROM {T("ginkgo_Sys_Menu")} WHERE {C("Id")} IN ({idstr})";
                     await dm.ExecuteNonQueryAsync(ct);
                 }
             }
@@ -755,7 +812,7 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
             var menuIds = new List<long>();
             using (var qc = conn.CreateCommand())
             {
-                qc.CommandText = "SELECT Id FROM ginkgo_Sys_Menu WHERE Module=@m";
+                qc.CommandText = $"SELECT {C("Id")} FROM {T("ginkgo_Sys_Menu")} WHERE {C("Module")}=@m";
                 var p = qc.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; qc.Parameters.Add(p);
                 using var reader = await qc.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct))
@@ -768,12 +825,12 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
                 var idstr = string.Join(",", menuIds);
                 using (var dp = conn.CreateCommand())
                 {
-                    dp.CommandText = $"DELETE FROM ginkgo_Sys_RolePermission WHERE PermissionId IN ({idstr})";
+                    dp.CommandText = $"DELETE FROM {T("ginkgo_Sys_RolePermission")} WHERE {C("PermissionId")} IN ({idstr})";
                     await dp.ExecuteNonQueryAsync(ct);
                 }
                 using (var dm = conn.CreateCommand())
                 {
-                    dm.CommandText = $"DELETE FROM ginkgo_Sys_Menu WHERE Id IN ({idstr})";
+                    dm.CommandText = $"DELETE FROM {T("ginkgo_Sys_Menu")} WHERE {C("Id")} IN ({idstr})";
                     await dm.ExecuteNonQueryAsync(ct);
                 }
             }
@@ -781,19 +838,19 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
             // 2. 字典条目：先按 Module 清理，再清理仍挂在该模块字典下的孤儿条目
             using (var di = conn.CreateCommand())
             {
-                di.CommandText = "DELETE FROM ginkgo_Sys_DictionaryItem WHERE Module=@m OR DictionaryId IN (SELECT Id FROM ginkgo_Sys_Dictionary WHERE Module=@m)";
+                di.CommandText = $"DELETE FROM {T("ginkgo_Sys_DictionaryItem")} WHERE {C("Module")}=@m OR {C("DictId")} IN (SELECT {C("Id")} FROM {T("ginkgo_Sys_Dictionary")} WHERE {C("Module")}=@m)";
                 var p = di.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; di.Parameters.Add(p);
                 try { await di.ExecuteNonQueryAsync(ct); }
                 catch
                 {
                     // 某些 MySQL 版本不允许 DELETE 子查询自指目标表，回退两步
                     using var step1 = conn.CreateCommand();
-                    step1.CommandText = "DELETE FROM ginkgo_Sys_DictionaryItem WHERE Module=@m";
+                    step1.CommandText = $"DELETE FROM {T("ginkgo_Sys_DictionaryItem")} WHERE {C("Module")}=@m";
                     var sp1 = step1.CreateParameter(); sp1.ParameterName = "@m"; sp1.Value = moduleId; step1.Parameters.Add(sp1);
                     await step1.ExecuteNonQueryAsync(ct);
 
                     using var step2 = conn.CreateCommand();
-                    step2.CommandText = "DELETE FROM ginkgo_Sys_DictionaryItem WHERE DictionaryId IN (SELECT Id FROM ginkgo_Sys_Dictionary WHERE Module=@m)";
+                    step2.CommandText = $"DELETE FROM {T("ginkgo_Sys_DictionaryItem")} WHERE {C("DictId")} IN (SELECT {C("Id")} FROM {T("ginkgo_Sys_Dictionary")} WHERE {C("Module")}=@m)";
                     var sp2 = step2.CreateParameter(); sp2.ParameterName = "@m"; sp2.Value = moduleId; step2.Parameters.Add(sp2);
                     await step2.ExecuteNonQueryAsync(ct);
                 }
@@ -802,7 +859,7 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
             // 3. 字典分类
             using (var dd = conn.CreateCommand())
             {
-                dd.CommandText = "DELETE FROM ginkgo_Sys_Dictionary WHERE Module=@m";
+                dd.CommandText = $"DELETE FROM {T("ginkgo_Sys_Dictionary")} WHERE {C("Module")}=@m";
                 var p = dd.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; dd.Parameters.Add(p);
                 await dd.ExecuteNonQueryAsync(ct);
             }
@@ -810,7 +867,7 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
             // 4. 系统配置
             using (var ds = conn.CreateCommand())
             {
-                ds.CommandText = "DELETE FROM ginkgo_Sys_Settings WHERE Module=@m";
+                ds.CommandText = $"DELETE FROM {T("ginkgo_Sys_Settings")} WHERE {C("Module")}=@m";
                 var p = ds.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; ds.Parameters.Add(p);
                 await ds.ExecuteNonQueryAsync(ct);
             }
@@ -828,7 +885,7 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
             long rootId;
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = "select Id from ginkgo_Sys_Menu where Code=@code";
+                cmd.CommandText = $"select {C("Id")} from {T("ginkgo_Sys_Menu")} where {C("Code")}=@code";
                 var p = cmd.CreateParameter(); p.ParameterName = "@code"; p.Value = rootCode; cmd.Parameters.Add(p);
                 var r = await cmd.ExecuteScalarAsync(ct);
                 if (r == null || !long.TryParse(r.ToString(), out rootId)) return;
@@ -839,14 +896,18 @@ values(@Id,@Module,@Name,@Route,@Type,@ItemMode,@Icon,@Url,@ParentId,@OrderNo,@V
             if (_dialect.Capabilities.SupportsRecursiveCte)
             {
                 using var uc = conn.CreateCommand();
-                uc.CommandText = @"with cte as (
-    select Id from ginkgo_Sys_Menu where Id=@root
+                var menu = T("ginkgo_Sys_Menu");
+                var idCol = C("Id");
+                var parentCol = C("ParentId");
+                var visibleCol = C("Visible");
+                uc.CommandText = $@"with cte as (
+    select {idCol} from {menu} where {idCol}=@root
     union all
-    select m.Id from ginkgo_Sys_Menu m inner join cte on m.ParentId = cte.Id
+    select m.{idCol} from {menu} m inner join cte on m.{parentCol} = cte.{idCol}
 )
-update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
+update {menu} set {visibleCol}=@vis where {idCol} in (select {idCol} from cte)";
                 var p1 = uc.CreateParameter(); p1.ParameterName = "@root"; p1.Value = rootId; uc.Parameters.Add(p1);
-                var p2 = uc.CreateParameter(); p2.ParameterName = "@vis"; p2.Value = visible ? 1 : 0; uc.Parameters.Add(p2);
+                var p2 = uc.CreateParameter(); p2.ParameterName = "@vis"; p2.Value = visible; uc.Parameters.Add(p2);
                 await uc.ExecuteNonQueryAsync(ct);
             }
             else
@@ -855,8 +916,8 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
                 if (allIds.Count > 0)
                 {
                     using var uc = conn.CreateCommand();
-                    uc.CommandText = $"UPDATE ginkgo_Sys_Menu SET Visible=@vis WHERE Id IN ({string.Join(",", allIds)})";
-                    var p2 = uc.CreateParameter(); p2.ParameterName = "@vis"; p2.Value = visible ? 1 : 0; uc.Parameters.Add(p2);
+                    uc.CommandText = $"UPDATE {T("ginkgo_Sys_Menu")} SET {C("Visible")}=@vis WHERE {C("Id")} IN ({string.Join(",", allIds)})";
+                    var p2 = uc.CreateParameter(); p2.ParameterName = "@vis"; p2.Value = visible; uc.Parameters.Add(p2);
                     await uc.ExecuteNonQueryAsync(ct);
                 }
             }
@@ -871,7 +932,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
             long rootId;
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = "SELECT Id FROM ginkgo_Sys_Menu WHERE Code = @code";
+                cmd.CommandText = $"SELECT {C("Id")} FROM {T("ginkgo_Sys_Menu")} WHERE {C("Code")} = @code";
                 var p = cmd.CreateParameter(); p.ParameterName = "@code"; p.Value = rootCode; cmd.Parameters.Add(p);
                 var r = await cmd.ExecuteScalarAsync(ct);
                 if (r == null || !long.TryParse(r.ToString(), out rootId)) return new List<long>();
@@ -889,7 +950,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
             while (currentLevel.Count > 0)
             {
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = $"SELECT Id FROM ginkgo_Sys_Menu WHERE ParentId IN ({string.Join(",", currentLevel)})";
+                cmd.CommandText = $"SELECT {C("Id")} FROM {T("ginkgo_Sys_Menu")} WHERE {C("ParentId")} IN ({string.Join(",", currentLevel)})";
                 var nextLevel = new List<long>();
                 using var reader = await cmd.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct))
@@ -963,9 +1024,8 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
                 }
 
                 cmd.CommandText =
-                    "SELECT TABLE_NAME, REFERENCED_TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL " +
-                    $"AND TABLE_NAME IN ({string.Join(", ", paramNames)})";
+                    _dialect.SqlGetForeignKeyDependencies +
+                    $" AND {_dialect.SqlForeignKeyChildTableInFilter} IN ({string.Join(", ", paramNames)})";
 
                 using var reader = await cmd.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct))
@@ -1083,9 +1143,15 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
                             sb.AppendLine();
                         }
                     }
+                    else if (string.Equals(_dialect.Code, "postgresql", StringComparison.OrdinalIgnoreCase))
+                    {
+                        sb.AppendLine($"-- 表: {tableName}");
+                        await ExportPostgreSqlTableSchemaAsync(conn, tableName, sb, ct);
+                        sb.AppendLine();
+                    }
                     else
                     {
-                        // 非 MySQL（当前主要是 SQL Server）：从 INFORMATION_SCHEMA 构建 MySQL 兼容 DDL
+                        // SQL Server：从 INFORMATION_SCHEMA 构建 MySQL 兼容 DDL
                         sb.AppendLine($"-- 表: {tableName}");
                         await ExportSqlServerTableSchemaAsync(conn, tableName, sb, ct);
                         sb.AppendLine();
@@ -1099,6 +1165,116 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
             }
 
             return sb.ToString();
+        }
+
+        /// <summary>按目标数据库方言导出表结构（必要时从源库方言转写）。</summary>
+        public async Task<string> ExportTableSchemaForTargetDialectAsync(
+            List<string> tableNames, string targetDialectCode, CancellationToken ct)
+        {
+            var native = await ExportTableSchemaAsync(tableNames, ct);
+            if (string.IsNullOrWhiteSpace(native)) return native;
+            return ModuleSqlScriptTranslator.TranslateScript(native, _dialect.Code, targetDialectCode);
+        }
+
+        private IDatabaseDialect ResolveDialect(string dialectCode)
+        {
+            var registry = _services.GetRequiredService<IDialectRegistry>();
+            return registry.Get(ModuleInstallScriptResolver.NormalizeProviderCode(dialectCode));
+        }
+
+        /// <summary>按目标数据库方言流式导出表数据到文件。</summary>
+        public Task<TableDataExportStats> ExportTableDataToFileForTargetDialectAsync(
+            List<string> tableNames,
+            string filePath,
+            string targetDialectCode,
+            CancellationToken ct,
+            int? rowLimit = null,
+            Action<string>? onProgress = null,
+            int batchSize = DefaultExportBatchSize)
+        {
+            var targetDialect = ResolveDialect(targetDialectCode);
+            return ExportTableDataToFileAsync(tableNames, filePath, ct, rowLimit, onProgress, batchSize, targetDialect);
+        }
+
+        /// <summary>
+        /// PostgreSQL 下通过 pg_catalog 构建原生 CREATE TABLE 语句。
+        /// </summary>
+        private async Task ExportPostgreSqlTableSchemaAsync(DbConnection conn, string tableName, System.Text.StringBuilder sb, CancellationToken ct)
+        {
+            var columns = new List<(string Name, string DataType, bool IsNullable, string? Default)>();
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = @"
+SELECT a.attname,
+       pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type,
+       NOT a.attnotnull AS is_nullable,
+       pg_get_expr(ad.adbin, ad.adrelid) AS column_default
+FROM pg_catalog.pg_attribute a
+LEFT JOIN pg_catalog.pg_attrdef ad ON a.attrelid = ad.adrelid AND a.attnum = ad.adnum
+JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
+JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+WHERE n.nspname = current_schema()
+  AND c.relname = @tableName
+  AND a.attnum > 0
+  AND NOT a.attisdropped
+ORDER BY a.attnum";
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@tableName";
+                p.Value = tableName;
+                cmd.Parameters.Add(p);
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                {
+                    columns.Add((
+                        Name: reader.GetString(0),
+                        DataType: reader.GetString(1),
+                        IsNullable: reader.GetBoolean(2),
+                        Default: reader.IsDBNull(3) ? null : reader.GetString(3)
+                    ));
+                }
+            }
+
+            if (columns.Count == 0)
+            {
+                sb.AppendLine($"-- 表 {tableName} 不存在或无列");
+                return;
+            }
+
+            var pkColumns = new List<string>();
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = @"
+SELECT kcu.column_name
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu
+  ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+WHERE tc.constraint_type = 'PRIMARY KEY'
+  AND tc.table_schema = current_schema()
+  AND tc.table_name = @tableName
+ORDER BY kcu.ordinal_position";
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@tableName";
+                p.Value = tableName;
+                cmd.Parameters.Add(p);
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                    pkColumns.Add(reader.GetString(0));
+            }
+
+            sb.AppendLine($"CREATE TABLE IF NOT EXISTS {_dialect.QuoteIdentifier(tableName)} (");
+            var colLines = new List<string>();
+            foreach (var col in columns)
+            {
+                var nullable = col.IsNullable ? "NULL" : "NOT NULL";
+                var defaultVal = string.IsNullOrWhiteSpace(col.Default) ? "" : $" DEFAULT {col.Default}";
+                colLines.Add($"  {_dialect.QuoteIdentifier(col.Name)} {col.DataType} {nullable}{defaultVal}");
+            }
+            if (pkColumns.Count > 0)
+            {
+                colLines.Add($"  PRIMARY KEY ({string.Join(", ", pkColumns.Select(c => _dialect.QuoteIdentifier(c)))})");
+            }
+            sb.AppendLine(string.Join(",\n", colLines));
+            sb.AppendLine(");");
         }
 
         /// <summary>
@@ -1233,18 +1409,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
         /// <summary>
         /// 将字段值格式化为 SQL 字面量。
         /// </summary>
-        private static string FormatSqlValue(object val)
-        {
-            if (val is string s)
-                return $"'{s.Replace("'", "''").Replace("\\", "\\\\")}'";
-            if (val is DateTime dt)
-                return $"'{dt:yyyy-MM-dd HH:mm:ss.ffffff}'";
-            if (val is bool b)
-                return b ? "1" : "0";
-            if (val is byte[] bytes)
-                return $"0x{BitConverter.ToString(bytes).Replace("-", "")}";
-            return val.ToString() ?? "NULL";
-        }
+        private string FormatSqlValue(object val) => _dialect.FormatSqlLiteral(val);
 
         /// <summary>
         /// 查询表行数（失败时返回 null）。
@@ -1284,13 +1449,23 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
         /// <summary>
         /// 流式导出指定表的数据为 INSERT 语句并写入文件（支持百万级全量导出，避免内存溢出）。
         /// </summary>
-        public async Task<TableDataExportStats> ExportTableDataToFileAsync(
+        public Task<TableDataExportStats> ExportTableDataToFileAsync(
             List<string> tableNames,
             string filePath,
             CancellationToken ct,
             int? rowLimit = null,
             Action<string>? onProgress = null,
             int batchSize = DefaultExportBatchSize)
+            => ExportTableDataToFileAsync(tableNames, filePath, ct, rowLimit, onProgress, batchSize, _dialect);
+
+        private async Task<TableDataExportStats> ExportTableDataToFileAsync(
+            List<string> tableNames,
+            string filePath,
+            CancellationToken ct,
+            int? rowLimit,
+            Action<string>? onProgress,
+            int batchSize,
+            IDatabaseDialect outputDialect)
         {
             var stats = new TableDataExportStats { TableCount = tableNames?.Count ?? 0 };
             if (tableNames == null || tableNames.Count == 0) return stats;
@@ -1348,7 +1523,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
                     onProgress?.Invoke($"  [数据导出] ({ti + 1}/{tableNames.Count}) 表 {tableName}：约 {estimatedRows?.ToString() ?? "?"} 行");
 
                     var exported = await ExportSingleTableDataToWriterAsync(
-                        conn, tableName, writer, ct, rowLimit, batchSize,
+                        conn, tableName, writer, outputDialect, ct, rowLimit, batchSize,
                         (batchRows, totalForTable) =>
                         {
                             stats.TotalRows += batchRows;
@@ -1383,16 +1558,20 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
             DbConnection conn,
             string tableName,
             StreamWriter writer,
+            IDatabaseDialect outputDialect,
             CancellationToken ct,
             int? rowLimit,
             int batchSize,
             Action<long, long>? onBatchExported)
         {
             var pk = await GetPrimaryKeyColumnAsync(conn, tableName, ct);
-            var quotedName = _dialect.QuoteIdentifier(tableName);
+            var sourceQuotedName = _dialect.QuoteIdentifier(tableName);
+            var outputQuotedName = outputDialect.QuoteIdentifier(tableName);
             long totalExported = 0;
             List<string>? columnNames = null;
             var headerWritten = false;
+
+            string FormatValue(object val) => outputDialect.FormatSqlLiteral(val);
 
             async Task WriteRowAsync(DbDataReader reader)
             {
@@ -1411,10 +1590,10 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
 
                 var values = new List<string>(reader.FieldCount);
                 for (var i = 0; i < reader.FieldCount; i++)
-                    values.Add(reader.IsDBNull(i) ? "NULL" : FormatSqlValue(reader.GetValue(i)));
+                    values.Add(reader.IsDBNull(i) ? "NULL" : FormatValue(reader.GetValue(i)));
 
-                var insertPrefix = _dialect.ToIdempotentInsert($"INSERT INTO {quotedName}");
-                var cols = string.Join(", ", columnNames.Select(c => _dialect.QuoteIdentifier(c)));
+                var insertPrefix = outputDialect.ToIdempotentInsert($"INSERT INTO {outputQuotedName}");
+                var cols = string.Join(", ", columnNames.Select(c => outputDialect.QuoteIdentifier(c)));
                 await writer.WriteLineAsync($"{insertPrefix} ({cols}) VALUES ({string.Join(", ", values)});");
                 totalExported++;
             }
@@ -1437,10 +1616,10 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
                     var orderClause = $" ORDER BY {quotedPk} ASC";
                     var limitClause = " " + _dialect.BuildLimitClause(0, take);
                     if (lastKey == null)
-                        cmd.CommandText = $"SELECT * FROM {quotedName}{orderClause}{limitClause}";
+                        cmd.CommandText = $"SELECT * FROM {sourceQuotedName}{orderClause}{limitClause}";
                     else
                     {
-                        cmd.CommandText = $"SELECT * FROM {quotedName} WHERE {quotedPk} > @lastKey{orderClause}{limitClause}";
+                        cmd.CommandText = $"SELECT * FROM {sourceQuotedName} WHERE {quotedPk} > @lastKey{orderClause}{limitClause}";
                         AddKeyParameter(cmd, "@lastKey", lastKey);
                     }
 
@@ -1472,7 +1651,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
                     if (take <= 0) break;
 
                     using var cmd = conn.CreateCommand();
-                    cmd.CommandText = $"SELECT * FROM {quotedName} ORDER BY 1 ASC {_dialect.BuildLimitClause((int)offset, take)}";
+                    cmd.CommandText = $"SELECT * FROM {sourceQuotedName} ORDER BY 1 ASC {_dialect.BuildLimitClause((int)offset, take)}";
 
                     using var reader = await cmd.ExecuteReaderAsync(ct);
                     var batchCount = 0;
@@ -1562,17 +1741,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
                             }
                             else
                             {
-                                var val = reader.GetValue(i);
-                                if (val is string s)
-                                    values.Add($"'{s.Replace("'", "''").Replace("\\", "\\\\")}'");
-                                else if (val is DateTime dt)
-                                    values.Add($"'{dt:yyyy-MM-dd HH:mm:ss.ffffff}'");
-                                else if (val is bool b)
-                                    values.Add(b ? "1" : "0");
-                                else if (val is byte[] bytes)
-                                    values.Add($"0x{BitConverter.ToString(bytes).Replace("-", "")}");
-                                else
-                                    values.Add(val.ToString() ?? "NULL");
+                                values.Add(FormatSqlValue(reader.GetValue(i)));
                             }
                         }
                         sb.AppendLine($"{_dialect.ToIdempotentInsert($"INSERT INTO {_dialect.QuoteIdentifier(tableName)}")} ({string.Join(", ", columnNames.Select(c => _dialect.QuoteIdentifier(c)))}) VALUES ({string.Join(", ", values)});");
@@ -1609,7 +1778,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
             int rootOrderNo;
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = "SELECT Id, Name, Icon, SupportedClients, Route, OrderNo FROM ginkgo_Sys_Menu WHERE Code = @code AND (IsDeleted = 0 OR IsDeleted IS NULL)";
+                cmd.CommandText = $"SELECT {C("Id")}, {C("Name")}, {C("Icon")}, {C("SupportedClients")}, {C("Route")}, {C("OrderNo")} FROM {T("ginkgo_Sys_Menu")} WHERE {C("Code")} = @code AND ({C("IsDeleted")} = {_dialect.BoolLiteral(false)} OR {C("IsDeleted")} IS NULL)";
                 var p = cmd.CreateParameter(); p.ParameterName = "@code"; p.Value = rootCode; cmd.Parameters.Add(p);
                 using var reader = await cmd.ExecuteReaderAsync(ct);
                 if (!await reader.ReadAsync(ct)) return null;
@@ -1627,7 +1796,7 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
             while (currentLevel.Count > 0)
             {
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = $"SELECT Id, ParentId, Name, Route, Type, ItemMode, Icon, Url, Code, OrderNo, Visible, WebRouteUrl, WebDisplayMode, SupportedClients, Resource, Method FROM ginkgo_Sys_Menu WHERE ParentId IN ({string.Join(",", currentLevel)}) AND (IsDeleted = 0 OR IsDeleted IS NULL) ORDER BY OrderNo";
+                cmd.CommandText = $"SELECT {C("Id")}, {C("ParentId")}, {C("Name")}, {C("Route")}, {C("Type")}, {C("ItemMode")}, {C("Icon")}, {C("Url")}, {C("Code")}, {C("OrderNo")}, {C("Visible")}, {C("WebRouteUrl")}, {C("WebDisplayMode")}, {C("SupportedClients")}, {C("Resource")}, {C("Method")} FROM {T("ginkgo_Sys_Menu")} WHERE {C("ParentId")} IN ({string.Join(",", currentLevel)}) AND ({C("IsDeleted")} = {_dialect.BoolLiteral(false)} OR {C("IsDeleted")} IS NULL) ORDER BY {C("OrderNo")}";
                 var nextLevel = new List<long>();
                 using var reader = await cmd.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct))
@@ -1719,12 +1888,12 @@ update ginkgo_Sys_Menu set Visible=@vis where Id in (select Id from cte)";
             var rows = new List<(long Id, long? ParentId, string Title, string? Icon, string? Url, string? Badge, int OrderNo, bool RequireGrant, string? ClientType)>();
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = @"
-SELECT i.Id, i.ParentId, i.Title, i.Icon, i.Url, i.Badge, i.OrderNo, i.RequireGrant, g.ClientType
-FROM ginkgo_Sys_MenuGroupItem i
-INNER JOIN ginkgo_Sys_MenuGroup g ON g.Id = i.MenuGroupId
-WHERE i.Module = @m AND (i.IsDeleted = 0 OR i.IsDeleted IS NULL) AND (g.IsDeleted = 0 OR g.IsDeleted IS NULL)
-ORDER BY g.ClientType, i.OrderNo, i.Id";
+                cmd.CommandText = $@"
+SELECT i.{C("Id")}, i.{C("ParentId")}, i.{C("Title")}, i.{C("Icon")}, i.{C("Url")}, i.{C("Badge")}, i.{C("OrderNo")}, i.{C("RequireGrant")}, g.{C("ClientType")}
+FROM {T("ginkgo_Sys_MenuGroupItem")} i
+INNER JOIN {T("ginkgo_Sys_MenuGroup")} g ON g.{C("Id")} = i.{C("MenuGroupId")}
+WHERE i.{C("Module")} = @m AND (i.{C("IsDeleted")} = {_dialect.BoolLiteral(false)} OR i.{C("IsDeleted")} IS NULL) AND (g.{C("IsDeleted")} = {_dialect.BoolLiteral(false)} OR g.{C("IsDeleted")} IS NULL)
+ORDER BY g.{C("ClientType")}, i.{C("OrderNo")}, i.{C("Id")}";
                 var p = cmd.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; cmd.Parameters.Add(p);
                 using var reader = await cmd.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct))
@@ -1807,7 +1976,7 @@ ORDER BY g.ClientType, i.OrderNo, i.Id";
             // 字典分类
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = "SELECT * FROM ginkgo_Sys_Dictionary WHERE Module=@m AND (IsDeleted=0 OR IsDeleted IS NULL) ORDER BY Id";
+                cmd.CommandText = $"SELECT * FROM {T("ginkgo_Sys_Dictionary")} WHERE {C("Module")}=@m AND ({C("IsDeleted")}={_dialect.BoolLiteral(false)} OR {C("IsDeleted")} IS NULL) ORDER BY {C("Id")}";
                 var p = cmd.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; cmd.Parameters.Add(p);
                 using var reader = await cmd.ExecuteReaderAsync(ct);
                 var fieldCount = reader.FieldCount;
@@ -1825,11 +1994,11 @@ ORDER BY g.ClientType, i.OrderNo, i.Id";
             // 字典条目（含挂在该模块分类下的项）
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = @"
-SELECT * FROM ginkgo_Sys_DictionaryItem
-WHERE (Module=@m OR DictId IN (SELECT Id FROM ginkgo_Sys_Dictionary WHERE Module=@m))
-  AND (IsDeleted=0 OR IsDeleted IS NULL)
-ORDER BY DictId, SortOrder, Id";
+                cmd.CommandText = $@"
+SELECT * FROM {T("ginkgo_Sys_DictionaryItem")}
+WHERE ({C("Module")}=@m OR {C("DictId")} IN (SELECT {C("Id")} FROM {T("ginkgo_Sys_Dictionary")} WHERE {C("Module")}=@m))
+  AND ({C("IsDeleted")}={_dialect.BoolLiteral(false)} OR {C("IsDeleted")} IS NULL)
+ORDER BY {C("DictId")}, {C("SortOrder")}, {C("Id")}";
                 var p = cmd.CreateParameter(); p.ParameterName = "@m"; p.Value = moduleId; cmd.Parameters.Add(p);
                 using var reader = await cmd.ExecuteReaderAsync(ct);
                 var fieldCount = reader.FieldCount;
@@ -1856,15 +2025,7 @@ ORDER BY DictId, SortOrder, Id";
             return _dialect.ToIdempotentInsert(insert) + ";";
         }
 
-        private static string FormatSqlLiteral(object? val)
-        {
-            if (val == null || val is DBNull) return "NULL";
-            if (val is string s) return $"'{s.Replace("'", "''").Replace("\\", "\\\\")}'";
-            if (val is DateTime dt) return $"'{dt:yyyy-MM-dd HH:mm:ss.ffffff}'";
-            if (val is bool b) return b ? "1" : "0";
-            if (val is byte[] bytes) return $"0x{BitConverter.ToString(bytes).Replace("-", "")}";
-            return val.ToString() ?? "NULL";
-        }
+        private string FormatSqlLiteral(object? val) => _dialect.FormatSqlLiteral(val);
 
     }
 

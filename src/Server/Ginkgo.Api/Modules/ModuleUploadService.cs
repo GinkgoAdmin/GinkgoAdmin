@@ -84,7 +84,11 @@ public sealed class InstallSpec
 {
     public string? ModuleId { get; set; }
     public string? Description { get; set; }
+    /// <summary>为 true 时仅允许在 PostgreSQL 环境下加载/启用。</summary>
+    public bool RequirePostgreSql { get; set; }
     public string[]? SqlScripts { get; set; }
+    /// <summary>按数据库方言映射的安装 SQL 脚本（键：mysql / postgresql / sqlserver）。</summary>
+    public Dictionary<string, string[]>? SqlScriptsByDialect { get; set; }
     public string[]? UninstallSql { get; set; }
     public Dictionary<string, object>? Config { get; set; }
     public MenusSpec? Menus { get; set; }
@@ -361,17 +365,21 @@ public sealed class ModuleUploadService
                     ReadCommentHandling = JsonCommentHandling.Skip
                 });
 
-                if (installSpec?.SqlScripts != null)
+                if (installSpec?.SqlScripts != null || installSpec?.SqlScriptsByDialect != null)
                 {
                     var baseDir = Path.GetDirectoryName(installJsonPath) ?? extractedPath;
-                    foreach (var script in installSpec.SqlScripts)
-                    {
-                        var scriptPath = Path.Combine(baseDir, script);
-                        if (!File.Exists(scriptPath))
+                    var sqlError = ModuleInstallScriptResolver.ValidateOrGetError(
+                        baseDir,
+                        _config["Database:Provider"],
+                        new ModuleInstallScriptResolver.InstallSpecLite
                         {
-                            result.ErrorMessage = $"SQL脚本文件不存在: {script}";
-                            return result;
-                        }
+                            SqlScripts = installSpec.SqlScripts,
+                            SqlScriptsByDialect = installSpec.SqlScriptsByDialect
+                        });
+                    if (sqlError != null)
+                    {
+                        result.ErrorMessage = sqlError;
+                        return result;
                     }
                 }
             }
@@ -594,18 +602,21 @@ public sealed class ModuleUploadService
                 });
             }
 
-            // 验证SQL脚本存在性
-            if (installSpec?.SqlScripts != null)
+            if (installSpec?.SqlScripts != null || installSpec?.SqlScriptsByDialect != null)
             {
                 var baseDir = Path.GetDirectoryName(installJsonPath) ?? extractDir;
-                foreach (var script in installSpec.SqlScripts)
-                {
-                    var scriptPath = Path.Combine(baseDir, script);
-                    if (!File.Exists(scriptPath))
+                var sqlError = ModuleInstallScriptResolver.ValidateOrGetError(
+                    baseDir,
+                    _config["Database:Provider"],
+                    new ModuleInstallScriptResolver.InstallSpecLite
                     {
-                        result.ErrorMessage = $"SQL脚本文件不存在: {script}";
-                        return result;
-                    }
+                        SqlScripts = installSpec?.SqlScripts,
+                        SqlScriptsByDialect = installSpec?.SqlScriptsByDialect
+                    });
+                if (sqlError != null)
+                {
+                    result.ErrorMessage = sqlError;
+                    return result;
                 }
             }
 
@@ -897,17 +908,19 @@ public sealed class ModuleUploadService
             }
 
             // Step 2: 执行SQL脚本
-            if (installSpec?.SqlScripts != null && installSpec.SqlScripts.Length > 0)
+            if (installSpec?.SqlScripts != null || installSpec?.SqlScriptsByDialect != null)
             {
                 var installJsonDir = FindInstallJsonDirectory(extractedPath);
-                var scripts = installSpec.SqlScripts.Select(p => Path.Combine(installJsonDir, p)).ToList();
+                var resolved = ModuleInstallScriptResolver.Resolve(
+                    installJsonDir,
+                    _config["Database:Provider"],
+                    new ModuleSqlExecutor.InstallSpec
+                    {
+                        SqlScripts = installSpec.SqlScripts,
+                        SqlScriptsByDialect = installSpec.SqlScriptsByDialect
+                    });
 
                 // 注意：必须在执行 install.sql 之前注册卸载 SQL 回滚。
-                // 因为 install.sql 大量使用 CREATE TABLE（DDL），MySQL 中的 DDL 会触发隐式提交，
-                // 把事务边界切碎，使得 ExecuteScriptsAsync 内部的 ROLLBACK 只能回滚最后一段未提交的批次，
-                // 之前已被 DDL 隐式提交的建表与种子数据会残留在库里。
-                // 只有提前注册卸载脚本作为回滚动作，外层 catch 才会在 SQL 中途失败时执行 uninstall.sql，
-                // 把残留的表/字典/数据清理干净，避免下次安装因重复主键继续报错。
                 if (installSpec.UninstallSql != null && installSpec.UninstallSql.Length > 0)
                 {
                     var uninstallScripts = installSpec.UninstallSql.Select(p => Path.Combine(installJsonDir, p)).ToList();
@@ -921,8 +934,8 @@ public sealed class ModuleUploadService
                     });
                 }
 
-                await _sqlExecutor.ExecuteScriptsAsync(scripts, ct);
-                result.ExecutedSteps.Add($"执行SQL脚本: {string.Join(", ", installSpec.SqlScripts)}");
+                await _sqlExecutor.ExecuteScriptsAsync(resolved.AbsolutePaths, ct, resolved.ScriptsAreNativeDialect);
+                result.ExecutedSteps.Add($"执行SQL脚本: {string.Join(", ", resolved.RelativePaths)}");
             }
 
             // Step 3: 注册菜单
@@ -1614,7 +1627,7 @@ public sealed class ModuleUploadService
             ".so", ".dylib", ".a",
             ".vue", ".ts", ".tsx", ".js", ".jsx", ".css", ".scss", ".less", ".html", ".htm",
             ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico",
-            ".md", ".txt", ".config", ".yaml", ".yml",
+            ".md", ".txt", ".csv", ".config", ".yaml", ".yml",
             ".xaml", ".cs", ".csproj", ".sln", ".props", ".targets",
             ".map", ".woff", ".woff2", ".ttf", ".eot"
         };

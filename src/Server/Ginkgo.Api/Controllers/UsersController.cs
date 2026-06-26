@@ -2,6 +2,7 @@
 // 用户模块 API 控制器，占位实现，返回规范结果。
 
 using Ginkgo.Application.Users;
+using Ginkgo.Plugin.Abstractions;
 using Ginkgo.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -147,11 +148,10 @@ public sealed class UsersController : ControllerBase
     /// <summary>
     /// 获取“本人”详情。
     /// </summary>
-    [AllowAnonymous]
+    [LoginOnly]
     [HttpGet("me")]
     public async Task<Result<UserDetailDto>> GetMeAsync()
     {
-        // 未登录返回 401（使用手动检查，而非 Permission 策略）
         if (!TryGetCurrentUserId(User, out var userId)) return Result<UserDetailDto>.Fail(401, "未登录");
         var data = await _service.GetAsync(userId);
         if (data == null) return Result<UserDetailDto>.Fail(404, "用户不存在");
@@ -174,7 +174,7 @@ public sealed class UsersController : ControllerBase
         public string? PhoneCode { get; set; }
     }
     [HttpPut("me")]
-    [AllowAnonymous]
+    [LoginOnly]
     public async Task<Result> UpdateMeAsync(
         [FromBody] UpdateMeInput input,
         [FromServices] SqlSugar.ISqlSugarClient db,
@@ -249,7 +249,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpDelete("me")]
-    [AllowAnonymous]
+    [LoginOnly]
     public async Task<Result> DeleteMeAsync([FromBody] DeleteMeInput input)
     {
         if (!TryGetCurrentUserId(User, out var userId)) return Result.Fail(401, "未登录");
@@ -272,7 +272,7 @@ public sealed class UsersController : ControllerBase
     /// 清除“本人”可选个人信息。
     /// </summary>
     [HttpPost("me/clear-personal-info")]
-    [AllowAnonymous]
+    [LoginOnly]
     public async Task<Result> ClearPersonalInfoAsync()
     {
         if (!TryGetCurrentUserId(User, out var userId)) return Result.Fail(401, "未登录");
@@ -291,7 +291,7 @@ public sealed class UsersController : ControllerBase
     /// 修改“本人”密码。
     /// </summary>
     [HttpPost("me/password")]
-    [AllowAnonymous]
+    [LoginOnly]
     public async Task<Result> ChangeMyPassword([FromBody] ChangePasswordInput input)
     {
         if (!TryGetCurrentUserId(User, out var userId)) return Result.Fail(401, "未登录");

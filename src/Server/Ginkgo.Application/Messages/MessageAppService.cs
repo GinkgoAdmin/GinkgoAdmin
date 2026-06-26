@@ -333,7 +333,37 @@ public sealed class MessageAppService : IMessageAppService
         page = page <= 0 ? 1 : page;
         pageSize = pageSize <= 0 ? 20 : pageSize;
 
-        // 基础查询：未删除的消息
+        var baseQuery = BuildAdminListQuery(title, startDate, endDate);
+
+        // PostgreSQL 对 GROUP BY 聚合更严格，且 SqlSugar 链式 GroupBy 会污染原查询；统一内存分组
+        var allMessages = await baseQuery.ToListAsync();
+        var groups = allMessages
+            .GroupBy(m => new { m.Title, Date = m.CreatedAt.Date })
+            .Select(g => new AdminMessageListItemDto
+            {
+                Title = g.Key.Title,
+                CreatedAt = g.Min(m => m.CreatedAt),
+                TotalRecipients = g.Count(),
+                ReadCount = g.Count(m => m.IsRead),
+                Status = "Published"
+            })
+            .OrderByDescending(x => x.CreatedAt)
+            .ToList();
+
+        var total = groups.Count;
+        var items = groups.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return new PagedResult<AdminMessageListItemDto>
+        {
+            Total = total,
+            Page = page,
+            PageSize = pageSize,
+            Items = items
+        };
+    }
+
+    private ISugarQueryable<Message> BuildAdminListQuery(string? title, DateTime? startDate, DateTime? endDate)
+    {
         var baseQuery = _repo.Query().Where(m => !m.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(title))
@@ -345,65 +375,7 @@ public sealed class MessageAppService : IMessageAppService
         if (endDate.HasValue)
             baseQuery = baseQuery.Where(m => m.CreatedAt <= endDate.Value);
 
-        // 按 Title + DATE(CreatedAt) 分组，得到发送批次
-        var grouped = baseQuery
-            .GroupBy(m => new { m.Title, DatePart = m.CreatedAt.Date })
-            .Select(g => new AdminMessageListItemDto
-            {
-                Title = g.Title,
-                CreatedAt = SqlFunc.AggregateMin(g.CreatedAt),
-                TotalRecipients = SqlFunc.AggregateCount(g.Id),
-                ReadCount = SqlFunc.IIF(g.IsRead, 1, 0),
-                Status = "Published"
-            });
-
-        // SqlSugar GroupBy + Select with aggregates can be tricky.
-        // Fallback: load all messages and group in memory if the above fails.
-        try
-        {
-            var total = await grouped.CountAsync();
-            var items = await grouped
-                .OrderByDescending(x => x.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return new PagedResult<AdminMessageListItemDto>
-            {
-                Total = total,
-                Page = page,
-                PageSize = pageSize,
-                Items = items
-            };
-        }
-        catch
-        {
-            // Fallback: in-memory grouping
-            var allMessages = await baseQuery.ToListAsync();
-            var groups = allMessages
-                .GroupBy(m => new { m.Title, Date = m.CreatedAt.Date })
-                .Select(g => new AdminMessageListItemDto
-                {
-                    Title = g.Key.Title,
-                    CreatedAt = g.Min(m => m.CreatedAt),
-                    TotalRecipients = g.Count(),
-                    ReadCount = g.Count(m => m.IsRead),
-                    Status = "Published"
-                })
-                .OrderByDescending(x => x.CreatedAt)
-                .ToList();
-
-            var total = groups.Count;
-            var items = groups.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-            return new PagedResult<AdminMessageListItemDto>
-            {
-                Total = total,
-                Page = page,
-                PageSize = pageSize,
-                Items = items
-            };
-        }
+        return baseQuery;
     }
 
     /// <inheritdoc />

@@ -2,7 +2,7 @@
 
   补丁：为共享菜单/字典/配置及菜单组相关表补全结构（SQL Server / Snowflake ID 版）
 
-  适用：已安装但表结构缺少 Module / RequireGrant / IsDefault / RoleMenuGroupItem 的历史实例
+  适用：已安装但表结构缺少 Module / RequireGrant / IsUniappHome / IsDefault / RoleMenuGroupItem 的历史实例
 
 */
 
@@ -159,6 +159,20 @@ BEGIN
   ALTER TABLE [ginkgo_Sys_MenuGroupItem] ADD [RequireGrant] BIT NOT NULL
 
     CONSTRAINT [DF_ginkgo_Sys_MenuGroupItem_RequireGrant] DEFAULT 0;
+
+END;
+
+GO
+
+
+
+IF COL_LENGTH('ginkgo_Sys_MenuGroupItem', 'IsUniappHome') IS NULL
+
+BEGIN
+
+  ALTER TABLE [ginkgo_Sys_MenuGroupItem] ADD [IsUniappHome] BIT NOT NULL
+
+    CONSTRAINT [DF_ginkgo_Sys_MenuGroupItem_IsUniappHome] DEFAULT 0;
 
 END;
 

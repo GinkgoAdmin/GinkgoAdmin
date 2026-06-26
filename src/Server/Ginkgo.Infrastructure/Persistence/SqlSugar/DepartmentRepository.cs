@@ -11,8 +11,7 @@ namespace Ginkgo.Infrastructure.Persistence.SqlSugar
         public async Task<(long total, List<Department> items)> GetPagedAsync(int page, int pageSize, string? keyword, CancellationToken ct = default)
         {
             var q = _db.Queryable<Department>()
-                // 统一过滤软删除
-                .Where("IsDeleted = @IsDeleted", new { IsDeleted = false });
+                .Where(x => !x.IsDeleted);
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 var k = keyword.Trim();
@@ -27,8 +26,7 @@ namespace Ginkgo.Infrastructure.Persistence.SqlSugar
         public Task<List<Department>> GetAllOrderedAsync(CancellationToken ct = default)
         {
             return _db.Queryable<Department>()
-                // 统一过滤软删除
-                .Where("IsDeleted = @IsDeleted", new { IsDeleted = false })
+                .Where(x => !x.IsDeleted)
                 .OrderBy(x => x.ParentId)
                 .OrderBy(x => x.Order)
                 .ToListAsync();
@@ -37,8 +35,7 @@ namespace Ginkgo.Infrastructure.Persistence.SqlSugar
         public async Task<List<long>> GetDescendantIdsAsync(long parentId, bool includeSelf = true, CancellationToken ct = default)
         {
             var all = await _db.Queryable<Department>()
-                // 统一过滤软删除
-                .Where("IsDeleted = @IsDeleted", new { IsDeleted = false })
+                .Where(x => !x.IsDeleted)
                 .Select(d => new { d.Id, d.ParentId })
                 .ToListAsync();
             var childrenMap = all.GroupBy(d => d.ParentId ?? 0).ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToList());
@@ -67,8 +64,7 @@ namespace Ginkgo.Infrastructure.Persistence.SqlSugar
         public async Task<(long total, List<Department> items)> SearchAsync(DepartmentQueryFilter filter, int page, int pageSize, CancellationToken ct = default)
         {
             var q = _db.Queryable<Department>()
-                // 统一过滤软删除
-                .Where("IsDeleted = @IsDeleted", new { IsDeleted = false });
+                .Where(x => !x.IsDeleted);
             if (!string.IsNullOrWhiteSpace(filter.Keyword))
             {
                 var k = filter.Keyword.Trim();

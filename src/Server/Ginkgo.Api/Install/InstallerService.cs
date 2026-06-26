@@ -214,7 +214,7 @@ public sealed class InstallerService
                     var allowedClients = dialect.QuoteIdentifier("AllowedClients");
                     var idCol = dialect.QuoteIdentifier("Id");
                     var sqlUpdateRole =
-                        $"UPDATE {roleTable} SET {isSuperAdmin} = 1, " +
+                        $"UPDATE {roleTable} SET {isSuperAdmin} = {dialect.BoolLiteral(true)}, " +
                         $"{allowedClients} = COALESCE(NULLIF({allowedClients},''), @Clients) " +
                         $"WHERE {idCol} = @RoleId";
                     await db.Ado.ExecuteCommandAsync(
@@ -406,27 +406,40 @@ public sealed class InstallerService
         var sql = await File.ReadAllTextAsync(scriptPath, ct);
         IEnumerable<string> batches = dialect.SplitBatches(sql);
 
-        int i = 0;
-        foreach (var raw in batches)
+        var disableFk = dialect.SqlDisableReferentialIntegrity;
+        var enableFk = dialect.SqlEnableReferentialIntegrity;
+        if (!string.IsNullOrWhiteSpace(disableFk))
+            db.Ado.ExecuteCommand(disableFk);
+
+        try
         {
-            var batch = (raw ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(batch)) continue;
-            i++;
-            try
+            int i = 0;
+            foreach (var raw in batches)
             {
-                // 方言级 INSERT 清洗（SQL Server 移除 RowVersion 列，其它方言恒等返回）
-                batch = dialect.SanitizeInsertBatch(batch, db);
-                // MySQL → 目标方言转写 hook（内置 MySql/SqlServer 实现返回原文，
-                // 未来 PG/Oracle/达梦 等方言可选择在此实现轻量 DDL 转写，
-                // 以复用现有 MySQL 脚本作为过渡路径）。
-                batch = dialect.TranslateMySqlDDL(batch);
-                db.Ado.ExecuteCommand(batch);
+                var batch = (raw ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(batch)) continue;
+                i++;
+                try
+                {
+                    batch = dialect.SanitizeInsertBatch(batch, db);
+                    batch = dialect.TranslateMySqlDDL(batch);
+                    if (string.IsNullOrWhiteSpace(batch) ||
+                        batch.StartsWith("-- skipped", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    db.Ado.ExecuteCommand(batch);
+                }
+                catch (Exception ex)
+                {
+                    logs.Add(new InstallLog { At = DateTime.Now, Level = "ERROR", Message = $"执行脚本批次#{i}失败:\n{ex}" });
+                    throw;
+                }
             }
-            catch (Exception ex)
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(enableFk))
             {
-                // 记录完整异常信息，避免前端显示被截断
-                logs.Add(new InstallLog { At = DateTime.Now, Level = "ERROR", Message = $"执行脚本批次#{i}失败:\n{ex}" });
-                throw;
+                try { db.Ado.ExecuteCommand(enableFk); } catch { /* 恢复外键失败不掩盖原始异常 */ }
             }
         }
     }

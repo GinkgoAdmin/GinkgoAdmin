@@ -88,9 +88,19 @@ function parseInput(v: string) {
     return
   }
   try {
-    const obj = JSON.parse(v)
+    let obj = JSON.parse(v)
+    // PG jsonb 误存为 string 类型时，API 可能返回一层 JSON 字符串，需再解析
     if (typeof obj === 'string') {
-      // 纯字符串当作默认语言
+      const trimmed = obj.trim()
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {
+          const nested = JSON.parse(trimmed)
+          if (nested && typeof nested === 'object') {
+            langs.value.forEach(l => { values[l.code] = nested[l.code] || '' })
+            return
+          }
+        } catch { /* 回落到默认语言 */ }
+      }
       values[getDefaultLang()] = obj
       langs.value.filter(l => l.code !== getDefaultLang()).forEach(l => { values[l.code] = '' })
       return

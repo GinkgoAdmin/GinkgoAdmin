@@ -65,7 +65,7 @@ public sealed class DictionaryItem : AuditableEntity
     /// <summary>
     /// 扩展数据（不同类型的条目的差异化配置）。
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "扩展JSON")]
+    [SugarColumn(ColumnDataType = "json", IsNullable = true, ColumnDescription = "扩展JSON")]
     public string? ExtraJson { get; set; }
 
     // ===== 领域行为 =====

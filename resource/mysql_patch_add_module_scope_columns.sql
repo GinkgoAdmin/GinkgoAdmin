@@ -1,6 +1,6 @@
 /*
   补丁：为共享菜单/字典/配置及菜单组相关表补全结构（MySQL）
-  适用：已安装但表结构缺少 Module / RequireGrant / IsDefault / RoleMenuGroupItem 的历史实例
+  适用：已安装但表结构缺少 Module / RequireGrant / IsUniappHome / IsDefault / RoleMenuGroupItem 的历史实例
   说明：
     - sys = 主框架系统级数据
     - 插件数据应在安装时写入对应 ModuleId
@@ -106,6 +106,15 @@ SET @sql := IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS
    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ginkgo_Sys_MenuGroupItem' AND COLUMN_NAME = 'RequireGrant') = 0,
   'ALTER TABLE `ginkgo_Sys_MenuGroupItem` ADD COLUMN `RequireGrant` TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否需要授权（0=公共可见 1=需授权）'' AFTER `Module`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ginkgo_Sys_MenuGroupItem.IsUniappHome
+SET @sql := IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ginkgo_Sys_MenuGroupItem' AND COLUMN_NAME = 'IsUniappHome') = 0,
+  'ALTER TABLE `ginkgo_Sys_MenuGroupItem` ADD COLUMN `IsUniappHome` TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否设为UNIAPP框架启动首页'' AFTER `RequireGrant`',
   'SELECT 1'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

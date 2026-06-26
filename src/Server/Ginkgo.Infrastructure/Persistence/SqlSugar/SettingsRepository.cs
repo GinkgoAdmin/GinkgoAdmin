@@ -26,6 +26,14 @@ public sealed class SettingsRepository : ISettingsRepository
         return await _db.Queryable<Setting>().OrderBy(s => s.Key).ToListAsync();
     }
 
+    public async Task<List<Setting>> GetByModuleAsync(string module, CancellationToken ct = default)
+    {
+        return await _db.Queryable<Setting>()
+            .Where(s => s.Module == module)
+            .OrderBy(s => s.Key)
+            .ToListAsync();
+    }
+
     public async Task AddAsync(Setting entity, CancellationToken ct = default)
     {
         await _db.Insertable(entity).ExecuteCommandAsync();
@@ -44,6 +52,7 @@ public sealed class SettingsRepository : ISettingsRepository
                 s.UpdatedAt, 
                 s.UpdatedBy, 
                 s.Class,
+                s.Module,
                 s.Id 
             })
             .Where(s => s.Key == entity.Key)
@@ -55,6 +64,24 @@ public sealed class SettingsRepository : ISettingsRepository
         {
             throw new InvalidOperationException($"更新配置失败：Key '{entity.Key}' 不存在");
         }
+    }
+
+    public async Task<int> DeleteByKeysAsync(IEnumerable<string> keys, CancellationToken ct = default)
+    {
+        var list = keys.Where(k => !string.IsNullOrWhiteSpace(k)).Distinct(StringComparer.Ordinal).ToList();
+        if (list.Count == 0) return 0;
+        return await _db.Deleteable<Setting>().Where(s => list.Contains(s.Key)).ExecuteCommandAsync();
+    }
+
+    public async Task<int> DeleteByModuleAndKeyPrefixAsync(string module, string keyPrefix, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(module) || string.IsNullOrWhiteSpace(keyPrefix)) return 0;
+        var all = await GetByModuleAsync(module, ct);
+        var keys = all
+            .Where(s => s.Key.StartsWith(keyPrefix, StringComparison.Ordinal))
+            .Select(s => s.Key)
+            .ToList();
+        return await DeleteByKeysAsync(keys, ct);
     }
 }
 

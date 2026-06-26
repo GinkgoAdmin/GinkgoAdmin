@@ -97,7 +97,17 @@ public static class ServiceCollectionExtensions
                     // 实体配置
                     EntityService = (c, p) =>
                     {
-                        // 自动转换下划线命名
+                        if (dbType == DbType.PostgreSQL)
+                        {
+                            // PostgreSQL 保留 PascalCase 列名，与 pgloader 迁移后的双引号标识符一致
+                            if (string.IsNullOrEmpty(p.DbColumnName))
+                                p.DbColumnName = p.PropertyName;
+                            // json → jsonb，配合 DataExecuting 将 string 参数按 jsonb 提交
+                            PostgreSqlJsonbStringBridge.ConfigureEntityColumn(p);
+                            return;
+                        }
+
+                        // MySQL 下含下划线的列名转小写
                         if (!string.IsNullOrEmpty(p.DbColumnName) && p.DbColumnName.ToLower().Contains("_"))
                         {
                             p.DbColumnName = p.DbColumnName.ToLower();
@@ -111,12 +121,26 @@ public static class ServiceCollectionExtensions
                 }
             };
 
+            // PostgreSQL：禁止 SqlSugar 将表名/列名自动转小写，否则无法命中 "ginkgo_Sys_User" 等 PascalCase 表
+            if (dbType == DbType.PostgreSQL)
+            {
+                config.MoreSettings ??= new ConnMoreSettings();
+                config.MoreSettings.PgSqlIsAutoToLower = false;
+                config.MoreSettings.EnableJsonb = true;
+            }
+
             // ===== 高级能力：构造期挂载（与 ConnectionConfig 相关、必须在 SqlSugarClient 实例化前完成） =====
             ApplyReadWriteSplit(config, features.ReadWriteSplit, logger);          // P1.1 ✅ Stage B
             ApplySecondLevelCache(config, features.SecondLevelCache, logger, sp);  // P1.2 ✅ Stage B
             // 注：SaasMultiDb 必须在 SqlSugarClient 实例化之后调用（需要 AsTenant()），已移至下方 client 初始化后执行。
 
             var client = new SqlSugarClient(config);
+
+            if (dbType == DbType.PostgreSQL)
+            {
+                client.Aop.OnExecutingChangeSql = PostgreSqlJsonbStringBridge.OnExecutingChangeSql;
+                client.Aop.DataExecuted = PostgreSqlJsonbStringBridge.OnDataExecuted;
+            }
 
             // 设置命令超时时间
             client.Ado.CommandTimeOut = 30;
@@ -138,11 +162,6 @@ public static class ServiceCollectionExtensions
                 };
             }
 
-            // 配置数据读取事件，用于调试绑定问题
-            client.Aop.DataExecuting = (oldValue, entityInfo) =>
-            {
-                // 可以在这里查看数据绑定过程
-            };
 
             // ===== 高级能力：客户端期挂载（基于 client.Aop） =====
             ApplySlowQuery(client, features.SlowQuery, logger, sp);                // P0.2 ✅ Stage A

@@ -21,7 +21,8 @@ public sealed class SettingsAppService : ISettingsAppService
             Type = x.Type,
             Description = x.Description,
             Class = x.Class,
-            Version = x.Version
+            Version = x.Version,
+            Module = x.Module
         }).ToList();
     }
 
@@ -37,12 +38,16 @@ public sealed class SettingsAppService : ISettingsAppService
         if (exists == null)
         {
             var entity = Setting.Create(key, input.Value, input.Type, input.Description, @class, operatorId);
+            if (!string.IsNullOrWhiteSpace(input.Module))
+                entity.Module = input.Module.Trim();
             await _repo.AddAsync(entity, ct);
             return;
         }
 
         exists.SetValue(input.Value, input.Type, operatorId);
         exists.ChangeMeta(input.Description, @class, operatorId);
+        if (!string.IsNullOrWhiteSpace(input.Module))
+            exists.Module = input.Module.Trim();
         await _repo.UpdateAsync(exists, ct);
     }
 }

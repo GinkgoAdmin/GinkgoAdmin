@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Ginkgo.Infrastructure.SqlTranslation;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -157,7 +158,7 @@ public sealed class ModulePackageService
     /// <param name="exportDictionary">是否从数据库导出插件字典写入 ini_data.sql</param>
     /// <param name="ct">取消令牌</param>
     /// <param name="progress">可选进度回调（供打包插件实时写入步骤日志）</param>
-    public async Task<ModulePackageResult> PackageModuleAsync(string moduleId, string packageType = "source", bool exportDbSchema = false, bool exportDbData = false, bool sanitizeConfig = true, CancellationToken ct = default, IProgress<string>? progress = null, bool exportClientMenus = false, bool exportDictionary = false)
+    public async Task<ModulePackageResult> PackageModuleAsync(string moduleId, string packageType = "source", bool exportDbSchema = false, bool exportDbData = false, bool sanitizeConfig = true, CancellationToken ct = default, IProgress<string>? progress = null, bool exportClientMenus = false, bool exportDictionary = false, IReadOnlyList<string>? exportSqlDialects = null)
     {
         var result = new ModulePackageResult { PackageType = packageType };
 
@@ -396,7 +397,7 @@ public sealed class ModulePackageService
             // 步骤 8: 数据库导出（表结构 + 可选数据 + 菜单同步）
             // ============================================================
             result.Steps.Add("[8/10] 数据库导出...");
-            await ExportDatabaseAsync(moduleDir, moduleId, stagingDir, exportDbSchema, exportDbData, exportClientMenus, exportDictionary, manifest, result, progress, ct);
+            await ExportDatabaseAsync(moduleDir, moduleId, stagingDir, exportDbSchema, exportDbData, exportClientMenus, exportDictionary, exportSqlDialects, manifest, result, progress, ct);
 
             // ============================================================
             // 步骤 9: 生成 install-manifest.json
@@ -513,7 +514,7 @@ public sealed class ModulePackageService
     /// <summary>
     /// 导出数据库（三种模式：源文件直接复制 / 真实结构导出 / 真实结构+数据导出）
     /// </summary>
-    private async Task ExportDatabaseAsync(string moduleDir, string moduleId, string stagingDir, bool exportDbSchema, bool exportDbData, bool exportClientMenus, bool exportDictionary, ModuleManifest manifest, ModulePackageResult result, IProgress<string>? progress, CancellationToken ct)
+    private async Task ExportDatabaseAsync(string moduleDir, string moduleId, string stagingDir, bool exportDbSchema, bool exportDbData, bool exportClientMenus, bool exportDictionary, IReadOnlyList<string>? exportSqlDialects, ModuleManifest manifest, ModulePackageResult result, IProgress<string>? progress, CancellationToken ct)
     {
         void Step(string msg)
         {
@@ -546,7 +547,7 @@ public sealed class ModulePackageService
                 else
                 {
                     // 回退：从源码中的 install.sql 提取表名
-                    var installSqlFiles = FindInstallSqlFiles(serverDir);
+                    var installSqlFiles = ModuleInstallSqlLocator.FindInstallSqlFiles(serverDir, _config["Database:Provider"]);
                     foreach (var sqlFile in installSqlFiles)
                     {
                         var sqlContent = await File.ReadAllTextAsync(sqlFile, ct);
@@ -566,61 +567,63 @@ public sealed class ModulePackageService
                     tableNames = await _sqlExecutor.SortTablesForDataExportAsync(tableNames, ct);
                     Step($"  表顺序: 已按外键依赖排序（{tableNames.Count} 张）");
 
-                    // 2. 导出表结构
-                    var schemaSql = await _sqlExecutor.ExportTableSchemaAsync(tableNames, ct);
-                    if (!string.IsNullOrWhiteSpace(schemaSql))
+                    var exportDialects = ResolveExportDialects(exportSqlDialects);
+                    Step($"  目标数据库方言: {string.Join(", ", exportDialects)}");
+
+                    foreach (var dialect in exportDialects)
                     {
-                        // 确定写入路径：保持与源文件相同的相对路径
-                        var installSqlRelPath = DetermineInstallSqlRelativePath(serverDir);
-                        var targetPath = Path.Combine(stagingDir, "server", installSqlRelPath);
-                        var targetDir = Path.GetDirectoryName(targetPath);
-                        if (targetDir != null && !Directory.Exists(targetDir))
-                            Directory.CreateDirectory(targetDir);
-                        await File.WriteAllTextAsync(targetPath, schemaSql, System.Text.Encoding.UTF8, ct);
-                        Step($"  导出表结构: {tableNames.Count} 张表 → {installSqlRelPath}");
-                    }
+                        var folder = ModuleInstallSqlLocator.MapDialectCodeToSqlFolder(dialect);
+                        var installSqlRelPath = Path.Combine("sql", folder, "install.sql").Replace('\\', '/');
 
-                    // 3. 导出表数据（模式 C：全量流式写入，支持百万级）
-                    if (exportDbData)
-                    {
-                        Step($"  开始全量导出表数据（{tableNames.Count} 张表，数据量大时可能耗时较长，请耐心等待）...");
-
-                        var installSqlRelPath = DetermineInstallSqlRelativePath(serverDir);
-                        var sqlDir = Path.GetDirectoryName(installSqlRelPath) ?? "sql";
-                        var dataRelPath = Path.Combine(sqlDir, "init_data.sql");
-                        var dataTargetPath = Path.Combine(stagingDir, "server", dataRelPath);
-                        var dataTargetDir = Path.GetDirectoryName(dataTargetPath);
-                        if (dataTargetDir != null && !Directory.Exists(dataTargetDir))
-                            Directory.CreateDirectory(dataTargetDir);
-
-                        var exportStats = await _sqlExecutor.ExportTableDataToFileAsync(
-                            tableNames,
-                            dataTargetPath,
-                            ct,
-                            rowLimit: null,
-                            onProgress: Step);
-
-                        if (exportStats.TotalRows > 0 || exportStats.TotalBytes > 0)
+                        var schemaSql = await _sqlExecutor.ExportTableSchemaForTargetDialectAsync(tableNames, dialect, ct);
+                        if (!string.IsNullOrWhiteSpace(schemaSql))
                         {
-                            result.IncludedFiles.Add($"server/{dataRelPath.Replace('\\', '/')}");
-
-                            _logger.LogInformation(
-                                "init_data.sql 已写入: {Path}, 行数: {Rows}, 大小: {Size} bytes",
-                                dataTargetPath, exportStats.TotalRows, exportStats.TotalBytes);
-                            Step($"  导出表数据: {exportStats.TotalRows:N0} 行 → {dataRelPath}（{exportStats.TotalBytes:N0} bytes）");
-
-                            // 立即将 init_data.sql 注册到暂存区 install.json 的 SqlScripts 中（不依赖后续文件检测）
-                            var dataRelPathNormalized = dataRelPath.Replace('\\', '/');
-                            await RegisterSqlScriptInInstallJsonAsync(stagingDir, serverDir, dataRelPathNormalized, ct);
-                            Step($"  已注册 SqlScript: {dataRelPathNormalized}");
+                            var targetPath = Path.Combine(stagingDir, "server", installSqlRelPath.Replace('/', Path.DirectorySeparatorChar));
+                            var targetDir = Path.GetDirectoryName(targetPath);
+                            if (targetDir != null && !Directory.Exists(targetDir))
+                                Directory.CreateDirectory(targetDir);
+                            await File.WriteAllTextAsync(targetPath, schemaSql, System.Text.Encoding.UTF8, ct);
+                            Step($"  导出表结构 [{dialect}]: {tableNames.Count} 张表 → {installSqlRelPath}");
                         }
-                        else
+
+                        if (exportDbData)
                         {
-                            Step("  导出表数据: 无数据行（已跳过 init_data.sql 注册）");
-                            if (File.Exists(dataTargetPath))
+                            Step($"  开始导出表数据 [{dialect}]（{tableNames.Count} 张表）...");
+                            var dataRelPath = Path.Combine("sql", folder, "init_data.sql").Replace('\\', '/');
+                            var dataTargetPath = Path.Combine(stagingDir, "server", dataRelPath.Replace('/', Path.DirectorySeparatorChar));
+                            var dataTargetDir = Path.GetDirectoryName(dataTargetPath);
+                            if (dataTargetDir != null && !Directory.Exists(dataTargetDir))
+                                Directory.CreateDirectory(dataTargetDir);
+
+                            var exportStats = await _sqlExecutor.ExportTableDataToFileForTargetDialectAsync(
+                                tableNames,
+                                dataTargetPath,
+                                dialect,
+                                ct,
+                                rowLimit: null,
+                                onProgress: Step);
+
+                            if (exportStats.TotalRows > 0 || exportStats.TotalBytes > 0)
+                            {
+                                result.IncludedFiles.Add($"server/{dataRelPath}");
+                                Step($"  导出表数据 [{dialect}]: {exportStats.TotalRows:N0} 行 → {dataRelPath}（{exportStats.TotalBytes:N0} bytes）");
+                            }
+                            else if (File.Exists(dataTargetPath))
+                            {
                                 File.Delete(dataTargetPath);
+                            }
                         }
                     }
+
+                    var stagingInstallJson = Path.Combine(stagingDir, "server", "install.json");
+                    await ModuleInstallScriptResolver.RegisterDialectScriptsInInstallJsonAsync(
+                        stagingInstallJson,
+                        exportDialects,
+                        exportDbData,
+                        includeIniData: false,
+                        _config["Database:Provider"],
+                        ct);
+                    Step($"  已注册 SqlScriptsByDialect（{exportDialects.Count} 种方言）");
                 }
             }
             catch (Exception ex)
@@ -641,7 +644,7 @@ public sealed class ModulePackageService
 
         // 插件字典：勾选后导出到 ini_data.sql 并注册到 install.json SqlScripts
         if (exportDictionary)
-            await ExportDictionaryToIniDataAsync(serverDir, stagingDir, moduleId, result, ct);
+            await ExportDictionaryToIniDataAsync(serverDir, stagingDir, moduleId, exportSqlDialects, result, ct);
         else
             Step("  字典导出: 跳过（未勾选）");
     }
@@ -697,62 +700,6 @@ public sealed class ModulePackageService
         }
 
         await File.WriteAllTextAsync(installJsonPath, JsonSerializer.Serialize(node, CreateReadableJsonOptions()), System.Text.Encoding.UTF8, ct);
-    }
-
-    /// <summary>
-    /// 查找模块 server/sql 目录下所有 install.sql 文件（兼容根目录和数据库类型子目录两种风格）
-    /// </summary>
-    private static List<string> FindInstallSqlFiles(string serverDir)
-    {
-        var result = new List<string>();
-        var sqlDir = Path.Combine(serverDir, "sql");
-        if (!Directory.Exists(sqlDir))
-            return result;
-
-        // 优先查找根目录下的 install.sql
-        var rootInstall = Path.Combine(sqlDir, "install.sql");
-        if (File.Exists(rootInstall))
-        {
-            result.Add(rootInstall);
-            return result;
-        }
-
-        // 回退：查找子目录下的 install.sql（如 sql/mysql/install.sql、sql/mssql/install.sql）
-        foreach (var subDir in Directory.GetDirectories(sqlDir))
-        {
-            var subInstall = Path.Combine(subDir, "install.sql");
-            if (File.Exists(subInstall))
-                result.Add(subInstall);
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// 确定 install.sql 的相对路径（相对于 server/ 目录），用于导出时保持原始目录结构
-    /// </summary>
-    private static string DetermineInstallSqlRelativePath(string serverDir)
-    {
-        var sqlDir = Path.Combine(serverDir, "sql");
-
-        // 优先使用根目录下的 install.sql 路径
-        var rootInstall = Path.Combine(sqlDir, "install.sql");
-        if (File.Exists(rootInstall))
-            return Path.Combine("sql", "install.sql");
-
-        // 查找子目录（如 sql/mysql/install.sql）
-        if (Directory.Exists(sqlDir))
-        {
-            foreach (var subDir in Directory.GetDirectories(sqlDir))
-            {
-                var subInstall = Path.Combine(subDir, "install.sql");
-                if (File.Exists(subInstall))
-                    return Path.Combine("sql", Path.GetFileName(subDir), "install.sql");
-            }
-        }
-
-        // 默认路径
-        return Path.Combine("sql", "install.sql");
     }
 
     /// <summary>
@@ -933,10 +880,26 @@ public sealed class ModulePackageService
         }
     }
 
+    private List<string> ResolveExportDialects(IReadOnlyList<string>? requested)
+    {
+        if (requested != null && requested.Count > 0)
+        {
+            return requested
+                .Select(ModuleInstallScriptResolver.NormalizeProviderCode)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        return new List<string>
+        {
+            ModuleInstallScriptResolver.NormalizeProviderCode(_config["Database:Provider"])
+        };
+    }
+
     /// <summary>
-    /// 从数据库导出插件字典（ginkgo_Sys_Dictionary / DictionaryItem），写入 ini_data.sql 并注册到 SqlScripts。
+    /// 从数据库导出插件字典（ginkgo_Sys_Dictionary / DictionaryItem），写入各方言 ini_data.sql 并注册到 SqlScriptsByDialect。
     /// </summary>
-    private async Task ExportDictionaryToIniDataAsync(string serverDir, string stagingDir, string moduleId, ModulePackageResult result, CancellationToken ct)
+    private async Task ExportDictionaryToIniDataAsync(string serverDir, string stagingDir, string moduleId, IReadOnlyList<string>? exportSqlDialects, ModulePackageResult result, CancellationToken ct)
     {
         try
         {
@@ -947,34 +910,50 @@ public sealed class ModulePackageService
                 return;
             }
 
-            const string iniRelPath = "sql/ini_data.sql";
-            var targetPath = Path.Combine(stagingDir, "server", iniRelPath);
-            var targetDir = Path.GetDirectoryName(targetPath);
-            if (targetDir != null && !Directory.Exists(targetDir))
-                Directory.CreateDirectory(targetDir);
-
-            if (File.Exists(targetPath))
+            var sourceDialect = ModuleInstallScriptResolver.NormalizeProviderCode(_config["Database:Provider"]);
+            var exportDialects = ResolveExportDialects(exportSqlDialects);
+            var header = "-- ============================================================" + Environment.NewLine
+                + "-- 插件初始化数据（字典等，由打包器自动生成）" + Environment.NewLine
+                + $"-- Module: {moduleId}" + Environment.NewLine
+                + "-- ============================================================" + Environment.NewLine + Environment.NewLine;
+            foreach (var dialect in exportDialects)
             {
-                var existing = await File.ReadAllTextAsync(targetPath, ct);
-                var merged = existing.TrimEnd() + Environment.NewLine + Environment.NewLine
-                    + "-- ============================================================" + Environment.NewLine
-                    + "-- 以下内容由打包器自动追加：插件字典导出" + Environment.NewLine
-                    + "-- ============================================================" + Environment.NewLine
-                    + dictSql;
-                await File.WriteAllTextAsync(targetPath, merged, System.Text.Encoding.UTF8, ct);
-            }
-            else
-            {
-                var header = "-- ============================================================" + Environment.NewLine
-                    + "-- 插件初始化数据（字典等，由打包器自动生成）" + Environment.NewLine
-                    + $"-- Module: {moduleId}" + Environment.NewLine
-                    + "-- ============================================================" + Environment.NewLine + Environment.NewLine;
-                await File.WriteAllTextAsync(targetPath, header + dictSql, System.Text.Encoding.UTF8, ct);
+                var folder = ModuleInstallSqlLocator.MapDialectCodeToSqlFolder(dialect);
+                var iniRelPath = $"sql/{folder}/ini_data.sql";
+                var targetPath = Path.Combine(stagingDir, "server", iniRelPath.Replace('/', Path.DirectorySeparatorChar));
+                var targetDir = Path.GetDirectoryName(targetPath);
+                if (targetDir != null && !Directory.Exists(targetDir))
+                    Directory.CreateDirectory(targetDir);
+
+                var translatedDict = string.Equals(dialect, sourceDialect, StringComparison.OrdinalIgnoreCase)
+                    ? dictSql
+                    : ModuleSqlScriptTranslator.TranslateScript(dictSql, sourceDialect, dialect);
+
+                var content = header + translatedDict;
+
+                if (File.Exists(targetPath))
+                {
+                    var existing = await File.ReadAllTextAsync(targetPath, ct);
+                    content = existing.TrimEnd() + Environment.NewLine + Environment.NewLine
+                        + "-- ============================================================" + Environment.NewLine
+                        + "-- 以下内容由打包器自动追加：插件字典导出" + Environment.NewLine
+                        + "-- ============================================================" + Environment.NewLine
+                        + translatedDict;
+                }
+
+                await File.WriteAllTextAsync(targetPath, content, System.Text.Encoding.UTF8, ct);
+                result.IncludedFiles.Add($"server/{iniRelPath}");
             }
 
-            result.IncludedFiles.Add($"server/{iniRelPath}");
-            await RegisterSqlScriptInInstallJsonAsync(stagingDir, serverDir, iniRelPath, ct);
-            result.Steps.Add($"  字典导出: OK → {iniRelPath}（安装时随 SqlScripts 一并执行；卸载时按 Module 自动清理）");
+            var stagingInstallJson = Path.Combine(stagingDir, "server", "install.json");
+            await ModuleInstallScriptResolver.RegisterDialectScriptsInInstallJsonAsync(
+                stagingInstallJson,
+                exportDialects,
+                includeInitData: false,
+                includeIniData: true,
+                _config["Database:Provider"],
+                ct);
+            result.Steps.Add($"  字典导出: OK → sql/{{方言}}/ini_data.sql（{exportDialects.Count} 种方言）");
         }
         catch (Exception ex)
         {

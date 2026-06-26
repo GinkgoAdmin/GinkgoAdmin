@@ -44,8 +44,10 @@
                   <el-button type="primary" link size="small" :icon="MoreFilled" />
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item command="edit">编辑</el-dropdown-item>
-                      <el-dropdown-item v-if="!group.isSystem" command="delete" divided>
+                      <el-dropdown-item command="export">导出菜单</el-dropdown-item>
+                      <el-dropdown-item command="import">导入菜单</el-dropdown-item>
+                      <el-dropdown-item command="edit" divided>编辑</el-dropdown-item>
+                      <el-dropdown-item v-if="!group.isSystem" command="delete">
                         <span style="color: var(--el-color-danger)">删除</span>
                       </el-dropdown-item>
                     </el-dropdown-menu>
@@ -68,6 +70,8 @@
             </div>
             <div class="items-header-actions">
               <el-button type="primary" size="small" :icon="Plus" @click="handleAddItem()">添加菜单项</el-button>
+              <el-button size="small" :icon="Download" @click="handleExportGroup()">导出菜单</el-button>
+              <el-button size="small" :icon="Upload" @click="triggerMenuImport">导入菜单</el-button>
               <el-button size="small" :icon="Download" @click="showImportDialog = true">从系统菜单导入</el-button>
             </div>
           </div>
@@ -341,6 +345,14 @@
         <el-button type="primary" :loading="importing" @click="handleImport">导入选中项</el-button>
       </template>
     </el-dialog>
+
+    <input
+      ref="menuImportFileRef"
+      type="file"
+      accept="application/json,.json"
+      style="display: none"
+      @change="onMenuImportFileChange"
+    />
   </div>
 </template>
 
@@ -348,16 +360,16 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { Plus, Delete, Download, MoreFilled, Lock, Link, Rank } from '@element-plus/icons-vue'
+import { Plus, Delete, Download, Upload, MoreFilled, Lock, Link, Rank } from '@element-plus/icons-vue'
 import {
   getMenuGroups, getMenuGroupDetail, createMenuGroup, updateMenuGroup, deleteMenuGroup,
   getMenuGroupItems, createMenuGroupItem, updateMenuGroupItem, deleteMenuGroupItem,
   batchDeleteMenuGroupItems, importFromSystemMenu, sortMenuGroupItems,
-  setMenuGroupItemUniappHome,
+  setMenuGroupItemUniappHome, exportMenuGroup, importMenuGroup,
   type MenuGroupListItem, type MenuGroupItemNode,
   type CreateMenuGroupInput, type UpdateMenuGroupInput,
   type CreateMenuGroupItemInput, type UpdateMenuGroupItemInput,
-  type MenuGroupItemSortInput
+  type MenuGroupItemSortInput, type MenuGroupExportPackage
 } from '@/api/menuGroup'
 import { getAdminMenusTree, type AdminMenuNode } from '@/api/menu'
 import BootstrapIconPicker from '@/components/BootstrapIconPicker.vue'
@@ -632,7 +644,115 @@ async function toggleGroupEnabled(group: MenuGroupListItem, val: boolean) {
 
 function handleGroupCommand(cmd: string, group: MenuGroupListItem) {
   if (cmd === 'edit') handleEditGroup(group)
+  else if (cmd === 'export') handleExportGroup(group)
+  else if (cmd === 'import') handleImportGroup(group)
   else if (cmd === 'delete') handleDeleteGroup(group)
+}
+
+const menuImportFileRef = ref<HTMLInputElement | null>(null)
+const menuImportTargetGroupId = ref('')
+
+function downloadJsonFile(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+async function handleExportGroup(group?: MenuGroupListItem) {
+  const target = group || currentGroup.value
+  if (!target) {
+    ElMessage.warning('请先选择要导出的菜单组')
+    return
+  }
+  try {
+    const pkg = await exportMenuGroup(target.id)
+    const slug = pkg.group?.slug || target.slug || 'menu-group'
+    const date = new Date().toISOString().slice(0, 10)
+    downloadJsonFile(pkg, `menu-group-${slug}-${date}.json`)
+    ElMessage.success(`已导出「${pkg.group?.name || target.name}」共 ${pkg.items?.length ?? 0} 项`)
+  } catch (e: any) {
+    ElMessage.error(e?.message || '导出失败')
+  }
+}
+
+function handleImportGroup(group?: MenuGroupListItem) {
+  const target = group || currentGroup.value
+  if (!target) {
+    ElMessage.warning('请先选择要导入到的菜单组')
+    return
+  }
+  menuImportTargetGroupId.value = target.id
+  if (currentGroupId.value !== target.id) selectGroup(target)
+  triggerMenuImport()
+}
+
+function triggerMenuImport() {
+  if (!currentGroupId.value) {
+    ElMessage.warning('请先选择要导入到的菜单组')
+    return
+  }
+  menuImportTargetGroupId.value = currentGroupId.value
+  menuImportFileRef.value?.click()
+}
+
+function parseMenuImportPackage(raw: unknown): MenuGroupExportPackage {
+  const obj = raw as MenuGroupExportPackage
+  if (!obj || typeof obj !== 'object' || !obj.group?.slug || !obj.group?.name) {
+    throw new Error('文件格式无效：需包含 group.slug 与 group.name')
+  }
+  if (!Array.isArray(obj.items)) obj.items = []
+  if (obj.formatVersion != null && obj.formatVersion !== 1) {
+    throw new Error(`不支持的格式版本：${obj.formatVersion}`)
+  }
+  return obj
+}
+
+async function onMenuImportFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  const groupId = menuImportTargetGroupId.value || currentGroupId.value
+  if (!groupId) {
+    ElMessage.warning('请先选择要导入到的菜单组')
+    return
+  }
+
+  try {
+    const text = await file.text()
+    const pkg = parseMenuImportPackage(JSON.parse(text))
+    const target = groups.value.find(g => g.id === groupId)
+    const slug = pkg.group.slug
+    const itemCount = pkg.items.length
+
+    let confirmMsg = `将把 ${itemCount} 个菜单项导入到「${target?.name || '当前菜单组'}」`
+    if (target && target.slug !== slug) {
+      confirmMsg += `\n\n注意：文件来自「${pkg.group.name}」（${slug}），与当前组（${target.slug}）标识不同，将仅导入菜单项结构。`
+    }
+    confirmMsg += '\n\n导入将全量替换当前组下已有菜单项，是否继续？'
+
+    await ElMessageBox.confirm(confirmMsg, '导入确认', {
+      type: 'warning',
+      confirmButtonText: '覆盖导入',
+      cancelButtonText: '取消',
+    })
+
+    const result = await importMenuGroup(groupId, pkg)
+    ElMessage.success(`导入成功：新增 ${result.itemsCreated} 项，替换前删除 ${result.itemsDeleted} 项`)
+    if (currentGroupId.value === groupId) await loadItems()
+    await loadGroups()
+  } catch (err: any) {
+    if (err !== 'cancel' && err?.message !== 'cancel') {
+      ElMessage.error(err?.message || '导入失败')
+    }
+  }
 }
 
 async function handleDeleteGroup(group: MenuGroupListItem) {

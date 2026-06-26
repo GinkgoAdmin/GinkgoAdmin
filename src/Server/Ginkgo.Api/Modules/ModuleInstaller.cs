@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using Ginkgo.Api.Auth;
+using Ginkgo.Application.Modules;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Ginkgo.Api.Modules;
@@ -17,6 +19,7 @@ public sealed class ModuleInstaller
     private readonly PermissionCacheInvalidator? _permissionCacheInvalidator;
     private readonly IConfiguration _config;
     private readonly ILogger<ModuleInstaller> _logger;
+    private readonly IServiceScopeFactory _scopes;
 
     /// <summary>
     /// P1-5：按 moduleId 的串行化信号量。Install / Upgrade / Uninstall 都从这里取锁，
@@ -28,9 +31,9 @@ public sealed class ModuleInstaller
     private static SemaphoreSlim GetModuleLock(string moduleId)
         => _moduleLocks.GetOrAdd(moduleId, _ => new SemaphoreSlim(1, 1));
 
-    public ModuleInstaller(InstalledModulesStore store, ModuleLoader loader, ModuleSqlExecutor sql, IConfiguration config, ILogger<ModuleInstaller> logger, SolutionManager? solutionManager = null, WebModuleManager? webModuleManager = null, ServerModuleManager? serverModuleManager = null, PendingDeleteManager? pendingDelete = null, PermissionCacheInvalidator? permissionCacheInvalidator = null)
+    public ModuleInstaller(InstalledModulesStore store, ModuleLoader loader, ModuleSqlExecutor sql, IConfiguration config, ILogger<ModuleInstaller> logger, IServiceScopeFactory scopes, SolutionManager? solutionManager = null, WebModuleManager? webModuleManager = null, ServerModuleManager? serverModuleManager = null, PendingDeleteManager? pendingDelete = null, PermissionCacheInvalidator? permissionCacheInvalidator = null)
     {
-        _store = store; _installed = store; _loader = loader; _sql = sql; _config = config; _logger = logger; _solutionManager = solutionManager; _webModuleManager = webModuleManager; _serverModuleManager = serverModuleManager; _pendingDelete = pendingDelete; _permissionCacheInvalidator = permissionCacheInvalidator;
+        _store = store; _installed = store; _loader = loader; _sql = sql; _config = config; _logger = logger; _scopes = scopes; _solutionManager = solutionManager; _webModuleManager = webModuleManager; _serverModuleManager = serverModuleManager; _pendingDelete = pendingDelete; _permissionCacheInvalidator = permissionCacheInvalidator;
     }
 
     public sealed record ModuleOperationResult(bool Ok, string Message, List<string>? PendingDeleteDirs = null);
@@ -74,10 +77,11 @@ public sealed class ModuleInstaller
                 var spec = ModuleSqlExecutor.ReadInstallJson(installPath);
                 // 提取菜单根编码，用于后续持久化
                 menuRootCode = spec?.Menus?.RootCode;
-                if (spec?.SqlScripts != null && spec.SqlScripts.Length > 0)
+                if (spec?.SqlScripts != null || spec?.SqlScriptsByDialect != null)
                 {
-                    var scripts = spec.SqlScripts.Select(p => Path.Combine(baseDir, p));
-                    await _sql.ExecuteScriptsAsync(scripts, ct);
+                    var installJsonDir = Path.GetDirectoryName(installPath)!;
+                    var resolved = ModuleInstallScriptResolver.Resolve(installJsonDir, _config["Database:Provider"], spec);
+                    await _sql.ExecuteScriptsAsync(resolved.AbsolutePaths, ct, resolved.ScriptsAreNativeDialect);
                 }
                 // 应用 install.json 中的 Menus 规则（如有），同时把模块 Id 写入 ginkgo_Sys_Menu.Module
                 await _sql.ApplyMenusAsync(spec, repoItem.Manifest.Name ?? repoItem.Manifest.Id, repoItem.Manifest.Id, ct);
@@ -85,6 +89,9 @@ public sealed class ModuleInstaller
                 // 与上方 ApplyMenusAsync 使用相同的 moduleId，保持模块归属一致；置于同一 try 块内，异常将传播到下方 catch 形成安装失败结果
                 await _sql.ApplyClientMenusAsync(spec, repoItem.Manifest.Id, ct);
             }
+
+            // 数据库存储模式：安装时将 config/*.sample 默认值写入 ginkgo_Sys_Settings
+            await SeedModuleConfigToDatabaseAsync(repoItem.Manifest, baseDir, ct);
         }
         catch (Exception ex)
         {
@@ -649,6 +656,41 @@ public sealed class ModuleInstaller
         {
             // 版本格式无法解析时，按字符串比较
             return string.Compare(currentVersion, requiredMinVersion, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+    }
+
+    /// <summary>
+    /// 安装时将数据库存储模式的插件配置默认值写入 ginkgo_Sys_Settings（Module=moduleId）。
+    /// </summary>
+    private async Task SeedModuleConfigToDatabaseAsync(ModuleManifest manifest, string baseDir, CancellationToken ct)
+    {
+        if (manifest.Config?.IsDatabaseStorage != true) return;
+
+        var configDir = Path.Combine(baseDir, "config");
+        if (!Directory.Exists(configDir)) return;
+
+        using var scope = _scopes.CreateScope();
+        var dbSvc = scope.ServiceProvider.GetRequiredService<ModuleConfigDbService>();
+
+        var primaryFile = manifest.Config.PrimaryFile;
+        IEnumerable<string> sampleFiles;
+        if (!string.IsNullOrWhiteSpace(primaryFile))
+        {
+            var sample = Path.Combine(configDir, primaryFile.EndsWith(".sample", StringComparison.OrdinalIgnoreCase) ? primaryFile : primaryFile + ".sample");
+            sampleFiles = File.Exists(sample) ? new[] { sample } : Array.Empty<string>();
+        }
+        else
+        {
+            sampleFiles = Directory.GetFiles(configDir, "*.json.sample");
+        }
+
+        foreach (var samplePath in sampleFiles)
+        {
+            var fileName = Path.GetFileName(samplePath);
+            if (fileName.EndsWith(".sample", StringComparison.OrdinalIgnoreCase))
+                fileName = fileName[..^".sample".Length];
+            await dbSvc.SeedFromSampleAsync(manifest.Id, fileName, samplePath, ct);
+            _logger.LogInformation("[Install] 已写入插件数据库配置默认值: {ModuleId}/{File}", manifest.Id, fileName);
         }
     }
 }

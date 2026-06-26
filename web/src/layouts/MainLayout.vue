@@ -247,6 +247,7 @@ import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import { useSystemStore } from '../stores/system'
 import { useMenuStore } from '../stores/menu'
+import { useLanguageStore } from '../stores/language'
 import { useTabsStore } from '../stores/tabs'
 import { useNotificationStore } from '../stores/notification'
 import { loginFullPath, ADMIN_TITLE, adminBasePath } from '../config/admin'
@@ -258,6 +259,7 @@ import {
   MoreFilled, Refresh, Close, CircleClose, RefreshRight
 } from '@element-plus/icons-vue'
 import { getPluginManager } from '../plugins'
+import { injectAdminRoutes } from '../router/admin'
 import type { TabsPaneContext } from 'element-plus'
 import RecursiveMenuItem from '../components/RecursiveMenuItem.vue'
 import NotificationPopover from '../components/NotificationPopover.vue'
@@ -268,6 +270,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const system = useSystemStore()
 const menuStore = useMenuStore()
+const languageStore = useLanguageStore()
 const tabsStore = useTabsStore()
 const notificationStore = useNotificationStore()
 
@@ -629,7 +632,6 @@ function goToSettings(): void {
 // Clear cache and reload menus
 async function handleClearCache(): Promise<void> {
   try {
-    // 显示确认对话框
     await ElMessageBox.confirm(
       '确定要清空缓存吗？清空后将重新加载菜单和权限数据。',
       '清空缓存',
@@ -639,32 +641,37 @@ async function handleClearCache(): Promise<void> {
         type: 'warning',
       }
     )
-
-    // 显示加载提示
-    const loading = ElLoading.service({
-      lock: true,
-      text: '正在清空缓存并重新加载...',
-      background: 'rgba(0, 0, 0, 0.7)',
-    })
-
-    try {
-      // 清空菜单缓存
-      menuStore.clearCache()
-
-      // 重新加载菜单和权限数据
-      await menuStore.loadMenus(true)
-
-      // 关闭加载提示
-      loading.close()
-
-      // 显示成功消息
-      ElMessage.success('缓存已清空并重新加载')
-    } catch (error: any) {
-      loading.close()
-      ElMessage.error(error?.message || '重新加载失败')
-    }
   } catch {
-    // 用户取消操作
+    return
+  }
+
+  const loading = ElLoading.service({
+    lock: true,
+    text: '正在清空缓存并重新加载...',
+    background: 'rgba(0, 0, 0, 0.7)',
+  })
+
+  try {
+    menuStore.clearCache()
+    languageStore.clearCache()
+
+    const reloadMenus = menuStore.loadMenus(true)
+    const timeout = new Promise<never>((_, reject) => {
+      window.setTimeout(() => reject(new Error('菜单加载超时，请稍后重试')), 30000)
+    })
+    await Promise.race([reloadMenus, timeout])
+
+    await injectAdminRoutes(router)
+    await loadPluginLayoutExtensions()
+
+    ElMessage.success('缓存已清空并重新加载')
+  } catch (error: any) {
+    const msg = String(error?.message || '')
+    if (!msg.includes('登录') && !msg.includes('认证')) {
+      ElMessage.error(msg || '重新加载失败')
+    }
+  } finally {
+    loading.close()
   }
 }
 

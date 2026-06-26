@@ -83,11 +83,15 @@ public class DashboardController : ControllerBase
 
         var startDate = DateTime.Now.Date.AddDays(-days + 1);
 
-        var rawData = await _db.Queryable<OpLog>()
+        var logs = await _db.Queryable<OpLog>()
             .Where(x => x.CreatedAt >= startDate)
-            .GroupBy(x => x.CreatedAt.Date)
-            .Select(x => new { date = x.CreatedAt.Date, count = SqlFunc.AggregateCount(x.Id) })
+            .Select(x => new { x.CreatedAt })
             .ToListAsync();
+
+        var rawData = logs
+            .GroupBy(x => x.CreatedAt.Date)
+            .Select(g => new { date = g.Key, count = g.Count() })
+            .ToList();
 
         // 确保每一天都有数据（包括 0 的天）
         var result = new List<object>();
@@ -142,11 +146,15 @@ public class DashboardController : ControllerBase
 
         var startDate = DateTime.Now.Date.AddDays(-days + 1);
 
-        var rawData = await _db.Queryable<User>()
+        var users = await _db.Queryable<User>()
             .Where(x => x.CreatedAt >= startDate)
-            .GroupBy(x => x.CreatedAt.Date)
-            .Select(x => new { date = x.CreatedAt.Date, count = SqlFunc.AggregateCount(x.Id) })
+            .Select(x => new { x.CreatedAt })
             .ToListAsync();
+
+        var rawData = users
+            .GroupBy(x => x.CreatedAt.Date)
+            .Select(g => new { date = g.Key, count = g.Count() })
+            .ToList();
 
         var result = new List<object>();
         for (int i = 0; i < days; i++)

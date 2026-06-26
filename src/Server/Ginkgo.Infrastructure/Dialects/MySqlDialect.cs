@@ -287,6 +287,36 @@ public sealed class MySqlDialect : IDatabaseDialect
     /// <inheritdoc/>
     public string TranslateMySqlDDL(string mysqlDdl) => mysqlDdl;
 
+    /// <inheritdoc/>
+    public string? SqlDisableReferentialIntegrity => "SET FOREIGN_KEY_CHECKS=0";
+
+    /// <inheritdoc/>
+    public string? SqlEnableReferentialIntegrity => "SET FOREIGN_KEY_CHECKS=1";
+
+    /// <inheritdoc/>
+    public string SqlGetForeignKeyDependencies =>
+        "SELECT TABLE_NAME AS ChildTable, REFERENCED_TABLE_NAME AS ParentTable " +
+        "FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+        "WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL";
+
+    /// <inheritdoc/>
+    public string SqlForeignKeyChildTableInFilter => "TABLE_NAME";
+
+    /// <inheritdoc/>
+    public string FormatSqlLiteral(object? value)
+    {
+        if (value == null || value is DBNull) return "NULL";
+        if (value is string s)
+            return $"'{s.Replace("\\", "\\\\").Replace("'", "''")}'";
+        if (value is DateTime dt)
+            return $"'{dt:yyyy-MM-dd HH:mm:ss.ffffff}'";
+        if (value is bool b)
+            return BoolLiteral(b);
+        if (value is byte[] bytes)
+            return $"0x{BitConverter.ToString(bytes).Replace("-", "")}";
+        return value.ToString() ?? "NULL";
+    }
+
     // ================================================================
     // 工具
     // ================================================================

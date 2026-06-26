@@ -2,7 +2,7 @@
 
   补丁：为共享菜单/字典/配置及菜单组相关表补全结构（PostgreSQL）
 
-  适用：已安装但表结构缺少 Module / RequireGrant / IsDefault / RoleMenuGroupItem 的历史实例
+  适用：已安装但表结构缺少 Module / RequireGrant / IsUniappHome / IsDefault / RoleMenuGroupItem 的历史实例
 
 */
 
@@ -67,6 +67,10 @@ ALTER TABLE "ginkgo_Sys_MenuGroupItem"
 ALTER TABLE "ginkgo_Sys_MenuGroupItem"
 
   ADD COLUMN IF NOT EXISTS "RequireGrant" BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE "ginkgo_Sys_MenuGroupItem"
+
+  ADD COLUMN IF NOT EXISTS "IsUniappHome" BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS "IX_MenuGroupItem_Module" ON "ginkgo_Sys_MenuGroupItem" ("Module");
 

@@ -38,11 +38,14 @@ public static class ModulePreloader
         var result = new ModulePreloadResult();
         if (installationMode) return result;
 
-        // 1. 生产模块扫描
-        ScanProductionModules(builder, result);
+        // 同一 ModuleId 只允许 Initialize 一次（避免 health check / DI 重复注册导致启动失败）
+        var loadedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // 2. 开发模块扫描
-        ScanDevModules(builder, result);
+        // 1. 生产模块扫描
+        ScanProductionModules(builder, result, loadedIds);
+
+        // 2. 开发模块扫描（已加载过的 Id 跳过）
+        ScanDevModules(builder, result, loadedIds);
 
         return result;
     }
@@ -50,7 +53,7 @@ public static class ModulePreloader
     /// <summary>
     /// 扫描 modules/ 目录，加载已发布的模块。
     /// </summary>
-    private static void ScanProductionModules(WebApplicationBuilder builder, ModulePreloadResult result)
+    private static void ScanProductionModules(WebApplicationBuilder builder, ModulePreloadResult result, HashSet<string> loadedIds)
     {
         try
         {
@@ -82,12 +85,22 @@ public static class ModulePreloader
                             Console.WriteLine($"[Modules]   Skipped: no server.entryAssembly in manifest");
                             continue;
                         }
+                        if (!loadedIds.Add(manifest.Id))
+                        {
+                            Console.WriteLine($"[Modules]   Skipped duplicate module {manifest.Id} (manifest: {manifestPath})");
+                            continue;
+                        }
                         var baseDir = Path.GetDirectoryName(manifestPath)!;
                         var entry = Path.Combine(baseDir, manifest.Server.EntryAssembly.Replace('/', Path.DirectorySeparatorChar));
                         Console.WriteLine($"[Modules]   Entry DLL: {entry} (exists: {File.Exists(entry)})");
                         if (!File.Exists(entry))
                         {
                             Console.WriteLine($"[Modules]   Skipped: entry DLL not found");
+                            continue;
+                        }
+                        if (!ModuleDatabaseCompatibility.ShouldLoadModule(manifest.Id, builder.Configuration, baseDir))
+                        {
+                            Console.WriteLine($"[Modules]   Skipped: module {manifest.Id} requires PostgreSQL, current database is not PostgreSQL");
                             continue;
                         }
                         var alc = new AssemblyIsolatedLoadContext($"pre_mod_{manifest.Id}_{manifest.Version}", Path.GetDirectoryName(entry)!);
@@ -131,7 +144,7 @@ public static class ModulePreloader
     /// <summary>
     /// 开发期从 src/Module/** 预加载模块程序集（支持生产通过配置开启）。
     /// </summary>
-    private static void ScanDevModules(WebApplicationBuilder builder, ModulePreloadResult result)
+    private static void ScanDevModules(WebApplicationBuilder builder, ModulePreloadResult result, HashSet<string> loadedIds)
     {
         try
         {
@@ -146,6 +159,16 @@ public static class ModulePreloader
                 {
                     try
                     {
+                        if (!loadedIds.Add(d.Manifest.Id))
+                        {
+                            Console.WriteLine($"[Modules] Skip dev module {d.Manifest.Id}: already loaded from modules/ (avoid duplicate Initialize)");
+                            continue;
+                        }
+                        if (!ModuleDatabaseCompatibility.ShouldLoadModule(d.Manifest.Id, builder.Configuration, d.BaseDirectory))
+                        {
+                            Console.WriteLine($"[Modules] Skip dev module {d.Manifest.Id}: requires PostgreSQL, current database is not PostgreSQL");
+                            continue;
+                        }
                         Console.WriteLine($"Initializing module: {d.Manifest.Id}");
                         // 使用反射调用 Initialize 方法，避免类型转换问题
                         var initializeMethod = d.Instance.GetType().GetMethod("Initialize");

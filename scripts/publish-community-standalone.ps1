@@ -5,11 +5,20 @@ param(
     [string]$Configuration = "Release",
     [string]$Runtime = "",
     [string]$OutputDir = "dist/publish",
+    [string[]]$Modules = @(),
     [switch]$SkipWeb,
-    [switch]$SkipDbSanitize
+    [switch]$SkipDbSanitize,
+    [switch]$IncludeFrontendSource,
+    [switch]$SkipUniappSource,
+    [switch]$BuildUniappH5,
+    [string]$HBuilderXCli = "",
+    [string]$AdminSlug = "",
+    [string]$AdminTitle = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot 'publish-log-encoding.ps1')
 
 function Find-RepoRoot {
     $dir = (Get-Location).Path
@@ -111,7 +120,8 @@ function Copy-OptionalSubDir {
     $out = Join-Path $TargetDir $SubName
     if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Recurse -Force }
     New-Item -ItemType Directory -Path $out -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $SourceSubDir "*") -Destination $out -Recurse -Force
+    # 必须用 -Path 才能展开 * 通配符；-LiteralPath 会把 * 当普通字符导致目录为空
+    Copy-Item -Path (Join-Path $SourceSubDir '*') -Destination $out -Recurse -Force
 }
 
 function Resolve-ModuleVersion {
@@ -130,6 +140,32 @@ function Resolve-ModuleVersion {
     }
     catch { }
     return $version
+}
+
+# 判断 Release/Debug 输出是否已覆盖当前源码（API 运行时可跳过重新编译，避免与 ALC 争用 server/bin）
+function Test-ModuleReleaseArtifactUpToDate {
+    param(
+        [string]$ServerDir,
+        [string]$CsprojPath,
+        [string]$EntryDllPath
+    )
+
+    if (-not (Test-Path -LiteralPath $EntryDllPath)) { return $false }
+
+    $builtAt = (Get-Item -LiteralPath $EntryDllPath).LastWriteTimeUtc
+    $candidates = @($CsprojPath)
+    $candidates += Get-ChildItem -LiteralPath $ServerDir -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Extension -in '.cs', '.csproj', '.resx' } |
+        ForEach-Object { $_.FullName }
+
+    foreach ($path in $candidates) {
+        if (-not (Test-Path -LiteralPath $path)) { continue }
+        if ((Get-Item -LiteralPath $path).LastWriteTimeUtc -gt $builtAt) {
+            return $false
+        }
+    }
+
+    return $true
 }
 
 # 写入生产环境标准 manifest：modules/{id}/{version}/module.json
@@ -188,7 +224,7 @@ function Copy-CompiledModulePackage {
         Remove-Item -LiteralPath $versionDir -Recurse -Force
     }
     New-Item -ItemType Directory -Path $targetServerDir -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $ServerDir "*") -Destination $targetServerDir -Recurse -Force
+    Copy-Item -Path (Join-Path $ServerDir '*') -Destination $targetServerDir -Recurse -Force
 
     foreach ($rootFile in @("install-manifest.json", "README.md", "LICENSE", "CHANGELOG.md")) {
         $rootPath = Join-Path $ModDirFullName $rootFile
@@ -291,7 +327,11 @@ Write-Host " Output: $publishDir" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 
 Write-Host ""
-Write-Host "[1/4] dotnet publish API..." -ForegroundColor Yellow
+$totalSteps = 4
+if ($IncludeFrontendSource) { $totalSteps++ }
+if ($BuildUniappH5) { $totalSteps++ }
+
+Write-Host "[1/$totalSteps] dotnet publish API..." -ForegroundColor Yellow
 
 $publishArgs = @(
     "publish", $apiCsproj,
@@ -314,7 +354,7 @@ $hostDllNamesLower = @(
 )
 
 Write-Host ""
-Write-Host "[2/4] Pack modules to modules/ ..." -ForegroundColor Yellow
+Write-Host "[2/$totalSteps] Pack modules to modules/ ..." -ForegroundColor Yellow
 
 $modulesOutputDir = Join-Path $publishDir "modules"
 New-Item -ItemType Directory -Path $modulesOutputDir -Force | Out-Null
@@ -330,6 +370,10 @@ else {
     foreach ($modDir in (Get-ChildItem -LiteralPath $moduleRoot -Directory)) {
         $modName = $modDir.Name
         if ($modName -notlike "Ginkgo.Module.*") { continue }
+        if ($Modules.Count -gt 0 -and ($Modules -notcontains $modName)) {
+            Write-Host "  skip $modName (not in -Modules filter)" -ForegroundColor DarkGray
+            continue
+        }
 
         $serverDir = Join-Path $modDir.FullName "server"
         if (-not (Test-Path -LiteralPath $serverDir)) {
@@ -368,17 +412,33 @@ else {
         }
 
         Write-Host "  [source] build $modName ..." -ForegroundColor Gray
-        & dotnet build $csproj.FullName -c $Configuration
-        if ($LASTEXITCODE -ne 0) {
-            $failed += $modName
-            Write-Host "  FAILED build: $modName" -ForegroundColor Red
-            continue
-        }
-
         $assemblyName = Get-CsprojAssemblyName -CsprojPath $csproj.FullName
         $entryDll = "$assemblyName.dll"
         $buildDir = Join-Path $serverDir ("bin\{0}\net8.0" -f $Configuration)
         $entryDllPath = Join-Path $buildDir $entryDll
+        # 打包模式：不向 server/bin 根目录同步，避免 Ginkgo.Api 开发期 ALC 锁文件
+        $packBuildArgs = @(
+            'build', $csproj.FullName,
+            '-c', $Configuration,
+            '-p:GinkgoSkipServerBinSync=true'
+        )
+
+        if (Test-ModuleReleaseArtifactUpToDate -ServerDir $serverDir -CsprojPath $csproj.FullName -EntryDllPath $entryDllPath) {
+            Write-Host "  skip build (已有最新 $Configuration 产物，API 运行时可安全打包)" -ForegroundColor DarkCyan
+        }
+        else {
+            & dotnet @packBuildArgs
+            if ($LASTEXITCODE -ne 0) {
+                if (Test-Path -LiteralPath $entryDllPath) {
+                    Write-Host "  WARN: build failed，使用已有产物: $entryDllPath" -ForegroundColor Yellow
+                }
+                else {
+                    $failed += $modName
+                    Write-Host "  FAILED build: $modName" -ForegroundColor Red
+                    continue
+                }
+            }
+        }
 
         if (-not (Test-Path -LiteralPath $entryDllPath)) {
             $failed += $modName
@@ -447,7 +507,7 @@ else {
 }
 
 Write-Host ""
-Write-Host "[3/4] Copy resource/ ..." -ForegroundColor Yellow
+Write-Host "[3/$totalSteps] Copy resource/ ..." -ForegroundColor Yellow
 
 if ($resourceSrc) {
     $resourceDst = Join-Path $publishDir "resource"
@@ -474,49 +534,66 @@ else {
 
 if ($SkipWeb) {
     Write-Host ""
-    Write-Host "[4/4] Skip WEB (-SkipWeb)." -ForegroundColor DarkYellow
+    Write-Host "[4/$totalSteps] Skip WEB (-SkipWeb)." -ForegroundColor DarkYellow
 }
 elseif (-not (Test-Path -LiteralPath (Join-Path $webDir "package.json"))) {
     Write-Host ""
-    Write-Host "[4/4] web/package.json not found, skip WEB." -ForegroundColor DarkYellow
+    Write-Host "[4/$totalSteps] web/package.json not found, skip WEB." -ForegroundColor DarkYellow
 }
 else {
     Write-Host ""
-    Write-Host "[4/4] Build WEB ..." -ForegroundColor Yellow
+    Write-Host "[4/$totalSteps] Build WEB (open-source portal) ..." -ForegroundColor Yellow
 
-    $pluginDepsScript = Join-Path $webDir "scripts\install-plugin-deps.cjs"
-    Push-Location -LiteralPath $webDir
+    . (Join-Path $PSScriptRoot "publish-frontend-src.ps1")
     try {
-        if (-not (Test-Path -LiteralPath "node_modules")) {
-            Write-Host "  npm install ..." -ForegroundColor Gray
-            & npm install
-            if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
-        }
-
-        if (Test-Path -LiteralPath $pluginDepsScript) {
-            Write-Host "  install plugin npm deps ..." -ForegroundColor Gray
-            & node $pluginDepsScript
-        }
-
-        Write-Host "  npm run build ..." -ForegroundColor Gray
-        & npm run build
-        if ($LASTEXITCODE -ne 0) { throw "npm run build failed" }
-
-        $webDist = Join-Path $webDir "dist"
-        $wwwrootDir = Join-Path $publishDir "wwwroot"
-        if (Test-Path -LiteralPath $webDist) {
-            if (Test-Path -LiteralPath $wwwrootDir) {
-                Remove-Item -LiteralPath $wwwrootDir -Recurse -Force
-            }
-            Copy-Item -LiteralPath $webDist -Destination $wwwrootDir -Recurse -Force
-            Write-Host "  WEB copied to wwwroot/" -ForegroundColor Green
-        }
-        else {
-            Write-Host "  web/dist not found." -ForegroundColor Red
-        }
+        Invoke-BuildProjectDeliveryWebWwwroot -RepoRoot $repoRoot -PublishDir $publishDir -Modules $Modules -AdminSlug $AdminSlug -AdminTitle $AdminTitle
     }
-    finally {
-        Pop-Location
+    catch {
+        Write-Host ("  WEB build failed: " + $_.Exception.Message) -ForegroundColor Red
+        throw
+    }
+}
+
+if ($IncludeFrontendSource) {
+    Write-Host ""
+    Write-Host "[5/$totalSteps] Pack frontend-src (WEB/UNIAPP source) ..." -ForegroundColor Yellow
+    . (Join-Path $PSScriptRoot "publish-frontend-src.ps1")
+    $frontendPack = Invoke-PackProjectFrontendSource `
+        -RepoRoot $repoRoot `
+        -PublishDir $publishDir `
+        -Modules $Modules `
+        -AdminSlug $AdminSlug `
+        -AdminTitle $AdminTitle `
+        -IncludeWeb `
+        -IncludeUniapp:(-not $SkipUniappSource) | Select-Object -Last 1
+
+    $frontendPacked = ($null -ne $frontendPack) -and ($frontendPack.PSObject.Properties.Name -contains 'Packed') -and $frontendPack.Packed
+    if ($frontendPacked) {
+        Write-Host "  frontend-src/ ready." -ForegroundColor Green
+    }
+}
+
+$stepAfterWeb = 5
+if ($IncludeFrontendSource) { $stepAfterWeb = 6 }
+
+$h5Built = $false
+if ($BuildUniappH5) {
+    Write-Host ""
+    Write-Host "[$stepAfterWeb/$totalSteps] Build UNIAPP H5 -> h5/ ..." -ForegroundColor Yellow
+    . (Join-Path $PSScriptRoot "publish-uniapp-h5.ps1")
+    $h5Pack = Invoke-BuildProjectUniappH5 `
+        -RepoRoot $repoRoot `
+        -PublishDir $publishDir `
+        -Modules $Modules `
+        -SkipUniappSource:$SkipUniappSource `
+        -HBuilderXCli $HBuilderXCli | Select-Object -Last 1
+
+    $h5Built = ($null -ne $h5Pack) -and ($h5Pack.PSObject.Properties.Name -contains 'Built') -and $h5Pack.Built
+    if (-not $h5Built) {
+        $h5Reason = if ($null -ne $h5Pack -and ($h5Pack.PSObject.Properties.Name -contains 'Reason')) { [string]$h5Pack.Reason } else { 'unknown' }
+        Write-Host "  ERROR: UNIAPP H5 not produced ($h5Reason)." -ForegroundColor Red
+        Write-Host '  Check pack log for HBuilderX output; run cli open if connection was lost.' -ForegroundColor DarkYellow
+        exit 1
     }
 }
 
@@ -525,7 +602,11 @@ Write-Host "============================================" -ForegroundColor Cyan
 Write-Host " Done" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Output: $publishDir" -ForegroundColor Green
-Write-Host "  API + modules/ + resource/ + wwwroot/" -ForegroundColor Gray
+$outputParts = @("API", "modules/", "resource/")
+if (-not $SkipWeb) { $outputParts += "wwwroot/" }
+if ($IncludeFrontendSource) { $outputParts += "frontend-src/" }
+if ($h5Built) { $outputParts += "h5/" }
+Write-Host ("  " + ($outputParts -join " + ")) -ForegroundColor Gray
 Write-Host ""
 Write-Host "Deploy:" -ForegroundColor Yellow
 Write-Host "  1. Upload entire output folder to server (keep modules/{id}/{version}/ layout)" -ForegroundColor Yellow
@@ -533,6 +614,7 @@ Write-Host "  2. Edit resource/db.json on server" -ForegroundColor Yellow
 Write-Host "  3. dotnet Ginkgo.Api.dll in publish folder" -ForegroundColor Yellow
 Write-Host "  4. Check log: [Modules] Module registered: ..." -ForegroundColor Yellow
 Write-Host "  5. First deploy: run module install SQL (install.json SqlScripts) if menus missing" -ForegroundColor Yellow
+Write-Host "  6. UniApp H5 at /h5/ when h5/ folder exists in output" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Module layout example:" -ForegroundColor DarkGray
 Write-Host "  modules/Ginkgo.Module.Evaluate/0.1.0/module.json" -ForegroundColor DarkGray

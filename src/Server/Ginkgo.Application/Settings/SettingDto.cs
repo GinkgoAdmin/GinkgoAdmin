@@ -12,5 +12,7 @@ public sealed class SettingDto
     public string? Description { get; set; }
     public string? Class { get; set; }
     public int? Version { get; set; }
+    /// <summary>所属模块标识：sys=主框架，其他为插件 ModuleId。</summary>
+    public string? Module { get; set; }
 }
 

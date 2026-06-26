@@ -448,6 +448,238 @@ public sealed class MenuGroupAppService : IMenuGroupAppService
         return result;
     }
 
+    public Task<MenuGroupExportDto> ExportGroupAsync(long groupId, CancellationToken ct = default)
+    {
+        var group = _groupRepo.Query().FirstOrDefault(x => x.Id == groupId);
+        if (group == null) throw new InvalidOperationException("菜单组不存在");
+
+        var items = _itemRepo.Query()
+            .Where(x => x.MenuGroupId == groupId)
+            .OrderBy(x => x.Order)
+            .ThenBy(x => x.Id)
+            .ToList();
+
+        var byId = items.ToDictionary(x => x.Id);
+        var refMenuIds = items.Where(x => x.RefMenuId.HasValue).Select(x => x.RefMenuId!.Value).Distinct().ToList();
+        var refMenus = refMenuIds.Count > 0
+            ? _menuRepo.Query().Where(x => refMenuIds.Contains(x.Id)).ToList().ToDictionary(x => x.Id)
+            : new Dictionary<long, Menu>();
+
+        var usedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var idToExportKey = new Dictionary<long, string>();
+
+        foreach (var item in items)
+        {
+            var key = BuildExportItemKey(item, byId);
+            if (!usedKeys.Add(key))
+                key = $"{key}#{item.Order}";
+            idToExportKey[item.Id] = key;
+        }
+
+        var exportItems = items.Select(item =>
+        {
+            refMenus.TryGetValue(item.RefMenuId ?? 0, out var refMenu);
+            return new MenuGroupExportItemDto
+            {
+                ItemKey = idToExportKey[item.Id],
+                ParentItemKey = item.ParentId.HasValue && idToExportKey.TryGetValue(item.ParentId.Value, out var pk) ? pk : null,
+                Title = item.Title,
+                TitleI18n = item.TitleI18n,
+                Subtitle = item.Subtitle,
+                Icon = item.Icon,
+                Image = item.Image,
+                LinkType = item.LinkType,
+                Url = item.Url,
+                Target = item.Target,
+                RefMenuCode = refMenu?.Code,
+                RefMenuRoute = refMenu?.Route ?? refMenu?.WebRouteUrl,
+                PermissionCode = item.PermissionCode,
+                CssClass = item.CssClass,
+                Badge = item.Badge,
+                BadgeType = item.BadgeType,
+                ExtraData = item.ExtraData,
+                Order = item.Order,
+                Enabled = item.Enabled,
+                Module = item.Module,
+                RequireGrant = item.RequireGrant,
+                IsUniappHome = item.IsUniappHome
+            };
+        }).ToList();
+
+        var package = new MenuGroupExportDto
+        {
+            FormatVersion = 1,
+            ExportedAt = DateTime.Now,
+            Group = new MenuGroupExportGroupDto
+            {
+                Name = group.Name,
+                Slug = group.Slug,
+                Description = group.Description,
+                Location = group.Location,
+                ClientType = group.ClientType,
+                Enabled = group.Enabled,
+                MaxDepth = group.MaxDepth,
+                Version = group.Version
+            },
+            Items = exportItems
+        };
+
+        return Task.FromResult(package);
+    }
+
+    public async Task<MenuGroupImportResultDto> ImportGroupAsync(long groupId, MenuGroupExportDto package, CancellationToken ct = default)
+    {
+        if (package?.Group == null)
+            throw new InvalidOperationException("导入包格式无效：缺少 group");
+        if (package.FormatVersion != 1)
+            throw new InvalidOperationException($"不支持的导出格式版本：{package.FormatVersion}");
+
+        var group = await _groupRepo.GetByIdAsync(groupId, ct)
+            ?? throw new InvalidOperationException("目标菜单组不存在");
+
+        var importRows = package.Items ?? new List<MenuGroupExportItemDto>();
+        var result = new MenuGroupImportResultDto
+        {
+            GroupId = groupId,
+            GroupSlug = group.Slug
+        };
+
+        result.ItemsDeleted = await RemoveAllGroupItemsAsync(groupId, ct);
+
+        var keyToEntity = new Dictionary<string, MenuGroupItem>(StringComparer.OrdinalIgnoreCase);
+        var pending = importRows
+            .Where(x => !string.IsNullOrWhiteSpace(x.ItemKey))
+            .Select(x => { x.ItemKey = x.ItemKey.Trim(); return x; })
+            .ToList();
+
+        var guard = 0;
+        while (pending.Count > 0 && guard++ < pending.Count + 8)
+        {
+            var progressed = false;
+            for (var i = pending.Count - 1; i >= 0; i--)
+            {
+                var row = pending[i];
+                if (!string.IsNullOrWhiteSpace(row.ParentItemKey)
+                    && !keyToEntity.ContainsKey(row.ParentItemKey.Trim()))
+                    continue;
+
+                long? parentId = null;
+                if (!string.IsNullOrWhiteSpace(row.ParentItemKey)
+                    && keyToEntity.TryGetValue(row.ParentItemKey.Trim(), out var parentEntity))
+                    parentId = parentEntity.Id;
+
+                var refMenuId = ResolveRefMenuId(row.LinkType, row.RefMenuCode, row.RefMenuRoute);
+                var linkType = row.LinkType ?? "Custom";
+                if (string.Equals(linkType, "SystemMenu", StringComparison.OrdinalIgnoreCase) && !refMenuId.HasValue)
+                    linkType = "Custom";
+
+                var entity = MenuGroupItem.Create(
+                    menuGroupId: groupId,
+                    title: row.Title,
+                    linkType: linkType,
+                    url: row.Url,
+                    parentId: parentId,
+                    refMenuId: refMenuId,
+                    module: string.IsNullOrWhiteSpace(row.Module) ? "sys" : row.Module.Trim(),
+                    requireGrant: row.RequireGrant
+                );
+                entity.TitleI18n = row.TitleI18n;
+                entity.Subtitle = row.Subtitle?.Trim();
+                entity.Icon = row.Icon?.Trim();
+                entity.Image = row.Image?.Trim();
+                entity.Target = string.IsNullOrWhiteSpace(row.Target) ? "_self" : row.Target.Trim();
+                entity.PermissionCode = row.PermissionCode?.Trim();
+                entity.CssClass = row.CssClass?.Trim();
+                entity.Badge = row.Badge?.Trim();
+                entity.BadgeType = row.BadgeType?.Trim();
+                entity.ExtraData = string.IsNullOrWhiteSpace(row.ExtraData) ? null : row.ExtraData;
+                entity.SetOrder(row.Order);
+                if (row.Enabled) entity.Enable(); else entity.Disable();
+                entity.SetUniappHome(false);
+
+                await _itemRepo.AddAsync(entity, ct);
+                keyToEntity[row.ItemKey] = entity;
+                result.ItemsCreated++;
+                pending.RemoveAt(i);
+                progressed = true;
+            }
+
+            if (!progressed) break;
+        }
+
+        if (pending.Count > 0)
+            throw new InvalidOperationException($"导入失败：{pending.Count} 个菜单项无法解析父级关系，请检查 ParentItemKey");
+
+        var homeRow = importRows.FirstOrDefault(x => x.IsUniappHome && keyToEntity.ContainsKey(x.ItemKey.Trim()));
+        if (homeRow != null && IsDefaultUniappGroup(group))
+        {
+            var homeEntity = keyToEntity[homeRow.ItemKey.Trim()];
+            if (!string.IsNullOrWhiteSpace(homeEntity.Url))
+                await SetUniappHomeAsync(groupId, homeEntity.Id, true, null, ct);
+        }
+
+        return result;
+    }
+
+    private async Task<int> RemoveAllGroupItemsAsync(long groupId, CancellationToken ct)
+    {
+        var items = _itemRepo.Query().Where(x => x.MenuGroupId == groupId).ToList();
+        if (items.Count == 0) return 0;
+
+        var itemIds = items.Select(x => x.Id).ToList();
+        var roleItemIds = _roleMenuGroupItemRepo.Query()
+            .Where(x => itemIds.Contains(x.MenuGroupItemId))
+            .Select(x => x.Id)
+            .ToList();
+        if (roleItemIds.Count > 0)
+            await _roleMenuGroupItemRepo.DeleteRangeAsync(roleItemIds, ct);
+
+        foreach (var item in items.Where(x => x.IsUniappHome))
+            await ClearUniappHomePathSettingIfMatchAsync(item.Url, null, ct);
+
+        foreach (var item in items)
+            await _itemRepo.DeleteAsync(item.Id, ct);
+
+        return items.Count;
+    }
+
+    private long? ResolveRefMenuId(string? linkType, string? refMenuCode, string? refMenuRoute)
+    {
+        if (!string.Equals(linkType, "SystemMenu", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(refMenuCode))
+        {
+            var byCode = _menuRepo.Query().FirstOrDefault(x => x.Code == refMenuCode.Trim());
+            if (byCode != null) return byCode.Id;
+        }
+
+        if (!string.IsNullOrWhiteSpace(refMenuRoute))
+        {
+            var route = refMenuRoute.Trim();
+            var byRoute = _menuRepo.Query().FirstOrDefault(x => x.Route == route || x.WebRouteUrl == route);
+            if (byRoute != null) return byRoute.Id;
+        }
+
+        return null;
+    }
+
+    private static string BuildExportItemKey(MenuGroupItem item, IReadOnlyDictionary<long, MenuGroupItem> byId)
+    {
+        var segments = new List<string>();
+        MenuGroupItem? cur = item;
+        var guard = 0;
+        while (cur != null && guard++ < 64)
+        {
+            var seg = !string.IsNullOrWhiteSpace(cur.Url)
+                ? cur.Url.Trim()
+                : (!string.IsNullOrWhiteSpace(cur.Title) ? cur.Title.Trim() : cur.Id.ToString());
+            segments.Insert(0, seg);
+            cur = cur.ParentId.HasValue && byId.TryGetValue(cur.ParentId.Value, out var parent) ? parent : null;
+        }
+        return string.Join("/", segments);
+    }
+
     // ===== 导航查询（含权限过滤） =====
 
 #pragma warning disable CS1998 // 此方法中所有查询均为同步操作，暂不需要 await

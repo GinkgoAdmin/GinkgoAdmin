@@ -10,8 +10,8 @@ namespace Ginkgo.Api.Middlewares;
 /// 2. <c>X-Frame-Options: DENY</c> —— 禁止页面被任意站点 iframe 嵌入，防点击劫持；
 /// 3. <c>Referrer-Policy: strict-origin-when-cross-origin</c> —— 跨源仅传 origin，
 ///    避免后台 Token / 路径信息通过 Referer 泄漏；
-/// 4. <c>Permissions-Policy</c> —— 默认禁用 camera / microphone / geolocation，
-///    模块如需调用请显式覆盖；
+/// 4. <c>Permissions-Policy</c> —— 默认禁用 camera / microphone / geolocation；
+///    <c>/h5</c> 移动端页面允许 <c>camera</c>、<c>geolocation</c>、<c>microphone</c>（评估拍照/GPS/录音等）；
 /// 5. <c>Cross-Origin-Opener-Policy: same-origin</c> —— 避免被恶意页面 window.opener 串号；
 /// 6. <c>Strict-Transport-Security</c>（仅生产 + HTTPS）—— 强制后续请求走 HTTPS；
 /// 7. API 响应额外设置 <c>Cache-Control: no-store</c>，避免代理/浏览器缓存敏感 JSON。
@@ -48,8 +48,14 @@ public sealed class SecurityHeadersMiddleware
             if (!headers.ContainsKey("Referrer-Policy"))
                 headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
 
+            // H5 移动端（/h5）需要相机、麦克风与定位能力；其余路由保持默认禁用
             if (!headers.ContainsKey("Permissions-Policy"))
-                headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
+            {
+                var isH5Mobile = context.Request.Path.StartsWithSegments("/h5");
+                headers["Permissions-Policy"] = isH5Mobile
+                    ? "camera=(self), geolocation=(self), microphone=(self), payment=()"
+                    : "camera=(), microphone=(), geolocation=(), payment=()";
+            }
 
             if (!headers.ContainsKey("Cross-Origin-Opener-Policy"))
                 headers["Cross-Origin-Opener-Policy"] = "same-origin";

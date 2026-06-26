@@ -6,6 +6,8 @@ using Ginkgo.Plugin.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
@@ -33,11 +35,12 @@ public sealed class ModulesController : ControllerBase
     private readonly ModuleHotReloader _hot;
     private readonly IHostEnvironment _env;
     private readonly IMemoryCache _memoryCache;
+    private readonly ModuleConfigDbService _moduleConfigDb;
 
 
-    public ModulesController(ModuleRepository repo, InstalledModulesStore store, ModuleInstaller installer, ClientTaskService clientTasks, IModuleAppService moduleApp, ModuleHotReloader hot, IHostEnvironment env, IMemoryCache memoryCache)
+    public ModulesController(ModuleRepository repo, InstalledModulesStore store, ModuleInstaller installer, ClientTaskService clientTasks, IModuleAppService moduleApp, ModuleHotReloader hot, IHostEnvironment env, IMemoryCache memoryCache, ModuleConfigDbService moduleConfigDb)
     {
-        _repo = repo; _store = store; _installer = installer; _clientTasks = clientTasks; _moduleApp = moduleApp; _hot = hot; _env = env; _memoryCache = memoryCache;
+        _repo = repo; _store = store; _installer = installer; _clientTasks = clientTasks; _moduleApp = moduleApp; _hot = hot; _env = env; _memoryCache = memoryCache; _moduleConfigDb = moduleConfigDb;
     }
 
     /// <summary>
@@ -56,7 +59,9 @@ public sealed class ModulesController : ControllerBase
     [AllowAnonymous]
     [HttpGet("enabled-plugins")]
     [EndpointComment("已启用插件清单", Category = "只读")]
-    public async Task<ActionResult<IEnumerable<string>>> GetEnabledPlugins([FromServices] IRepository<InstalledModuleEntity> moduleRepo)
+    public async Task<ActionResult<IEnumerable<string>>> GetEnabledPlugins(
+        [FromServices] IRepository<InstalledModuleEntity> moduleRepo,
+        [FromServices] IConfiguration configuration)
     {
         try
         {
@@ -81,6 +86,8 @@ public sealed class ModulesController : ControllerBase
                         .Where(runtimeKnownIds.Contains)
                         .ToList();
                 }
+
+                ids = ModuleDatabaseCompatibility.FilterLoadableModuleIds(ids, configuration);
 
                 return ids;
             }) ?? new List<string>();
@@ -199,7 +206,11 @@ public sealed class ModulesController : ControllerBase
 
                     // 环境和路径信息
                     IsDevMode = await IsModuleInDevModeAsync(entity.ModuleId),
-                    ManifestPath = manifestPath
+                    ManifestPath = manifestPath,
+
+                    // 配置存储方式（供模块管理列表展示）
+                    ConfigStorage = manifest?.Config?.IsDatabaseStorage == true ? "database" : "file",
+                    ConfigPrimaryFile = manifest?.Config?.PrimaryFile
                 };
 
                 // 一次性填充运行时健康快照供前端列表渲染红/绿灯与菜单注册可见性。
@@ -370,6 +381,32 @@ public sealed class ModulesController : ControllerBase
         return Task.FromResult(false);
     }
 
+    /// <summary>
+    /// 枚举生产环境 modules/{moduleId}/{version}/server/config 目录。
+    /// 优先 preferredVersion，否则按版本目录名降序回退（与 module.json 定位逻辑一致）。
+    /// </summary>
+    private static IEnumerable<string> EnumerateProductionConfigDirs(string moduleId, string? preferredVersion)
+    {
+        var moduleRoot = Path.Combine(AppContext.BaseDirectory, "modules", moduleId);
+        if (!Directory.Exists(moduleRoot)) yield break;
+
+        var yielded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(preferredVersion))
+        {
+            var preferred = Path.Combine(moduleRoot, preferredVersion, "server", "config");
+            if (Directory.Exists(preferred) && yielded.Add(preferred))
+                yield return preferred;
+        }
+
+        foreach (var verDir in Directory.EnumerateDirectories(moduleRoot).OrderByDescending(d => d, StringComparer.OrdinalIgnoreCase))
+        {
+            var cfgDir = Path.Combine(verDir, "server", "config");
+            if (Directory.Exists(cfgDir) && yielded.Add(cfgDir))
+                yield return cfgDir;
+        }
+    }
+
     private async Task<List<string>> ResolveAllModuleConfigDirsAsync(string moduleId, IRepository<InstalledModuleEntity> moduleRepo)
     {
         var dirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -406,6 +443,9 @@ public sealed class ModulesController : ControllerBase
             var cfgDir = Path.Combine(baseDir, "server", "config");
             if (Directory.Exists(cfgDir)) dirs.Add(cfgDir);
         }
+
+        foreach (var prodCfg in EnumerateProductionConfigDirs(moduleId, rec?.Version))
+            dirs.Add(prodCfg);
 
         foreach (var root in ProbeRoots())
         {
@@ -453,10 +493,24 @@ public sealed class ModulesController : ControllerBase
         var rec = entities.Where(x => x.ModuleId == moduleId)
                          .OrderByDescending(x => x.InstalledAtUtc)
                          .FirstOrDefault();
-        if (rec == null) return null;
-        var baseDir = Path.Combine(AppContext.BaseDirectory, "modules", moduleId, rec.Version);
-        var cfgDir = Path.Combine(baseDir, "server", "config");
-        if (Directory.Exists(cfgDir)) return cfgDir;
+        if (rec == null)
+        {
+            foreach (var prodCfg in EnumerateProductionConfigDirs(moduleId, null))
+            {
+                if (Directory.Exists(prodCfg)) return prodCfg;
+            }
+        }
+        else
+        {
+            var baseDir = Path.Combine(AppContext.BaseDirectory, "modules", moduleId, rec.Version);
+            var cfgDir = Path.Combine(baseDir, "server", "config");
+            if (Directory.Exists(cfgDir)) return cfgDir;
+
+            foreach (var prodCfg in EnumerateProductionConfigDirs(moduleId, rec.Version))
+            {
+                if (Directory.Exists(prodCfg)) return prodCfg;
+            }
+        }
 
         // 3) 兜底：尝试在运行目录附近向上搜索 src/Module
         foreach (var root in ProbeRoots())
@@ -502,7 +556,21 @@ public sealed class ModulesController : ControllerBase
             return BadRequest(new { ok = false, code = "INVALID_MODULE_ID", message = "moduleId 不合法" });
         var cfgDir = await ResolveModuleConfigDirAsync(moduleId, moduleRepo);
         if (cfgDir == null) return NotFound(new { ok = false, message = "未找到模块或配置目录" });
-        var files = Directory.Exists(cfgDir) ? Directory.GetFiles(cfgDir, "*.json*").Select(Path.GetFileName).ToArray() : Array.Empty<string>();
+        var files = Directory.Exists(cfgDir)
+            ? Directory.GetFiles(cfgDir, "*.json*").Select(Path.GetFileName).Where(f => f != null).Cast<string>().ToArray()
+            : Array.Empty<string>();
+
+        // 数据库存储模式：若仅有 .sample 而无实际 .json，仍将 primaryFile 列入可配置项
+        var manifest = await ReadModuleManifestAsync(moduleId);
+        if (manifest?.Config?.IsDatabaseStorage == true && !string.IsNullOrWhiteSpace(manifest.Config.PrimaryFile))
+        {
+            var primary = manifest.Config.PrimaryFile!;
+            var hasJson = files.Any(f => string.Equals(f, primary, StringComparison.OrdinalIgnoreCase));
+            var hasSample = files.Any(f => string.Equals(f, primary + ".sample", StringComparison.OrdinalIgnoreCase));
+            if (!hasJson && hasSample)
+                files = files.Concat([primary]).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+
         return Ok(files);
     }
 
@@ -583,6 +651,20 @@ public sealed class ModulesController : ControllerBase
         try { root = JsonNode.Parse(System.IO.File.ReadAllText(usePath)); } catch { return BadRequest(new { ok = false, message = "配置文件 JSON 解析失败" }); }
         if (root is null) return BadRequest(new { ok = false, message = "配置文件为空" });
         var normalized = NormalizeForUi(root);
+
+        var manifest = await ReadModuleManifestAsync(moduleId);
+        var useDatabase = manifest?.Config?.IsDatabaseStorage == true;
+        if (useDatabase)
+        {
+            await _moduleConfigDb.OverlayValuesFromDbAsync(normalized, moduleId, file, HttpContext.RequestAborted);
+            MaskPassword(normalized["items"] as JsonArray ?? new JsonArray());
+            normalized["storage"] = "database";
+        }
+        else
+        {
+            normalized["storage"] = "file";
+        }
+
         return Ok(normalized);
     }
 
@@ -594,15 +676,31 @@ public sealed class ModulesController : ControllerBase
         if (!ModuleIdentifierValidator.IsSafeModuleId(req.ModuleId))
             return BadRequest(new { ok = false, code = "INVALID_MODULE_ID", message = "moduleId 不合法" });
         if (!IsConfigFileNameSafe(req.File)) return BadRequest(new { ok = false, message = "非法的文件名" });
+        var manifest = await ReadModuleManifestAsync(req.ModuleId);
+        var useDatabase = manifest?.Config?.IsDatabaseStorage == true;
+
         var cfgDirs = await ResolveAllModuleConfigDirsAsync(req.ModuleId, moduleRepo);
-        if (cfgDirs.Count == 0) return NotFound(new { ok = false, message = "未找到模块或配置目录" });
+        if (cfgDirs.Count == 0 && !useDatabase) return NotFound(new { ok = false, message = "未找到模块或配置目录" });
 
         var targetFiles = cfgDirs.Select(d => Path.Combine(d, req.File)).ToList();
-        var primaryFile = targetFiles.FirstOrDefault(System.IO.File.Exists) ?? targetFiles.First();
+        var primaryFile = targetFiles.FirstOrDefault(System.IO.File.Exists) ?? targetFiles.FirstOrDefault();
 
         // 读取旧值用于保留密码占位符（***）
         JsonNode? oldRoot = null;
-        try { if (System.IO.File.Exists(primaryFile)) oldRoot = JsonNode.Parse(System.IO.File.ReadAllText(primaryFile)); } catch { }
+        if (primaryFile != null)
+        {
+            try { if (System.IO.File.Exists(primaryFile)) oldRoot = JsonNode.Parse(System.IO.File.ReadAllText(primaryFile)); } catch { }
+        }
+        if (useDatabase && oldRoot == null)
+        {
+            var (_, _, samplePath) = await ResolveConfigPathsAsync(req.ModuleId, req.File, moduleRepo);
+            if (samplePath != null && System.IO.File.Exists(samplePath))
+            {
+                try { oldRoot = JsonNode.Parse(System.IO.File.ReadAllText(samplePath)); } catch { }
+            }
+            if (oldRoot != null)
+                await _moduleConfigDb.OverlayValuesFromDbAsync(oldRoot, req.ModuleId, req.File, ct);
+        }
 
         // 合并：若新内容 items 中存在 type=password 且 value==='***'，则保留旧值
         var newRoot = req.Content;
@@ -610,17 +708,27 @@ public sealed class ModulesController : ControllerBase
 
         try
         {
-            var opts = new JsonSerializerOptions { WriteIndented = true };
-            var finalJson = newRoot.ToJsonString(opts);
-            foreach (var target in targetFiles)
+            if (useDatabase)
             {
-                try
+                long? operatorId = null;
+                var uid = User?.Claims.FirstOrDefault(c => c.Type.EndsWith("/nameidentifier") || c.Type.EndsWith("/sub"))?.Value;
+                if (long.TryParse(uid, out var gid)) operatorId = gid;
+                await _moduleConfigDb.SaveToDbAsync(req.ModuleId, req.File, newRoot, operatorId, ct);
+            }
+            else
+            {
+                var opts = new JsonSerializerOptions { WriteIndented = true };
+                var finalJson = newRoot.ToJsonString(opts);
+                foreach (var target in targetFiles)
                 {
-                    var dir = Path.GetDirectoryName(target);
-                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                    System.IO.File.WriteAllText(target, finalJson);
+                    try
+                    {
+                        var dir = Path.GetDirectoryName(target);
+                        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                        System.IO.File.WriteAllText(target, finalJson);
+                    }
+                    catch { }
                 }
-                catch { }
             }
         }
         catch (Exception ex)
@@ -628,11 +736,14 @@ public sealed class ModulesController : ControllerBase
             return BadRequest(new { ok = false, message = $"保存失败: {ex.Message}" });
         }
 
-        // 配置已写入文件，需要重启后端服务才能完全生效（不在此处做 Disable/Enable，避免热重载失败导致插件被禁用）
+        // 配置已写入，database 模式即时生效；file 模式需重启后端服务才能完全生效
         return Ok(new
         {
             ok = true,
-            message = "配置保存成功，重启后端服务后将完全生效"
+            storage = useDatabase ? "database" : "file",
+            message = useDatabase
+                ? "配置已保存到数据库"
+                : "配置保存成功，重启后端服务后将完全生效"
         });
     }
 
@@ -646,27 +757,46 @@ public sealed class ModulesController : ControllerBase
         if (!IsConfigFileNameSafe(req.File)) return BadRequest(new { ok = false, message = "非法的文件名" });
         var (_, _, samplePath) = await ResolveConfigPathsAsync(req.ModuleId, req.File, moduleRepo);
         var cfgDirs = await ResolveAllModuleConfigDirsAsync(req.ModuleId, moduleRepo);
-        if (cfgDirs.Count == 0) return NotFound(new { ok = false, message = "未找到模块或配置目录" });
+        var manifest = await ReadModuleManifestAsync(req.ModuleId);
+        var useDatabase = manifest?.Config?.IsDatabaseStorage == true;
+        if (cfgDirs.Count == 0 && !useDatabase) return NotFound(new { ok = false, message = "未找到模块或配置目录" });
         if (samplePath == null || !System.IO.File.Exists(samplePath)) return NotFound(new { ok = false, message = "未找到样例文件" });
 
-        var targetFiles = cfgDirs.Select(d => Path.Combine(d, req.File)).ToList();
-
-        try
+        if (useDatabase)
         {
-            foreach (var target in targetFiles)
+            try
             {
-                try
-                {
-                    var dir = Path.GetDirectoryName(target);
-                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                    System.IO.File.Copy(samplePath, target, overwrite: true);
-                }
-                catch { }
+                long? operatorId = null;
+                var uid = User?.Claims.FirstOrDefault(c => c.Type.EndsWith("/nameidentifier") || c.Type.EndsWith("/sub"))?.Value;
+                if (long.TryParse(uid, out var gid)) operatorId = gid;
+                await _moduleConfigDb.ResetFromSampleAsync(req.ModuleId, req.File, samplePath, operatorId, ct);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { ok = false, message = $"重置失败: {ex.Message}" });
             }
         }
-        catch (Exception ex)
+        else
         {
-            return BadRequest(new { ok = false, message = $"重置失败: {ex.Message}" });
+            var targetFiles = cfgDirs.Select(d => Path.Combine(d, req.File)).ToList();
+
+            try
+            {
+                foreach (var target in targetFiles)
+                {
+                    try
+                    {
+                        var dir = Path.GetDirectoryName(target);
+                        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                        System.IO.File.Copy(samplePath, target, overwrite: true);
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { ok = false, message = $"重置失败: {ex.Message}" });
+            }
         }
 
         var disabled = await _hot.DisableAsync(req.ModuleId, ct);
@@ -675,10 +805,133 @@ public sealed class ModulesController : ControllerBase
         return Ok(new
         {
             ok,
+            storage = useDatabase ? "database" : "file",
             message = ok
-                ? "已恢复默认并热重载，请重启后端服务确保配置完全生效"
-                : "已恢复默认，但热重载失败，请重启后端服务使配置生效"
+                ? (useDatabase ? "已恢复数据库默认配置并热重载" : "已恢复默认并热重载，请重启后端服务确保配置完全生效")
+                : (useDatabase ? "已恢复数据库默认配置，但热重载失败" : "已恢复默认，但热重载失败，请重启后端服务使配置生效")
         });
+    }
+
+    /// <summary>检查插件配置存储方式及数据库与样例文件的一致性。</summary>
+    [HttpGet("config/storage-status")]
+    public async Task<IActionResult> GetConfigStorageStatus(
+        [FromQuery] string moduleId,
+        [FromQuery] string file,
+        [FromServices] IRepository<InstalledModuleEntity> moduleRepo,
+        CancellationToken ct)
+    {
+        if (!ModuleIdentifierValidator.IsSafeModuleId(moduleId))
+            return BadRequest(new { ok = false, code = "INVALID_MODULE_ID", message = "moduleId 不合法" });
+        if (!IsConfigFileNameSafe(file)) return BadRequest(new { ok = false, message = "非法的文件名" });
+
+        var manifest = await ReadModuleManifestAsync(moduleId);
+        var useDatabase = manifest?.Config?.IsDatabaseStorage == true;
+        var (_, _, samplePath) = await ResolveConfigPathsAsync(moduleId, file, moduleRepo);
+
+        if (!useDatabase)
+        {
+            return Ok(new
+            {
+                ok = true,
+                storage = "file",
+                sampleExists = samplePath != null && System.IO.File.Exists(samplePath),
+                message = "当前为文件存储模式，配置保存在 server/config 目录"
+            });
+        }
+
+        var status = await _moduleConfigDb.CompareWithSampleAsync(moduleId, file, samplePath, ct);
+        return Ok(new
+        {
+            ok = true,
+            storage = "database",
+            file,
+            sampleExists = status.SampleExists,
+            sampleItemCount = status.SampleItemCount,
+            dbItemCount = status.DbItemCount,
+            hasDbData = status.DbItemCount > 0,
+            isConsistent = status.IsConsistent,
+            missingInDb = status.MissingInDb.Select(d => new { d.Name, sampleValue = d.SampleValue }),
+            extraInDb = status.ExtraInDb.Select(d => new { d.Name, dbValue = d.DbValue }),
+            valueMismatch = status.ValueMismatch.Select(d => new { d.Name, sampleValue = d.SampleValue, dbValue = d.DbValue })
+        });
+    }
+
+    public sealed record ModuleConfigDbActionRequest(string ModuleId, string File);
+
+    /// <summary>将样例文件初始配置全量同步到数据库。</summary>
+    [HttpPost("config/sync-to-db")]
+    public async Task<IActionResult> SyncConfigToDb(
+        [FromBody] ModuleConfigDbActionRequest req,
+        [FromServices] IRepository<InstalledModuleEntity> moduleRepo,
+        CancellationToken ct)
+    {
+        if (!ModuleIdentifierValidator.IsSafeModuleId(req.ModuleId))
+            return BadRequest(new { ok = false, code = "INVALID_MODULE_ID", message = "moduleId 不合法" });
+        if (!IsConfigFileNameSafe(req.File)) return BadRequest(new { ok = false, message = "非法的文件名" });
+
+        var manifest = await ReadModuleManifestAsync(req.ModuleId);
+        if (manifest?.Config?.IsDatabaseStorage != true)
+            return BadRequest(new { ok = false, message = "该模块未启用数据库存储模式，无法同步到库" });
+
+        var (_, _, samplePath) = await ResolveConfigPathsAsync(req.ModuleId, req.File, moduleRepo);
+        if (samplePath == null || !System.IO.File.Exists(samplePath))
+            return NotFound(new { ok = false, message = "未找到配置样例文件" });
+
+        try
+        {
+            long? operatorId = null;
+            var uid = User?.Claims.FirstOrDefault(c => c.Type.EndsWith("/nameidentifier") || c.Type.EndsWith("/sub"))?.Value;
+            if (long.TryParse(uid, out var gid)) operatorId = gid;
+
+            var result = await _moduleConfigDb.SyncToDbFromSampleAsync(req.ModuleId, req.File, samplePath, operatorId, ct);
+            return Ok(new
+            {
+                ok = true,
+                message = $"已同步 {result.SyncedCount} 项配置到数据库" + (result.RemovedExtraCount > 0 ? $"，并移除 {result.RemovedExtraCount} 项多余配置" : ""),
+                syncedCount = result.SyncedCount,
+                removedExtraCount = result.RemovedExtraCount,
+                isConsistent = result.IsConsistent
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { ok = false, message = $"同步失败: {ex.Message}" });
+        }
+    }
+
+    /// <summary>从数据库移除指定配置文件的全部配置项。</summary>
+    [HttpPost("config/remove-from-db")]
+    public async Task<IActionResult> RemoveConfigFromDb(
+        [FromBody] ModuleConfigDbActionRequest req,
+        [FromServices] IRepository<InstalledModuleEntity> moduleRepo,
+        CancellationToken ct)
+    {
+        if (!ModuleIdentifierValidator.IsSafeModuleId(req.ModuleId))
+            return BadRequest(new { ok = false, code = "INVALID_MODULE_ID", message = "moduleId 不合法" });
+        if (!IsConfigFileNameSafe(req.File)) return BadRequest(new { ok = false, message = "非法的文件名" });
+
+        var manifest = await ReadModuleManifestAsync(req.ModuleId);
+        if (manifest?.Config?.IsDatabaseStorage != true)
+            return BadRequest(new { ok = false, message = "该模块未启用数据库存储模式" });
+
+        var (_, _, samplePath) = await ResolveConfigPathsAsync(req.ModuleId, req.File, moduleRepo);
+        if (samplePath == null && (await ResolveModuleConfigDirAsync(req.ModuleId, moduleRepo)) == null)
+            return NotFound(new { ok = false, message = "未找到模块配置目录" });
+
+        try
+        {
+            var removed = await _moduleConfigDb.RemoveConfigFromDbAsync(req.ModuleId, req.File, ct);
+            return Ok(new
+            {
+                ok = true,
+                message = removed > 0 ? $"已从数据库移除 {removed} 项配置" : "数据库中无该配置文件相关项",
+                removedCount = removed
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { ok = false, message = $"移除失败: {ex.Message}" });
+        }
     }
 
         [HttpDelete("config/delete")]
@@ -1156,21 +1409,30 @@ public sealed class ModulesController : ControllerBase
             return NotFound(new { ok = false, message = $"未找到模块 {req.ModuleId} 的 install.json 配置文件" });
 
         var spec = ModuleSqlExecutor.ReadInstallJson(installPath);
-        if (spec?.SqlScripts == null || spec.SqlScripts.Length == 0)
-            return BadRequest(new { ok = false, message = "该模块的 install.json 中未定义 SqlScripts" });
+        if (spec?.SqlScripts == null && spec?.SqlScriptsByDialect == null)
+            return BadRequest(new { ok = false, message = "该模块的 install.json 中未定义 SqlScripts 或 SqlScriptsByDialect" });
 
         var baseDir = Path.GetDirectoryName(installPath)!;
-        var scriptPaths = spec.SqlScripts.Select(p => Path.Combine(baseDir, p)).ToList();
-
-        // 检查文件是否存在
-        var missing = scriptPaths.Where(p => !System.IO.File.Exists(p)).ToList();
-        if (missing.Count > 0)
-            return BadRequest(new { ok = false, message = $"以下 SQL 文件不存在: {string.Join(", ", missing.Select(Path.GetFileName))}" });
+        var config = HttpContext.RequestServices.GetService<IConfiguration>();
+        ModuleInstallScriptResolver.Resolution resolved;
+        try
+        {
+            resolved = ModuleInstallScriptResolver.Resolve(baseDir, config?["Database:Provider"], spec);
+        }
+        catch (ModuleInstallSqlNotFoundException ex)
+        {
+            return BadRequest(new { ok = false, message = ex.Message });
+        }
 
         try
         {
-            await sqlExecutor.ExecuteScriptsAsync(scriptPaths, ct);
-            return Ok(new { ok = true, message = $"已成功执行 {scriptPaths.Count} 个 SQL 脚本", executedScripts = spec.SqlScripts });
+            await sqlExecutor.ExecuteScriptsAsync(resolved.AbsolutePaths, ct, resolved.ScriptsAreNativeDialect);
+            return Ok(new
+            {
+                ok = true,
+                message = $"已成功执行 {resolved.AbsolutePaths.Count} 个 SQL 脚本",
+                executedScripts = resolved.RelativePaths
+            });
         }
         catch (Exception ex)
         {
@@ -1621,7 +1883,18 @@ public sealed class ModulesController : ControllerBase
     /// <param name="ExportClientMenus">是否导出多客户端菜单到 install.json</param>
     /// <param name="ExportDictionary">是否导出插件字典到 ini_data.sql</param>
     /// <param name="SanitizeConfig">是否对插件配置文件做脱敏处理（清空 items[].value 真实值），默认 true</param>
-    public sealed record PackageRequest(string ModuleId, string PackageType = "source", bool IncludeData = false, bool ExportDbSchema = false, bool ExportDbData = false, bool ExportClientMenus = false, bool ExportDictionary = false, bool SanitizeConfig = true);
+    public sealed record PackageRequest(
+        string ModuleId,
+        string PackageType = "source",
+        bool IncludeData = false,
+        bool ExportDbSchema = false,
+        bool ExportDbData = false,
+        bool ExportClientMenus = false,
+        bool ExportDictionary = false,
+        bool SanitizeConfig = true,
+        bool ExportSqlMysql = false,
+        bool ExportSqlPostgresql = false,
+        bool ExportSqlMssql = false);
 
     [HttpPost("package")]
     public async Task<IActionResult> PackageModuleAsync(
@@ -1640,7 +1913,9 @@ public sealed class ModulesController : ControllerBase
         if (exportData && !exportSchema)
             return BadRequest(new { ok = false, message = "勾选“真实数据内容”时必须同时勾选“真实数据结构”" });
 
-        var result = await packageService.PackageModuleAsync(req.ModuleId, req.PackageType ?? "source", exportSchema, exportData, req.SanitizeConfig, ct, progress: null, exportClientMenus: req.ExportClientMenus, exportDictionary: req.ExportDictionary);
+        var exportDialects = BuildExportSqlDialects(req.ExportSqlMysql, req.ExportSqlPostgresql, req.ExportSqlMssql);
+
+        var result = await packageService.PackageModuleAsync(req.ModuleId, req.PackageType ?? "source", exportSchema, exportData, req.SanitizeConfig, ct, progress: null, exportClientMenus: req.ExportClientMenus, exportDictionary: req.ExportDictionary, exportSqlDialects: exportDialects);
 
         if (!result.Ok)
         {
@@ -2352,4 +2627,13 @@ public sealed class ModulesController : ControllerBase
     }
 
     #endregion
+
+    private static IReadOnlyList<string>? BuildExportSqlDialects(bool mysql, bool postgresql, bool mssql)
+    {
+        var list = new List<string>();
+        if (mysql) list.Add("mysql");
+        if (postgresql) list.Add("postgresql");
+        if (mssql) list.Add("sqlserver");
+        return list.Count > 0 ? list : null;
+    }
 }

@@ -175,6 +175,7 @@ export const useMenuStore = defineStore('menu', {
       try {
         if (forceRefresh) {
           this.clearCache()
+          this.loaded = false
         }
         //this.clearCache()
         // 强制刷新或缓存未命中时，从接口获取最新菜单

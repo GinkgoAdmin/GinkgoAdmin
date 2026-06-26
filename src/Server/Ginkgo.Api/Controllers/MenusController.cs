@@ -9,6 +9,7 @@ using Ginkgo.Domain;
 using Ginkgo.Domain.Menus;
 using Ginkgo.Domain.Users;
 using Ginkgo.Domain.Roles;
+using Ginkgo.Api.Modules;
 
 namespace Ginkgo.Api.Controllers;
 
@@ -25,6 +26,7 @@ public sealed class MenusController : ControllerBase
     private readonly IRepository<Menu> _menuRepo;
     private readonly IRepository<UserRole> _userRoleRepo;
     private readonly IRepository<RolePermission> _rolePermRepo;
+    private readonly IConfiguration _configuration;
 
     /// <summary>
     /// 构造函数。
@@ -33,16 +35,19 @@ public sealed class MenusController : ControllerBase
     /// <param name="menuRepo">菜单仓储。</param>
     /// <param name="userRoleRepo">用户角色仓储。</param>
     /// <param name="rolePermRepo">角色权限仓储。</param>
+    /// <param name="configuration">应用配置。</param>
     public MenusController(
         IMenuAppService service,
         IRepository<Menu> menuRepo,
         IRepository<UserRole> userRoleRepo,
-        IRepository<RolePermission> rolePermRepo)
+        IRepository<RolePermission> rolePermRepo,
+        IConfiguration configuration)
     {
         _service = service;
         _menuRepo = menuRepo;
         _userRoleRepo = userRoleRepo;
         _rolePermRepo = rolePermRepo;
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -138,10 +143,14 @@ public sealed class MenusController : ControllerBase
     public ActionResult<Result<List<MenuNodeDto>>> GetAllTree()
     {
         // 管理端需要看到所有类型（Directory/Menu/Button/Api），包括禁用项
-        var all = _menuRepo.Query()
-            .OrderBy(x => x.ParentId)
-            .ThenBy(x => x.Order)
-            .ToList();
+        // 模块兼容过滤必须在 ToList 后于内存执行，SqlSugar 无法翻译自定义静态方法
+        var all = ModuleDatabaseCompatibility.FilterMenusInMemory(
+            _menuRepo.Query()
+                .OrderBy(x => x.ParentId)
+                .ThenBy(x => x.Order)
+                .ToList(),
+            _configuration,
+            x => x.Module);
         var dict = all.ToDictionary(x => x.Id, x => new MenuNodeDto
         {
             Id = x.Id,
@@ -195,24 +204,40 @@ public sealed class MenusController : ControllerBase
         var isAdmin = isAuthenticated && (User?.IsInRole("ADMIN") == true);
 
         // 1) 全量菜单（用于祖先回溯），2) 可见集合（仅启用且非 Api/Button），并按客户端过滤
-        var allMenus = _menuRepo.Query()
-            .OrderBy(x => x.ParentId)
-            .ThenBy(x => x.Order)
-            .ToList();
+        var allMenus = ModuleDatabaseCompatibility.FilterMenusInMemory(
+            _menuRepo.Query()
+                .OrderBy(x => x.ParentId)
+                .ThenBy(x => x.Order)
+                .ToList(),
+            _configuration,
+            x => x.Module);
         var allMenusDict = allMenus.ToDictionary(x => x.Id, x => x);
         
-        // 检查菜单及其所有祖先是否都启用
+        // 检查菜单及其所有祖先是否都启用（含环检测，避免 ParentId 自引用导致死循环）
+        var ancestorEnabledMemo = new Dictionary<long, bool>();
         bool IsAncestorChainEnabled(Menu menu)
         {
+            if (ancestorEnabledMemo.TryGetValue(menu.Id, out var cached)) return cached;
+            var visiting = new HashSet<long>();
             var current = menu;
             while (current != null)
             {
-                if (!current.Enabled) return false;
+                if (!visiting.Add(current.Id))
+                {
+                    ancestorEnabledMemo[menu.Id] = false;
+                    return false;
+                }
+                if (!current.Enabled)
+                {
+                    ancestorEnabledMemo[menu.Id] = false;
+                    return false;
+                }
                 if (current.ParentId.HasValue && allMenusDict.TryGetValue(current.ParentId.Value, out var parent))
                     current = parent;
                 else
                     break;
             }
+            ancestorEnabledMemo[menu.Id] = true;
             return true;
         }
         
@@ -261,9 +286,10 @@ public sealed class MenusController : ControllerBase
             if (!fullDict.TryGetValue(id, out var node)) continue;
             // 自身可见则加入
             if (visibleDict.ContainsKey(node.Id)) visibleIds.Add(node.Id);
-            // 回溯祖先链，遇到可见类型则加入
+            // 回溯祖先链，遇到可见类型则加入（含环检测）
+            var visited = new HashSet<long> { node.Id };
             var p = node.ParentId;
-            while (p.HasValue && fullDict.TryGetValue(p.Value, out var parent))
+            while (p.HasValue && visited.Add(p.Value) && fullDict.TryGetValue(p.Value, out var parent))
             {
                 if (visibleDict.ContainsKey(parent.Id)) visibleIds.Add(parent.Id);
                 p = parent.ParentId;

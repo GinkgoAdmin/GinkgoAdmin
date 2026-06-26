@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Ginkgo.Domain.Modules;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Ginkgo.Api.Modules;
@@ -20,6 +21,7 @@ public sealed class ModuleHotReloader
     private readonly ModuleInstaller _installer;
     private readonly ModuleSqlExecutor _sql;
     private readonly ClientTaskService _clientTasks;
+    private readonly IConfiguration _configuration;
 
     private readonly ILogger<ModuleHotReloader> _logger;
 
@@ -32,9 +34,10 @@ public sealed class ModuleHotReloader
         ModuleInstaller installer,
         ModuleSqlExecutor sql,
         ClientTaskService clientTasks,
+        IConfiguration configuration,
         ILogger<ModuleHotReloader> logger)
     {
-        _runtime = runtime; _parts = parts; _changeProvider = changeProvider; _sp = sp; _store = store; _installer = installer; _sql = sql; _clientTasks = clientTasks; _logger = logger;
+        _runtime = runtime; _parts = parts; _changeProvider = changeProvider; _sp = sp; _store = store; _installer = installer; _sql = sql; _clientTasks = clientTasks; _configuration = configuration; _logger = logger;
     }
 
     public async Task<bool> EnableAsync(string moduleId, CancellationToken ct = default)
@@ -42,6 +45,12 @@ public sealed class ModuleHotReloader
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
+            if (!ModuleDatabaseCompatibility.ShouldLoadModule(moduleId, _configuration))
+            {
+                _logger.LogWarning("[ModuleHotReloader] Enable: module {Module} requires PostgreSQL, current database is not PostgreSQL", moduleId);
+                return false;
+            }
+
             // 1) 读取已安装信息或磁盘 manifest
             var (manifest, entryPath) = ResolveManifestAndEntry(moduleId);
             if (manifest == null || entryPath == null)

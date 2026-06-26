@@ -200,6 +200,40 @@ public sealed class MenuGroupsController : ControllerBase
     }
 
     /// <summary>
+    /// 导出菜单组及其全部菜单项（JSON）。
+    /// </summary>
+    [HttpGet("{id}/export")]
+    public async Task<Result<MenuGroupExportDto>> ExportAsync(long id)
+    {
+        try
+        {
+            var data = await _service.ExportGroupAsync(id);
+            return Result<MenuGroupExportDto>.Success(data);
+        }
+        catch (InvalidOperationException ioe)
+        {
+            return Result<MenuGroupExportDto>.Fail(404, ioe.Message);
+        }
+    }
+
+    /// <summary>
+    /// 将导出包导入到指定菜单组（全量替换该组下全部菜单项）。
+    /// </summary>
+    [HttpPost("{id}/import")]
+    public async Task<Result<MenuGroupImportResultDto>> ImportAsync(long id, [FromBody] MenuGroupExportDto package)
+    {
+        try
+        {
+            var data = await _service.ImportGroupAsync(id, package);
+            return Result<MenuGroupImportResultDto>.Success(data, "导入成功");
+        }
+        catch (InvalidOperationException ioe)
+        {
+            return Result<MenuGroupImportResultDto>.Fail(400, ioe.Message);
+        }
+    }
+
+    /// <summary>
     /// 从系统菜单导入到菜单组。
     /// </summary>
     [HttpPost("{groupId}/items/import-from-system")]

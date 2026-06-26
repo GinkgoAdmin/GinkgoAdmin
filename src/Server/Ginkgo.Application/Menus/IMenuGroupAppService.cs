@@ -79,6 +79,16 @@ public interface IMenuGroupAppService
     /// </summary>
     Task<List<long>> ImportFromSystemMenuAsync(long groupId, long[] menuIds, long? parentId, CancellationToken ct = default);
 
+    /// <summary>
+    /// 导出菜单组及其全部菜单项（JSON 包）。
+    /// </summary>
+    Task<MenuGroupExportDto> ExportGroupAsync(long groupId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 将导出包导入到指定菜单组（默认全量替换该组下全部菜单项）。
+    /// </summary>
+    Task<MenuGroupImportResultDto> ImportGroupAsync(long groupId, MenuGroupExportDto package, CancellationToken ct = default);
+
     // ===== 导航查询（公开接口） =====
 
     /// <summary>

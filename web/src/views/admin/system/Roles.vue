@@ -85,7 +85,7 @@
             <p>请从左侧选择一个角色进行权限分配</p>
           </div>
 
-          <div v-else class="perm-content">
+          <div v-else class="perm-content" v-loading="permLoading">
             <el-tabs v-model="activePermTab" class="perm-tabs">
               <!-- 功能权限：后台 RBAC 资源权限树 + 数据范围 -->
               <el-tab-pane label="功能权限" name="function">
@@ -160,12 +160,12 @@
             <el-scrollbar height="calc(100vh - 440px)">
               <el-tree
                 ref="permTreeRef"
+                :key="'perm-tree-' + currentRoleId"
                 :data="permissionTree"
                 node-key="id"
                 show-checkbox
                 check-strictly
                 default-expand-all
-                :default-checked-keys="checkedPermIds"
                 :filter-node-method="filterPermissionNode"
                 :props="{ label: 'name', children: 'children' }"
                 class="perm-tree"
@@ -353,6 +353,7 @@ import {
   clientTypeLabel,
   normalizeIcon
 } from './rolePortalGrant.utils'
+import { applyPermissionCheckCascade } from './rolePermission.utils'
 import { getDepartmentsTree, type DepartmentTreeNode } from '../../../api/department'
 import {
   getGrantableItems,
@@ -411,6 +412,9 @@ const permissionTree = ref<PermissionTreeNode[]>([])
 const permissionKeyword = ref('')
 const currentRoleId = ref<string>('')
 const checkedPermIds = ref<string[]>([])
+const permLoading = ref(false)
+/** 切换角色时递增，丢弃过期的异步加载结果 */
+let loadPermSeq = 0
 const dataScope = ref<{ strategy: string; departmentIds?: string[] }>({ strategy: 'All', departmentIds: [] })
 // 部门树（供「指定部门」多选使用，进入页面时一次性拉取并缓存）
 const deptTree = ref<DepartmentTreeNode[]>([])
@@ -426,6 +430,8 @@ const grantableLoading = ref(false)
 const grantTreeRefs = new Map<string, any>()
 /** 防止勾选联动 setCheckedKeys 触发 @check 递归 */
 let portalGrantCheckSyncing = false
+/** 功能权限树勾选联动重入保护 */
+let permCheckSyncing = false
 /**
  * 业务入口树节点 props：
  * - label/children 字段映射
@@ -475,16 +481,21 @@ async function loadRoleItemPermissions(roleId: string) {
   } catch {
     grantedIds = []
   }
+  // 异步返回后角色已切换则丢弃，避免显示上一角色的勾选
+  if (roleId !== currentRoleId.value) return
   await nextTick()
   applyRoleItemChecks(grantedIds)
 }
 
-/** 将已授权 Id 集合回填到各棵入口树（仅勾选树内存在的节点） */
+/** 将已授权 Id 集合回填到各棵入口树（先清空再勾选，避免残留上一角色） */
 function applyRoleItemChecks(grantedIds: string[]) {
-  const grantedSet = new Set(grantedIds)
+  const grantedSet = new Set(grantedIds.map(String))
   grantTreeRefs.forEach(tree => {
     if (!tree) return
-    // check-strictly：仅勾选 grantedSet 中、且该树存在的节点（不存在的 key 会被忽略）
+    tree.setCheckedKeys?.([])
+  })
+  grantTreeRefs.forEach(tree => {
+    if (!tree) return
     tree.setCheckedKeys?.([...grantedSet])
   })
 }
@@ -548,19 +559,49 @@ async function ensureDeptTreeLoaded() {
 }
 
 async function loadPermissions(roleId: string) {
-  permissionTree.value = await getPermissionTree()
-  checkedPermIds.value = await getRolePermissionIds(roleId)
-  await nextTick()
-  permTreeRef.value?.filter(permissionKeyword.value)
-  const scope = await getRoleDataScope(roleId)
-  dataScope.value = { strategy: (scope.strategy || scope.dataScope || 'All') as string, departmentIds: scope.departmentIds || [] }
-  // 进入权限分配面板时，懒加载部门树供「指定部门」多选使用
-  await ensureDeptTreeLoaded()
-  // 加载业务入口授权数据：首次加载可授权入口列表，并回填该角色已授权的入口项
-  if (!grantableGroups.value.length) {
-    await loadGrantableItems()
-  } else {
-    await loadRoleItemPermissions(roleId)
+  const seq = ++loadPermSeq
+  permLoading.value = true
+  checkedPermIds.value = []
+  dataScope.value = { strategy: 'All', departmentIds: [] }
+
+  try {
+    // 权限树全站共用，仅首次拉取
+    if (!permissionTree.value.length) {
+      const tree = await getPermissionTree()
+      if (seq !== loadPermSeq) return
+      permissionTree.value = tree
+    }
+
+    const [ids, scope] = await Promise.all([
+      getRolePermissionIds(roleId),
+      getRoleDataScope(roleId)
+    ])
+    if (seq !== loadPermSeq) return
+
+    checkedPermIds.value = ids
+    dataScope.value = {
+      strategy: (scope.strategy || scope.dataScope || 'All') as string,
+      departmentIds: scope.departmentIds || []
+    }
+
+    await nextTick()
+    permTreeRef.value?.setCheckedKeys([...ids])
+    permTreeRef.value?.filter(permissionKeyword.value)
+
+    await ensureDeptTreeLoaded()
+    if (seq !== loadPermSeq) return
+
+    if (!grantableGroups.value.length) {
+      await loadGrantableItems()
+    } else {
+      await loadRoleItemPermissions(roleId)
+    }
+  } catch (e: any) {
+    if (seq === loadPermSeq) {
+      ElMessage.error(e?.message || '加载角色权限失败')
+    }
+  } finally {
+    if (seq === loadPermSeq) permLoading.value = false
   }
 }
 
@@ -570,43 +611,26 @@ function filterPermissionNode(keyword: string, data: PermissionTreeNode) {
 
 /**
  * 权限树勾选联动：
- * - 勾选节点时，自动向上勾选所有祖先（保证一级菜单/目录在有子权限时必选）
- * - 取消节点时，自动向下取消所有后代（避免子节点已选但父节点未选的矛盾状态）
- * - 父节点可以独立勾选（不依赖子节点）
+ * - 勾选上级：自动勾选全部下级，并向上勾选祖先
+ * - 取消下级：仅取消当前节点及其下级，上级菜单可独立保留
  */
 function onPermCheck(
   data: PermissionTreeNode,
   { checkedKeys }: { checkedKeys: string[]; checkedNodes: PermissionTreeNode[]; halfCheckedKeys: string[]; halfCheckedNodes: PermissionTreeNode[] }
 ) {
-  const checkedSet = new Set<string>(checkedKeys)
-  if (checkedSet.has(data.id)) {
-    // 勾选：向上自动勾选所有祖先节点
-    permCheckAncestors(permissionTree.value, data.id, checkedSet)
-  } else {
-    // 取消：向下自动取消所有后代节点
-    permUncheckDescendants(data, checkedSet)
-  }
-  permTreeRef.value?.setCheckedKeys([...checkedSet])
-}
+  if (permCheckSyncing) return
 
-/** 找到 targetId 的所有祖先链并全部加入 checkedSet；返回是否在当前层找到 targetId */
-function permCheckAncestors(nodes: PermissionTreeNode[], targetId: string, checkedSet: Set<string>): boolean {
-  for (const node of nodes) {
-    if (node.id === targetId) return true
-    if (node.children?.length && permCheckAncestors(node.children, targetId, checkedSet)) {
-      checkedSet.add(node.id)
-      return true
-    }
-  }
-  return false
-}
+  const currentKeys = ((permTreeRef.value?.getCheckedKeys(false) as string[]) || checkedKeys || []).map(String)
+  const isChecking = (checkedKeys || []).map(String).includes(String(data.id))
+  const nextKeys = applyPermissionCheckCascade(permissionTree.value, currentKeys, data, isChecking)
+  if (nextKeys.length === currentKeys.length && nextKeys.every(k => currentKeys.includes(k))) return
 
-/** 递归取消 node 下所有后代节点 */
-function permUncheckDescendants(node: PermissionTreeNode, checkedSet: Set<string>) {
-  node.children?.forEach(child => {
-    checkedSet.delete(child.id)
-    permUncheckDescendants(child, checkedSet)
-  })
+  permCheckSyncing = true
+  try {
+    permTreeRef.value?.setCheckedKeys(nextKeys)
+  } finally {
+    permCheckSyncing = false
+  }
 }
 
 watch(permissionKeyword, value => {
@@ -772,10 +796,11 @@ async function submitForm() {
   } catch (e: any) { ElMessage.error(e?.message || '操作失败') }
 }
 
-function onRoleClick(node: any) {
+async function onRoleClick(node: any) {
+  if (!node?.id || node.id === currentRoleId.value) return
   currentRoleId.value = node.id
   currentRoleName.value = node.name
-  loadPermissions(node.id)
+  await loadPermissions(node.id)
 }
 
 onMounted(loadTree)

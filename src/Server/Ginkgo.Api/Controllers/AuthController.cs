@@ -12,12 +12,15 @@ using Ginkgo.Domain.Users.Events;
 using Ginkgo.Domain;
 using Ginkgo.Domain.Auth;
 using Ginkgo.Domain.Users;
+using Ginkgo.Infrastructure.Abstractions;
 using Ginkgo.Plugin.Abstractions.Extensions;
 using Ginkgo.Shared;
+using Ginkgo.ServerToolkit;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -39,6 +42,8 @@ public sealed class AuthController : ControllerBase
     private readonly IDomainEventPublisher _bus;
     private readonly IServiceProvider _serviceProvider;
     private readonly PermissionCacheInvalidator _permissionCacheInvalidator;
+    private readonly IDialectRegistry _dialectRegistry;
+    private readonly IConfiguration _config;
 
     public AuthController(
         IRepository<User> userRepo,
@@ -48,7 +53,9 @@ public sealed class AuthController : ControllerBase
         IPasswordHasher passwordHasher,
         IDomainEventPublisher bus,
         IServiceProvider serviceProvider,
-        PermissionCacheInvalidator permissionCacheInvalidator)
+        PermissionCacheInvalidator permissionCacheInvalidator,
+        IDialectRegistry dialectRegistry,
+        IConfiguration config)
     {
         _userRepo = userRepo;
         _refreshTokenRepo = refreshTokenRepo;
@@ -58,7 +65,12 @@ public sealed class AuthController : ControllerBase
         _bus = bus;
         _serviceProvider = serviceProvider;
         _permissionCacheInvalidator = permissionCacheInvalidator;
+        _dialectRegistry = dialectRegistry;
+        _config = config;
     }
+
+    private IDatabaseDialect Dialect =>
+        _dialectRegistry.Get(_config["Database:Provider"] ?? "mysql");
 
     /// <summary>
     /// 登录并发放令牌（加盐哈希校验）。
@@ -75,10 +87,12 @@ public sealed class AuthController : ControllerBase
         // 客户端类型：默认 WEB_ADMIN
         var client = string.IsNullOrWhiteSpace(clientType) ? "WEB_ADMIN" : clientType.Trim().ToUpperInvariant();
         // 支持用户名、邮箱、手机号三种方式登录
-        var sql = @"SELECT Id, UserName, DisplayName, PasswordHash, Salt, Email, Phone, Enabled, LastLoginAt, Avatar, Introduction 
-                     FROM ginkgo_Sys_User 
-                     WHERE (UserName = @Account OR Email = @Account OR Phone = @Account) 
-                       AND Enabled = 1 AND IsDeleted = 0";
+        var d = Dialect;
+        var userTable = d.QuoteTable(null, "ginkgo_Sys_User");
+        var sql = $@"SELECT {d.QuoteIdentifier("Id")}, {d.QuoteIdentifier("UserName")}, {d.QuoteIdentifier("DisplayName")}, {d.QuoteIdentifier("PasswordHash")}, {d.QuoteIdentifier("Salt")}, {d.QuoteIdentifier("Email")}, {d.QuoteIdentifier("Phone")}, {d.QuoteIdentifier("Enabled")}, {d.QuoteIdentifier("LastLoginAt")}, {d.QuoteIdentifier("Avatar")}, {d.QuoteIdentifier("Introduction")} 
+                     FROM {userTable} 
+                     WHERE ({d.QuoteIdentifier("UserName")} = @Account OR {d.QuoteIdentifier("Email")} = @Account OR {d.QuoteIdentifier("Phone")} = @Account) 
+                       AND {d.QuoteIdentifier("Enabled")} = {d.BoolLiteral(true)} AND {d.QuoteIdentifier("IsDeleted")} = {d.BoolLiteral(false)}";
         var dt = await db.Ado.GetDataTableAsync(sql, new { Account = userName });
         
         if (dt.Rows.Count == 0)
@@ -146,10 +160,12 @@ public sealed class AuthController : ControllerBase
         };
 
         // 查询用户所属角色是否有超级管理员标记（IsSuperAdmin=1）
-        var superAdminCheckSql = @"
-            SELECT COUNT(1) FROM ginkgo_Sys_Role r
-            INNER JOIN ginkgo_Sys_UserRole ur ON ur.RoleId = r.Id
-            WHERE ur.UserId = @UserId AND r.IsDeleted = 0 AND r.Enabled = 1 AND r.IsSuperAdmin = 1";
+        var roleTable = d.QuoteTable(null, "ginkgo_Sys_Role");
+        var userRoleTable = d.QuoteTable(null, "ginkgo_Sys_UserRole");
+        var superAdminCheckSql = $@"
+            SELECT COUNT(1) FROM {roleTable} r
+            INNER JOIN {userRoleTable} ur ON ur.{d.QuoteIdentifier("RoleId")} = r.{d.QuoteIdentifier("Id")}
+            WHERE ur.{d.QuoteIdentifier("UserId")} = @UserId AND r.{d.QuoteIdentifier("IsDeleted")} = {d.BoolLiteral(false)} AND r.{d.QuoteIdentifier("Enabled")} = {d.BoolLiteral(true)} AND r.{d.QuoteIdentifier("IsSuperAdmin")} = {d.BoolLiteral(true)}";
         var isSuperAdmin = await db.Ado.GetIntAsync(superAdminCheckSql, new { UserId = userId }) > 0;
 
         if (isSuperAdmin)
@@ -190,11 +206,11 @@ public sealed class AuthController : ControllerBase
         // 超级管理员跳过客户端验证
         if (!isSuperAdmin)
         {
-            var clientCheckSql = @"
-                SELECT r.AllowedClients 
-                FROM ginkgo_Sys_Role r 
-                INNER JOIN ginkgo_Sys_UserRole ur ON ur.RoleId = r.Id 
-                WHERE ur.UserId = @UserId AND r.IsDeleted = 0 AND r.Enabled = 1";
+            var clientCheckSql = $@"
+                SELECT r.{d.QuoteIdentifier("AllowedClients")} 
+                FROM {roleTable} r 
+                INNER JOIN {userRoleTable} ur ON ur.{d.QuoteIdentifier("RoleId")} = r.{d.QuoteIdentifier("Id")} 
+                WHERE ur.{d.QuoteIdentifier("UserId")} = @UserId AND r.{d.QuoteIdentifier("IsDeleted")} = {d.BoolLiteral(false)} AND r.{d.QuoteIdentifier("Enabled")} = {d.BoolLiteral(true)}";
             var roleDt = await db.Ado.GetDataTableAsync(clientCheckSql, new { UserId = userId });
             
             // 无角色 → 禁止登录
@@ -343,10 +359,13 @@ public sealed class AuthController : ControllerBase
         };
         // 查询用户所属角色是否有超级管理员标记
         var refreshDb = HttpContext.RequestServices.GetRequiredService<SqlSugar.ISqlSugarClient>();
-        var refreshSuperAdminSql = @"
-            SELECT COUNT(1) FROM ginkgo_Sys_Role r
-            INNER JOIN ginkgo_Sys_UserRole ur ON ur.RoleId = r.Id
-            WHERE ur.UserId = @UserId AND r.IsDeleted = 0 AND r.Enabled = 1 AND r.IsSuperAdmin = 1";
+        var rd = Dialect;
+        var refreshRoleTable = rd.QuoteTable(null, "ginkgo_Sys_Role");
+        var refreshUserRoleTable = rd.QuoteTable(null, "ginkgo_Sys_UserRole");
+        var refreshSuperAdminSql = $@"
+            SELECT COUNT(1) FROM {refreshRoleTable} r
+            INNER JOIN {refreshUserRoleTable} ur ON ur.{rd.QuoteIdentifier("RoleId")} = r.{rd.QuoteIdentifier("Id")}
+            WHERE ur.{rd.QuoteIdentifier("UserId")} = @UserId AND r.{rd.QuoteIdentifier("IsDeleted")} = {rd.BoolLiteral(false)} AND r.{rd.QuoteIdentifier("Enabled")} = {rd.BoolLiteral(true)} AND r.{rd.QuoteIdentifier("IsSuperAdmin")} = {rd.BoolLiteral(true)}";
         var isRefreshSuperAdmin = await refreshDb.Ado.GetIntAsync(refreshSuperAdminSql, new { UserId = existing.UserId }) > 0;
         if (isRefreshSuperAdmin)
             claims.Add(new Claim(ClaimTypes.Role, "ADMIN"));
@@ -408,8 +427,10 @@ public sealed class AuthController : ControllerBase
         CancellationToken ct)
     {
         // 读取注册模式配置
+        var rd = Dialect;
+        var settingsTable = rd.QuoteTable(null, "ginkgo_Sys_Settings");
         var modeSetting = await db.Ado.GetStringAsync(
-            "SELECT `Value` FROM ginkgo_Sys_Settings WHERE `Key` = 'Registration.Mode' LIMIT 1");
+            $"SELECT {rd.QuoteIdentifier("Value")} FROM {settingsTable} WHERE {rd.QuoteIdentifier("Key")} = 'Registration.Mode' {rd.BuildLimitClause(0, 1)}");
         var mode = string.IsNullOrWhiteSpace(modeSetting) ? "free" : modeSetting.Trim().ToLowerInvariant();
 
         // 关闭注册
@@ -467,8 +488,63 @@ public sealed class AuthController : ControllerBase
                 return Result<long>.Fail(4001, result.Message ?? "手机验证码无效或已过期");
         }
 
+        // 邮箱/手机验证码注册：账号即邮箱或手机号，密码服务端自动生成
+        if (mode is "email_code" or "phone_code" or "both_code")
+        {
+            var pwd = GenerateSecurePassword();
+            input.Password = pwd;
+            input.ConfirmPassword = pwd;
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(input.Password))
+                return Result<long>.Fail(4001, "请输入密码");
+            if (!string.Equals(input.Password, input.ConfirmPassword, StringComparison.Ordinal))
+                return Result<long>.Fail(4001, "两次密码输入不一致");
+        }
+
         var id = await _userApp.RegisterAsync(input, ct);
         return Result<long>.Success(id, "注册成功");
+    }
+
+    /// <summary>
+    /// 验证码登录（邮箱/短信）。需后台开启对应登录方式且用户已注册。
+    /// </summary>
+    [HttpPost("login/code")]
+    [AllowAnonymous]
+    [EnableRateLimiting("login")]
+    public async Task<Result<object>> LoginByCodeAsync(
+        [FromBody] LoginByCodeInput input,
+        [FromServices] ISecondaryVerificationService verificationService,
+        [FromServices] SqlSugar.ISqlSugarClient db,
+        CancellationToken ct = default)
+    {
+        var target = (input.Target ?? string.Empty).Trim();
+        var code = (input.Code ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(target) || string.IsNullOrEmpty(code))
+            return Result<object>.Fail(4001, "请输入账号和验证码");
+
+        var client = string.IsNullOrWhiteSpace(input.ClientType) ? "WEB_ADMIN" : input.ClientType.Trim().ToUpperInvariant();
+        var loginMethods = await ReadLoginMethodsAsync(db);
+        var isSms = input.Channel == VerificationChannel.Sms || (!target.Contains('@') && input.Channel != VerificationChannel.Email);
+        var methodKey = isSms ? "sms_code" : "email_code";
+        if (!loginMethods.Contains(methodKey, StringComparer.OrdinalIgnoreCase))
+            return Result<object>.Fail(4003, "当前系统未开启该验证码登录方式");
+
+        var verify = await verificationService.ValidateVerificationCodeAsync(
+            target: target,
+            purpose: VerificationPurpose.Login,
+            code: code,
+            consumeOnSuccess: true,
+            ct: ct);
+        if (!verify.Success)
+            return Result<object>.Fail(4001, verify.Message ?? "验证码无效或已过期");
+
+        var user = await LoadUserByAccountAsync(target, db);
+        if (user == null)
+            return Result<object>.Fail(4001, "账号不存在，请先注册");
+
+        return await IssueAuthTokensAsync(user, client, db);
     }
 
     /// <summary>
@@ -502,6 +578,195 @@ public sealed class AuthController : ControllerBase
     {
         await _userApp.ForgotPasswordResetAsync(input, ct);
         return Result.Success("已重置密码");
+    }
+
+    /// <summary>
+    /// 按账号（用户名/邮箱/手机号）加载启用中的用户。
+    /// </summary>
+    private async Task<User?> LoadUserByAccountAsync(string account, SqlSugar.ISqlSugarClient db)
+    {
+        var d = Dialect;
+        var userTable = d.QuoteTable(null, "ginkgo_Sys_User");
+        var sql = $@"SELECT {d.QuoteIdentifier("Id")}, {d.QuoteIdentifier("UserName")}, {d.QuoteIdentifier("DisplayName")}, {d.QuoteIdentifier("PasswordHash")}, {d.QuoteIdentifier("Salt")}, {d.QuoteIdentifier("Email")}, {d.QuoteIdentifier("Phone")}, {d.QuoteIdentifier("Enabled")}, {d.QuoteIdentifier("LastLoginAt")}, {d.QuoteIdentifier("Avatar")}, {d.QuoteIdentifier("Introduction")} 
+                     FROM {userTable} 
+                     WHERE ({d.QuoteIdentifier("UserName")} = @Account OR {d.QuoteIdentifier("Email")} = @Account OR {d.QuoteIdentifier("Phone")} = @Account) 
+                       AND {d.QuoteIdentifier("Enabled")} = {d.BoolLiteral(true)} AND {d.QuoteIdentifier("IsDeleted")} = {d.BoolLiteral(false)}";
+        var dt = await db.Ado.GetDataTableAsync(sql, new { Account = account });
+        if (dt.Rows.Count == 0) return null;
+
+        var row = dt.Rows[0];
+        var idValue = row["Id"];
+        long userId;
+        if (idValue is long longId)
+            userId = longId;
+        else if (idValue is decimal decimalId)
+            userId = (long)decimalId;
+        else if (idValue is int intId)
+            userId = intId;
+        else
+            return null;
+
+        return new User
+        {
+            Id = userId,
+            UserName = row["UserName"]?.ToString() ?? string.Empty,
+            DisplayName = row["DisplayName"]?.ToString() ?? string.Empty,
+            PasswordHash = row["PasswordHash"]?.ToString() ?? string.Empty,
+            Salt = row["Salt"] == DBNull.Value ? null : row["Salt"]?.ToString(),
+            Email = row["Email"] == DBNull.Value ? null : row["Email"]?.ToString(),
+            Phone = row["Phone"] == DBNull.Value ? null : row["Phone"]?.ToString(),
+            Enabled = Convert.ToBoolean(row["Enabled"]),
+            LastLoginAt = row["LastLoginAt"] == DBNull.Value ? null : Convert.ToDateTime(row["LastLoginAt"]),
+            Avatar = row["Avatar"] == DBNull.Value ? null : row["Avatar"]?.ToString(),
+            Introduction = row["Introduction"] == DBNull.Value ? null : row["Introduction"]?.ToString()
+        };
+    }
+
+    /// <summary>
+    /// 读取后台配置的登录方式列表。
+    /// </summary>
+    private async Task<List<string>> ReadLoginMethodsAsync(SqlSugar.ISqlSugarClient db)
+    {
+        var rd = Dialect;
+        var settingsTable = rd.QuoteTable(null, "ginkgo_Sys_Settings");
+        var raw = await db.Ado.GetStringAsync(
+            $"SELECT {rd.QuoteIdentifier("Value")} FROM {settingsTable} WHERE {rd.QuoteIdentifier("Key")} = 'Registration.LoginMethods' {rd.BuildLimitClause(0, 1)}");
+        if (string.IsNullOrWhiteSpace(raw))
+            return new List<string> { "password" };
+        try
+        {
+            var list = System.Text.Json.JsonSerializer.Deserialize<List<string>>(raw);
+            return list?.Count > 0 ? list : new List<string> { "password" };
+        }
+        catch
+        {
+            return new List<string> { "password" };
+        }
+    }
+
+    /// <summary>
+    /// 签发 JWT 与 Refresh Token（密码登录与验证码登录共用）。
+    /// </summary>
+    private async Task<Result<object>> IssueAuthTokensAsync(User user, string client, SqlSugar.ISqlSugarClient db)
+    {
+        var d = Dialect;
+        var userId = user.Id;
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new Claim("name", user.DisplayName),
+            new Claim("uname", user.UserName)
+        };
+
+        var roleTable = d.QuoteTable(null, "ginkgo_Sys_Role");
+        var userRoleTable = d.QuoteTable(null, "ginkgo_Sys_UserRole");
+        var superAdminCheckSql = $@"
+            SELECT COUNT(1) FROM {roleTable} r
+            INNER JOIN {userRoleTable} ur ON ur.{d.QuoteIdentifier("RoleId")} = r.{d.QuoteIdentifier("Id")}
+            WHERE ur.{d.QuoteIdentifier("UserId")} = @UserId AND r.{d.QuoteIdentifier("IsDeleted")} = {d.BoolLiteral(false)} AND r.{d.QuoteIdentifier("Enabled")} = {d.BoolLiteral(true)} AND r.{d.QuoteIdentifier("IsSuperAdmin")} = {d.BoolLiteral(true)}";
+        var isSuperAdmin = await db.Ado.GetIntAsync(superAdminCheckSql, new { UserId = userId }) > 0;
+
+        if (isSuperAdmin)
+            claims.Add(new Claim(ClaimTypes.Role, "ADMIN"));
+
+        await AppendModuleClaimsAsync(claims, userId);
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SigningKey));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expires = DateTime.Now.AddMinutes(_jwtOptions.ExpiresMinutes);
+
+        var token = new JwtSecurityToken(
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
+            claims: claims,
+            expires: expires,
+            signingCredentials: creds);
+
+        var jwt = _tokenHandler.WriteToken(token);
+        user.LastLoginAt = DateTime.Now;
+        await _userRepo.UpdateAsync(user);
+
+        try
+        {
+            var eventIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _bus.PublishAsync(new UserLoggedIn(user.Id, user.UserName, eventIp), HttpContext.RequestAborted);
+        }
+        catch { /* 忽略事件异常 */ }
+
+        if (!isSuperAdmin)
+        {
+            var clientCheckSql = $@"
+                SELECT r.{d.QuoteIdentifier("AllowedClients")} 
+                FROM {roleTable} r 
+                INNER JOIN {userRoleTable} ur ON ur.{d.QuoteIdentifier("RoleId")} = r.{d.QuoteIdentifier("Id")} 
+                WHERE ur.{d.QuoteIdentifier("UserId")} = @UserId AND r.{d.QuoteIdentifier("IsDeleted")} = {d.BoolLiteral(false)} AND r.{d.QuoteIdentifier("Enabled")} = {d.BoolLiteral(true)}";
+            var roleDt = await db.Ado.GetDataTableAsync(clientCheckSql, new { UserId = userId });
+
+            if (roleDt.Rows.Count == 0)
+            {
+                HttpContext.Items["OpLogResult"] = "未分配角色";
+                return Result<object>.Fail(4003, "当前账户未分配角色，无法登录");
+            }
+
+            var hasPermission = false;
+            foreach (System.Data.DataRow roleRow in roleDt.Rows)
+            {
+                var allowed = roleRow["AllowedClients"] == DBNull.Value ? null : roleRow["AllowedClients"]?.ToString();
+                if (string.IsNullOrWhiteSpace(allowed))
+                    continue;
+                var allowedList = allowed.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (allowedList.Any(a => string.Equals(a, client, StringComparison.OrdinalIgnoreCase)))
+                {
+                    hasPermission = true;
+                    break;
+                }
+            }
+            if (!hasPermission)
+            {
+                HttpContext.Items["OpLogResult"] = "无权登录此客户端";
+                return Result<object>.Fail(4003, "当前账户无权登录此客户端");
+            }
+        }
+
+        var roles = new List<string>();
+        if (isSuperAdmin)
+            roles.Add("ADMIN");
+
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var refreshToken = await GenerateRefreshTokenAsync(userId, ip);
+        _permissionCacheInvalidator.InvalidateAll();
+
+        return Result<object>.Success(new
+        {
+            token = jwt,
+            refreshToken = refreshToken.Token,
+            expiresAt = expires,
+            userName = user.UserName,
+            displayName = user.DisplayName,
+            avatar = user.Avatar,
+            phone = user.Phone,
+            email = user.Email,
+            roles,
+            isSuperAdmin
+        }, "登录成功");
+    }
+
+    /// <summary>
+    /// 生成符合强度要求的随机密码（验证码注册场景）。
+    /// </summary>
+    private static string GenerateSecurePassword()
+    {
+        const string letters = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ";
+        const string digits = "23456789";
+        const string all = letters + digits;
+        var buf = new char[16];
+        var bytes = new byte[16];
+        RandomNumberGenerator.Fill(bytes);
+        buf[0] = letters[bytes[0] % letters.Length];
+        buf[1] = digits[bytes[1] % digits.Length];
+        for (var i = 2; i < buf.Length; i++)
+            buf[i] = all[bytes[i] % all.Length];
+        return new string(buf);
     }
 
     /// <summary>
@@ -563,4 +828,22 @@ public sealed class AuthController : ControllerBase
 public sealed class RefreshTokenInput
 {
     public string RefreshToken { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 验证码登录请求体。
+/// </summary>
+public sealed class LoginByCodeInput
+{
+    /// <summary>登录目标（邮箱或手机号）。</summary>
+    public string Target { get; set; } = string.Empty;
+
+    /// <summary>验证码。</summary>
+    public string Code { get; set; } = string.Empty;
+
+    /// <summary>渠道（0=邮件，1=短信）。</summary>
+    public VerificationChannel Channel { get; set; } = VerificationChannel.Email;
+
+    /// <summary>客户端类型（默认 WEB_ADMIN）。</summary>
+    public string? ClientType { get; set; }
 }

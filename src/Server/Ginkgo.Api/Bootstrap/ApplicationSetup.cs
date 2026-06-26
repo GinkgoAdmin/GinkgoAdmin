@@ -2,6 +2,7 @@ using Ginkgo.Application;
 using Ginkgo.Application.Dictionaries;
 using Ginkgo.Application.Menus;
 using Ginkgo.Application.Messages;
+using Ginkgo.Application.Modules;
 using Ginkgo.Application.Notifications;
 using Ginkgo.Application.Roles;
 using Ginkgo.Application.Settings;
@@ -116,6 +117,8 @@ public static class ApplicationSetup
         services.AddScoped<IMenuGroupAppService, MenuGroupAppService>();
         services.AddScoped<IDictionaryAppService, DictionaryAppService>();
         services.AddScoped<ISettingsAppService, SettingsAppService>();
+        services.AddScoped<ModuleConfigDbService>();
+        services.AddScoped<Ginkgo.Domain.Settings.IModuleConfigValueStore, Ginkgo.Infrastructure.Persistence.SqlSugar.ModuleConfigValueStore>();
         services.AddScoped<Ginkgo.Application.IDataPermissionService, Ginkgo.Application.DataPermissionService>();
         services.AddScoped<Ginkgo.Application.Files.IFileAppService, Ginkgo.Application.Files.FileAppService>();
         // DDD: 文件存储适配

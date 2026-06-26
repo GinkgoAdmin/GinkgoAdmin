@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Ginkgo.Domain;
 using Ginkgo.Plugin.Abstractions.Extensions;
 using SqlSugar;
@@ -74,15 +75,27 @@ public class SqlSugarRepository<T> : IRepository<T> where T : Entity, new()
         }
     }
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, LambdaExpression> SoftDeleteFilterCache = new();
+
+    private ISugarQueryable<T> ApplySoftDeleteFilter(ISugarQueryable<T> query)
+    {
+        if (!typeof(AuditableEntity).IsAssignableFrom(typeof(T))) return query;
+        var lambda = (Expression<Func<T, bool>>)SoftDeleteFilterCache.GetOrAdd(typeof(T), static type =>
+        {
+            var param = Expression.Parameter(type, "x");
+            var cast = Expression.Convert(param, typeof(AuditableEntity));
+            var prop = Expression.Property(cast, nameof(AuditableEntity.IsDeleted));
+            var body = Expression.Not(prop);
+            return Expression.Lambda(body, param);
+        });
+        return query.Where(lambda);
+    }
+
     public ISugarQueryable<T> Query()
     {
         // 统一过滤软删除（若为审计实体）
         var q = _db.Queryable<T>();
-        if (typeof(AuditableEntity).IsAssignableFrom(typeof(T)))
-        {
-            // 使用动态条件避免类型转换问题
-            q = q.Where("IsDeleted = @IsDeleted", new { IsDeleted = false });
-        }
+        q = ApplySoftDeleteFilter(q);
 
         // 数据范围自动过滤（启用开关由 IDataScopeResolver.IsEnabled() 决定：
         //   优先 DB Settings.DataPermission.Enabled；未配置时回退 appsettings DataScope:Enabled，默认关闭确保兼容）
@@ -121,11 +134,7 @@ public class SqlSugarRepository<T> : IRepository<T> where T : Entity, new()
         var query = _db.Queryable<T>().Where(x => x.Id == id);
 
         // 应用软删除过滤
-        if (typeof(AuditableEntity).IsAssignableFrom(typeof(T)))
-        {
-            // 使用动态条件避免类型转换问题
-            query = query.Where("IsDeleted = @IsDeleted", new { IsDeleted = false });
-        }
+        query = ApplySoftDeleteFilter(query);
 
         return await query.FirstAsync();
     }
@@ -321,11 +330,7 @@ public class SqlSugarRepository<T> : IRepository<T> where T : Entity, new()
         var query = _db.Queryable<T>();
 
         // 应用软删除过滤
-        if (typeof(AuditableEntity).IsAssignableFrom(typeof(T)))
-        {
-            // 使用动态条件避免类型转换问题
-            query = query.Where("IsDeleted = @IsDeleted", new { IsDeleted = false });
-        }
+        query = ApplySoftDeleteFilter(query);
 
         return await query.CountAsync();
     }
@@ -335,11 +340,7 @@ public class SqlSugarRepository<T> : IRepository<T> where T : Entity, new()
         var query = _db.Queryable<T>().Where(x => x.Id == id);
 
         // 应用软删除过滤
-        if (typeof(AuditableEntity).IsAssignableFrom(typeof(T)))
-        {
-            // 使用动态条件避免类型转换问题
-            query = query.Where("IsDeleted = @IsDeleted", new { IsDeleted = false });
-        }
+        query = ApplySoftDeleteFilter(query);
 
         return await query.AnyAsync();
     }
@@ -349,11 +350,7 @@ public class SqlSugarRepository<T> : IRepository<T> where T : Entity, new()
         var query = _db.Queryable<T>();
 
         // 应用软删除过滤
-        if (typeof(AuditableEntity).IsAssignableFrom(typeof(T)))
-        {
-            // 使用动态条件避免类型转换问题
-            query = query.Where("IsDeleted = @IsDeleted", new { IsDeleted = false });
-        }
+        query = ApplySoftDeleteFilter(query);
 
         return await query.ToListAsync();
     }

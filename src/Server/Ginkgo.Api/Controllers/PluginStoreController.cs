@@ -1,4 +1,5 @@
 using Ginkgo.Api.Modules;
+using Ginkgo.Plugin.Abstractions.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -82,7 +83,7 @@ public sealed class PluginStoreController : ControllerBase
             // 使用参数化查询防止 SQL 注入
             var query = _db.Queryable<dynamic>()
                 .AS("ginkgo_PS_StoreItem")
-                .Where("Status = @status AND IsDeleted = @deleted AND IsVisible = 1", new { status = "published", deleted = 0 });
+                .Where($"Status = @status AND {_db.NotDeletedSql()} AND {_db.QuoteCol("IsVisible")} = {_db.BoolSql(true)}", new { status = "published" });
 
             // 按分类筛选（参数化）
             if (!string.IsNullOrWhiteSpace(category))
@@ -179,7 +180,7 @@ public sealed class PluginStoreController : ControllerBase
             // 使用参数化查询防止 SQL 注入
             var items = await _db.Queryable<dynamic>()
                 .AS("ginkgo_PS_StoreItem")
-                .Where("Id = @id AND IsDeleted = @deleted", new { id = long.Parse(id), deleted = 0 })
+                .Where($"Id = @id AND {_db.NotDeletedSql()}", new { id = long.Parse(id) })
                 .ToListAsync();
 
             if (items.Count == 0)

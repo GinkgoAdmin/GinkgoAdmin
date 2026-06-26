@@ -27,6 +27,10 @@ export interface ModuleInfo {
   serverDllLoaded?: boolean
   hasMenus?: boolean
   menuRegistered?: boolean
+  /** 配置存储方式：file | database */
+  configStorage?: 'file' | 'database'
+  /** 数据库存储模式主配置文件名 */
+  configPrimaryFile?: string
 }
 
 // 模块状态接口
@@ -320,6 +324,31 @@ export interface ConfigItem {
 export interface NormalizedConfig {
   groups: ConfigGroup[]
   items: ConfigItem[]
+  /** 配置存储方式（后端 normalized 接口返回） */
+  storage?: 'file' | 'database'
+}
+
+/** 配置项差异 */
+export interface ConfigItemDiff {
+  name: string
+  sampleValue?: string | null
+  dbValue?: string | null
+}
+
+/** 配置存储状态（数据库模式含一致性检查） */
+export interface ModuleConfigStorageStatus {
+  ok: boolean
+  storage: 'file' | 'database'
+  file?: string
+  sampleExists?: boolean
+  sampleItemCount?: number
+  dbItemCount?: number
+  hasDbData?: boolean
+  isConsistent?: boolean
+  missingInDb?: ConfigItemDiff[]
+  extraInDb?: ConfigItemDiff[]
+  valueMismatch?: ConfigItemDiff[]
+  message?: string
 }
 
 // 获取模块配置文件列表
@@ -340,6 +369,21 @@ export async function saveModuleConfig(moduleId: string, file: string, content: 
 // 重置配置为默认值
 export async function resetModuleConfig(moduleId: string, file: string): Promise<{ ok: boolean; message: string }> {
   return http.post('/v1/modules/config/reset', { moduleId, file })
+}
+
+// 检查配置存储方式及数据库与样例一致性
+export async function getModuleConfigStorageStatus(moduleId: string, file: string): Promise<ModuleConfigStorageStatus> {
+  return http.get('/v1/modules/config/storage-status', { params: { moduleId, file } })
+}
+
+// 将样例初始配置同步到数据库
+export async function syncModuleConfigToDb(moduleId: string, file: string): Promise<{ ok: boolean; message: string; syncedCount?: number; removedExtraCount?: number; isConsistent?: boolean }> {
+  return http.post('/v1/modules/config/sync-to-db', { moduleId, file })
+}
+
+// 从数据库移除指定配置文件的全部配置项
+export async function removeModuleConfigFromDb(moduleId: string, file: string): Promise<{ ok: boolean; message: string; removedCount?: number }> {
+  return http.post('/v1/modules/config/remove-from-db', { moduleId, file })
 }
 
 // 重置模块菜单

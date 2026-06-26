@@ -8,6 +8,7 @@ using Ginkgo.Domain.Modules;
 using Ginkgo.Infrastructure.Runtime;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Configuration;
 
 namespace Ginkgo.Api.Bootstrap;
 
@@ -24,9 +25,15 @@ public static class ModuleRuntimeBootstrap
         if (preload.DevModules.Count == 0) return;
         try
         {
+            var configuration = app.Services.GetRequiredService<IConfiguration>();
+            var compatibleDevModules = preload.DevModules
+                .Where(m => ModuleDatabaseCompatibility.ShouldLoadModule(m.Manifest.Id, configuration, m.BaseDirectory))
+                .ToList();
+            if (compatibleDevModules.Count == 0) return;
+
             var partManager = app.Services.GetRequiredService<ApplicationPartManager>();
             var notifier = app.Services.GetRequiredService<MvcActionDescriptorChangeProvider>();
-            DevModuleBootstrap.RegisterMvcPartsAndNotify(partManager, preload.DevModules, notifier);
+            DevModuleBootstrap.RegisterMvcPartsAndNotify(partManager, compatibleDevModules, notifier);
         }
         catch (Exception ex) { Console.WriteLine($"[BOOT] Dev module MVC registration failed: {ex.Message}"); }
     }
@@ -38,6 +45,7 @@ public static class ModuleRuntimeBootstrap
     public static void RegisterAndLoadModules(this WebApplication app, ModulePreloadResult preload)
     {
         using var scope = app.Services.CreateScope();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
         // 确保数据库表存在
         DatabaseMaintenanceService.EnsureDatabaseAndTables(scope.ServiceProvider);
@@ -68,6 +76,11 @@ public static class ModuleRuntimeBootstrap
                         Console.WriteLine($"[Modules] Skip deleted module: {m.Manifest.Id}");
                         continue;
                     }
+                    if (!ModuleDatabaseCompatibility.ShouldLoadModule(m.Manifest.Id, configuration, m.BaseDirectory))
+                    {
+                        Console.WriteLine($"[Modules] Skip incompatible module: {m.Manifest.Id} (requires PostgreSQL)");
+                        continue;
+                    }
 
                     try
                     {
@@ -81,6 +94,11 @@ public static class ModuleRuntimeBootstrap
                     if (!syncPolicy.ShouldSynchronize(m.Manifest.Id))
                     {
                         Console.WriteLine($"[Modules] Module {m.Manifest.Id} is DELETED, skipping TryLoad");
+                        continue;
+                    }
+                    if (!ModuleDatabaseCompatibility.ShouldLoadModule(m.Manifest.Id, configuration, m.BaseDirectory))
+                    {
+                        Console.WriteLine($"[Modules] Module {m.Manifest.Id} is incompatible with current database, skipping TryLoad");
                         continue;
                     }
 
@@ -108,6 +126,11 @@ public static class ModuleRuntimeBootstrap
             foreach (var m in preload.Modules)
             {
                 if (!syncPolicy.ShouldSynchronize(m.Manifest.Id))
+                {
+                    store.Remove(m.Manifest.Id);
+                    continue;
+                }
+                if (!ModuleDatabaseCompatibility.ShouldLoadModule(m.Manifest.Id, configuration, m.BaseDirectory))
                 {
                     store.Remove(m.Manifest.Id);
                     continue;

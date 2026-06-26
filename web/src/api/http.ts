@@ -13,9 +13,9 @@ const http = axios.create({
 let unauthorizedRedirecting = false
 // 是否正在执行"跳转到登录页"的路由守卫流程。
 // 在 beforeEach 守卫内，initPluginRoutes/initializePluginSystem 会发起 API 请求，
-// 若此时 unauthorizedRedirecting=true，请求会被永久挂起（createUnauthorizedPendingPromise），
-// 导致守卫永远无法完成、路由跳转被阻塞、页面白屏。
-// 通过此标志让守卫期间的请求改为 fail-fast（reject），使 try-catch 能正常捕获并继续。
+// 若此时 unauthorizedRedirecting=true，请求应 fail-fast（reject），
+// 使 try-catch 能正常捕获并继续，避免路由守卫死锁白屏。
+// 通过 navigatingToLogin 标志区分守卫内外的拒绝策略。
 let navigatingToLogin = false
 
 /** 由路由守卫调用：通知 http 拦截器当前正处于"跳转登录页"的守卫流程中 */
@@ -54,6 +54,22 @@ function shouldStartUnauthorizedFlow(): boolean {
   return !isLoginRoute()
 }
 
+/** 智慧社区大屏独立全屏路由：401 时弹窗登录，不跳转后台登录页 */
+function isSmartCommunityBigScreenStandalonePath(path?: string): boolean {
+  try {
+    const p = path ?? (typeof location !== 'undefined' ? (location.pathname || '') : '')
+    return /^\/sc-bigscreen(?:-page)?\//.test(p)
+  } catch {
+    return false
+  }
+}
+
+function notifySmartCommunityBigScreenLogin(message?: string) {
+  try {
+    window.dispatchEvent(new CustomEvent('sc-bigscreen:need-login', { detail: { message } }))
+  } catch { /* 静默 */ }
+}
+
 /**
  * 判断请求是否命中"插件商店"系列代理接口。
  *
@@ -75,8 +91,9 @@ function isPluginStoreProxyRequest(config: any): boolean {
   }
 }
 
-function createUnauthorizedPendingPromise<T = never>(): Promise<T> {
-  return new Promise<T>(() => { })
+/** 401 会话失效：reject 结束调用方等待；handleUnauthorized 已负责清 token 与跳转登录页 */
+function createUnauthorizedRejected<T = never>(message = '未登录或登录已过期'): Promise<T> {
+  return Promise.reject(new Error(message))
 }
 
 http.interceptors.request.use((config) => {
@@ -103,11 +120,8 @@ http.interceptors.request.use((config) => {
   }
 
   if (unauthorizedRedirecting && shouldStartUnauthorizedFlow()) {
-    if (navigatingToLogin) {
-      // 正在执行跳转登录页的路由守卫，拒绝请求而非永久挂起，避免死锁导致白屏
-      return Promise.reject(new Error('认证已过期，正在跳转登录页'))
-    }
-    return createUnauthorizedPendingPromise<any>()
+    // 跳转登录流程中：拒绝后续请求，避免重复弹窗；不可永久挂起 Promise（会导致清空缓存等操作卡死）
+    return createUnauthorizedRejected('认证已过期，正在跳转登录页')
   }
 
   if (token) {
@@ -130,6 +144,11 @@ http.interceptors.request.use((config) => {
  * 统一处理 401/403（清除 token、跳转登录页）
  */
 function handleUnauthorized(message?: string) {
+  if (isSmartCommunityBigScreenStandalonePath()) {
+    notifySmartCommunityBigScreenLogin(message || '未登录或登录已过期')
+    return
+  }
+
   if (unauthorizedRedirecting) {
     return
   }
@@ -204,7 +223,7 @@ http.interceptors.response.use((resp) => {
       }
       if (appCode === 401 && shouldStartUnauthorizedFlow()) {
         handleUnauthorized(appMessage || '未登录或登录已过期')
-        return createUnauthorizedPendingPromise()
+        return createUnauthorizedRejected(appMessage || '未登录或登录已过期')
       }
       // 403 只提示无权限，不清 token 也不跳登录页
       if (appCode === 403) {
@@ -246,7 +265,7 @@ http.interceptors.response.use((resp) => {
   if (resp?.status === 401) {
     if (shouldStartUnauthorizedFlow()) {
       handleUnauthorized(extractErrorMessage(resp?.data) || '登录已过期，请重新登录')
-      return createUnauthorizedPendingPromise()
+      return createUnauthorizedRejected(extractErrorMessage(resp?.data) || '登录已过期，请重新登录')
     }
     return Promise.reject(error)
   } else if (resp?.status === 403) {

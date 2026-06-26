@@ -246,13 +246,11 @@ public sealed class RegisterInput
     [MaxLength(32)]
     public string? Phone { get; set; }
 
-    [Required]
-    [MinLength(8)]
+    /// <summary>密码（自由注册必填；邮箱/手机验证码注册由服务端自动生成）。</summary>
     [MaxLength(128)]
     public string Password { get; set; } = string.Empty;
 
-    [Required]
-    [Compare(nameof(Password), ErrorMessage = "两次密码输入不一致")]
+    /// <summary>确认密码（自由注册必填）。</summary>
     public string ConfirmPassword { get; set; } = string.Empty;
 
     /// <summary>邮箱验证码（邮箱+验证码模式时必填）。</summary>

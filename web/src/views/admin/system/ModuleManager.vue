@@ -98,6 +98,13 @@
             </el-button>
             <el-button @click="handleModuleAction('config', mod)" type="primary" link>
               <i class="bi bi-gear" style="margin-right: 4px;"></i> 配置
+              <el-tag
+                v-if="mod.configStorage === 'database'"
+                size="small"
+                type="warning"
+                effect="plain"
+                class="config-storage-tag"
+              >库配置</el-tag>
             </el-button>
             <!-- 健康指示灯：runtimeLoaded / serverDllLoaded / (hasMenus ? menuRegistered : true) 全部 true 时显示绿灯，否则红灯。
                  状态字段缺失时（旧版本后端）按"未知"显示绿灯，避免误报。
@@ -916,6 +923,53 @@
           </el-select>
         </div>
 
+        <!-- 配置存储方式与数据库一致性检查 -->
+        <div v-if="configStorageStatus && configFiles.length > 0" class="config-storage-panel">
+          <el-alert :type="configStorageAlertType" :closable="false" show-icon>
+            <template #title>
+              <span>存储方式：{{ configStorageStatus.storage === 'database' ? '数据库（ginkgo_Sys_Settings）' : '文件（server/config）' }}</span>
+              <el-tag
+                v-if="configStorageStatus.storage === 'database'"
+                :type="configDbConsistentTagType"
+                size="small"
+                effect="plain"
+                style="margin-left: 8px;"
+              >{{ configDbStatusLabel }}</el-tag>
+            </template>
+            <div v-if="configStorageStatus.storage === 'database'">
+              <p class="config-storage-summary">
+                初始样例 {{ configStorageStatus.sampleItemCount ?? 0 }} 项，库中 {{ configStorageStatus.dbItemCount ?? 0 }} 项
+                <template v-if="configStorageStatus.isConsistent">，与样例一致。</template>
+                <template v-else>，与样例不一致，可执行「同步到库」对齐初始配置。</template>
+              </p>
+              <ul v-if="!configStorageStatus.isConsistent && configStorageHasDiffs" class="config-storage-diff-list">
+                <li v-for="d in (configStorageStatus.missingInDb || [])" :key="'m-' + d.name">库中缺少：{{ d.name }}</li>
+                <li v-for="d in (configStorageStatus.extraInDb || [])" :key="'e-' + d.name">库中多余：{{ d.name }}</li>
+                <li v-for="d in (configStorageStatus.valueMismatch || [])" :key="'v-' + d.name">值不一致：{{ d.name }}</li>
+              </ul>
+            </div>
+            <p v-else class="config-storage-summary">{{ configStorageStatus.message || '配置保存在插件 server/config 目录下的 JSON 文件中。' }}</p>
+          </el-alert>
+          <div v-if="configStorageStatus.storage === 'database'" class="config-storage-actions">
+            <el-button size="small" type="primary" @click="handleSyncConfigToDb" :loading="configDbActionLoading">
+              <i class="bi bi-cloud-arrow-up" style="margin-right: 4px;"></i>同步到库
+            </el-button>
+            <el-button
+              size="small"
+              type="danger"
+              plain
+              @click="handleRemoveConfigFromDb"
+              :loading="configDbActionLoading"
+              :disabled="!configStorageStatus.hasDbData"
+            >
+              <i class="bi bi-trash" style="margin-right: 4px;"></i>从库中移除
+            </el-button>
+            <el-button size="small" @click="loadConfigStorageStatus" :loading="configStorageLoading">
+              <i class="bi bi-arrow-clockwise" style="margin-right: 4px;"></i>重新检查
+            </el-button>
+          </div>
+        </div>
+
         <!-- 配置表单 -->
         <div v-if="configData && configData.groups && configData.items">
           <el-tabs v-model="activeConfigTab" v-if="configData.groups.length > 1">
@@ -1240,7 +1294,7 @@ import { useMenuStore } from '../../../stores/menu'
 import * as moduleApi from '../../../api/module'
 import http from '../../../api/http'
 import * as pluginStoreApi from '../../../api/plugin-store'
-import type { ModuleInfo, ModuleStatus, UploadValidationResult, InstallResult, PackageResult, PackageableModule, EnvironmentInfo, NormalizedConfig, ConfigItem } from '../../../api/module'
+import type { ModuleInfo, ModuleStatus, UploadValidationResult, InstallResult, PackageResult, PackageableModule, EnvironmentInfo, NormalizedConfig, ConfigItem, ModuleConfigStorageStatus } from '../../../api/module'
 import { normalizeDirectStoreLoginResult, normalizeStoreLoginMessage, normalizeStoreUserInfo } from './storeLoginCallback.utils'
 import StoreCaptchaPanel from './StoreCaptchaPanel.vue'
 
@@ -1930,6 +1984,36 @@ const configFiles = ref<string[]>([])
 const activeConfigFile = ref('')
 const activeConfigTab = ref('')
 const configData = ref<NormalizedConfig | null>(null)
+const configStorageStatus = ref<ModuleConfigStorageStatus | null>(null)
+const configStorageLoading = ref(false)
+const configDbActionLoading = ref(false)
+
+const configStorageAlertType = computed(() => {
+  if (!configStorageStatus.value) return 'info'
+  if (configStorageStatus.value.storage === 'file') return 'info'
+  return configStorageStatus.value.isConsistent ? 'success' : 'warning'
+})
+
+const configDbConsistentTagType = computed(() => {
+  const s = configStorageStatus.value
+  if (!s?.hasDbData) return 'info'
+  return s.isConsistent ? 'success' : 'warning'
+})
+
+const configDbStatusLabel = computed(() => {
+  const s = configStorageStatus.value
+  if (!s) return ''
+  if (!s.hasDbData) return '未入库'
+  return s.isConsistent ? '已与样例一致' : '与样例不一致'
+})
+
+const configStorageHasDiffs = computed(() => {
+  const s = configStorageStatus.value
+  if (!s) return false
+  return (s.missingInDb?.length ?? 0) > 0
+    || (s.extraInDb?.length ?? 0) > 0
+    || (s.valueMismatch?.length ?? 0) > 0
+})
 
 // ============ 灰度策略缓存（模块列表卡片上显示灰度标识） ============
 const grayscalePolicies = ref<Record<string, moduleApi.GrayscalePolicy>>({})
@@ -2755,6 +2839,7 @@ const handleOpenConfig = async (mod: ModuleInfo) => {
   configModuleName.value = mod.name || mod.id
   configFiles.value = []
   configData.value = null
+  configStorageStatus.value = null
   activeConfigFile.value = ''
   activeConfigTab.value = ''
   showConfigDialog.value = true
@@ -2792,11 +2877,79 @@ const loadConfigData = async () => {
       activeConfigTab.value = data.groups[0].code
     }
     await preloadSystemApisIfNeeded()
+    await loadConfigStorageStatus()
   } catch (error: unknown) {
     ElMessage.error(`加载配置失败: ${error instanceof Error ? error.message : '加载失败'}`)
     configData.value = null
+    configStorageStatus.value = null
   } finally {
     configLoading.value = false
+  }
+}
+
+const loadConfigStorageStatus = async () => {
+  if (!activeConfigFile.value || !configModuleId.value) return
+  configStorageLoading.value = true
+  try {
+    configStorageStatus.value = await moduleApi.getModuleConfigStorageStatus(configModuleId.value, activeConfigFile.value)
+  } catch (error: unknown) {
+    configStorageStatus.value = null
+    const msg = error instanceof Error ? error.message : '检查失败'
+    if (!msg.includes('404')) ElMessage.warning(`配置存储状态检查失败: ${msg}`)
+  } finally {
+    configStorageLoading.value = false
+  }
+}
+
+const handleSyncConfigToDb = async () => {
+  if (!configModuleId.value || !activeConfigFile.value) return
+  try {
+    await ElMessageBox.confirm(
+      '将把插件初始样例文件中的配置全量写入数据库，覆盖库中同名字段，并移除样例中不存在的多余项。是否继续？',
+      '同步到库',
+      { type: 'warning', confirmButtonText: '确认同步', cancelButtonText: '取消' }
+    )
+  } catch { return }
+
+  configDbActionLoading.value = true
+  try {
+    const result = await moduleApi.syncModuleConfigToDb(configModuleId.value, activeConfigFile.value)
+    if (!result.ok) {
+      ElMessage.warning(result.message || '同步失败')
+      return
+    }
+    ElMessage.success(result.message || '同步成功')
+    await loadConfigData()
+  } catch (error: unknown) {
+    ElMessage.error(`同步失败: ${error instanceof Error ? error.message : '同步失败'}`)
+  } finally {
+    configDbActionLoading.value = false
+  }
+}
+
+const handleRemoveConfigFromDb = async () => {
+  if (!configModuleId.value || !activeConfigFile.value) return
+  try {
+    await ElMessageBox.confirm(
+      '将从数据库移除该配置文件的全部配置项，插件将回退为仅使用样例默认值（未入库状态）。是否继续？',
+      '从库中移除',
+      { type: 'warning', confirmButtonText: '确认移除', cancelButtonText: '取消' }
+    )
+  } catch { return }
+
+  configDbActionLoading.value = true
+  try {
+    const result = await moduleApi.removeModuleConfigFromDb(configModuleId.value, activeConfigFile.value)
+    if (!result.ok) {
+      ElMessage.warning(result.message || '移除失败')
+      return
+    }
+    ElMessage.success(result.message || '移除成功')
+    await loadConfigData()
+  } catch (error: unknown) {
+    ElMessage.error(`移除失败: ${error instanceof Error ? error.message : '移除失败'}`)
+  } finally {
+    configDbActionLoading.value = false
   }
 }
 
@@ -2910,6 +3063,7 @@ const resetConfigForm = () => {
   configModuleName.value = ''
   configFiles.value = []
   configData.value = null
+  configStorageStatus.value = null
   activeConfigFile.value = ''
   activeConfigTab.value = ''
 }
@@ -4266,6 +4420,38 @@ onMounted(async () => {
 }
 
 .admin-dark .config-file-selector { border-bottom-color: #374151; }
+
+.config-storage-tag {
+  margin-left: 4px;
+  vertical-align: middle;
+  transform: scale(0.9);
+}
+
+.config-storage-panel {
+  margin-bottom: 16px;
+}
+
+.config-storage-summary {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.config-storage-diff-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.admin-dark .config-storage-diff-list { color: #9ca3af; }
+
+.config-storage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
 
 .selector-label { font-size: 13px; color: #6b7280; white-space: nowrap; }
 .admin-dark .selector-label { color: #9ca3af; }

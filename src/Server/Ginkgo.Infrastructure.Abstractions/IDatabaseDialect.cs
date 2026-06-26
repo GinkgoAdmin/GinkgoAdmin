@@ -196,6 +196,34 @@ public interface IDatabaseDialect
     string TranslateMySqlDDL(string mysqlDdl);
 
     // ================================================================
+    // 模块安装 / 脚本执行期方言辅助
+    // ================================================================
+
+    /// <summary>
+    /// 模块 SQL 执行前临时放宽引用完整性检查的语句（如 MySQL FOREIGN_KEY_CHECKS=0）。
+    /// 返回 null 表示无需执行。
+    /// </summary>
+    string? SqlDisableReferentialIntegrity { get; }
+
+    /// <summary>
+    /// 模块 SQL 执行后恢复引用完整性检查的语句。返回 null 表示无需执行。
+    /// </summary>
+    string? SqlEnableReferentialIntegrity { get; }
+
+    /// <summary>
+    /// 查询外键依赖：返回子表名与父表名两列（ChildTable, ParentTable），调用方追加 AND {FilterColumn} IN (...)。
+    /// </summary>
+    string SqlGetForeignKeyDependencies { get; }
+
+    /// <summary>外键依赖查询中用于 IN 过滤的子表列表达式（如 TABLE_NAME、kcu.table_name）。</summary>
+    string SqlForeignKeyChildTableInFilter { get; }
+
+    /// <summary>
+    /// 将 ADO.NET 读取的值格式化为可嵌入 SQL 的字面量（导出 INSERT 脚本等场景）。
+    /// </summary>
+    string FormatSqlLiteral(object? value);
+
+    // ================================================================
     // 工具：执行 SqlSugar 底层 ADO.NET 命令（避免实现层重复造轮子）
     // ================================================================
 

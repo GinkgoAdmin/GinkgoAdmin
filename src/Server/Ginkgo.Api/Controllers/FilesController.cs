@@ -255,6 +255,7 @@ public sealed class FilesController : ControllerBase
     {
         var f = await repo.GetByIdAsync(id);
         if (f == null) return NotFound();
+        if (!CanAccessFile(f)) return Forbid();
         return await ServeFileContentAsync(f, storageSwitcher);
     }
 
@@ -268,7 +269,23 @@ public sealed class FilesController : ControllerBase
     {
         var f = await repo.GetByIdAsync(id);
         if (f == null) return NotFound();
+        if (!CanAccessFile(f)) return Forbid();
         return await ServeFileContentAsync(f, storageSwitcher, f.FileName);
+    }
+
+    /// <summary>
+    /// 校验当前用户是否有权访问指定文件（与 GetByIdAsync 权限一致）。
+    /// </summary>
+    private bool CanAccessFile(SysFile file)
+    {
+        var isAdmin = User?.IsInRole("ADMIN") == true || User?.IsInRole("admin") == true;
+        if (isAdmin) return true;
+
+        long? me = null;
+        var uid = User?.Claims.FirstOrDefault(c => c.Type.EndsWith("/nameidentifier") || c.Type.EndsWith("/sub"))?.Value;
+        if (long.TryParse(uid, out var gid)) me = gid;
+        var ownerId = file.CreatedBy ?? file.OwnerId;
+        return ownerId != null && ownerId == me;
     }
 
     // ---------- 私有方法：统一文件内容输出 ----------

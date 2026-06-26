@@ -22,6 +22,9 @@ public static class DatabaseMaintenanceService
     {
         var cfg = serviceProvider.GetRequiredService<IConfiguration>();
         var autoCreate = string.Equals(cfg["Database:AutoCreate"], "true", StringComparison.OrdinalIgnoreCase);
+        var provider = cfg["Database:Provider"] ?? string.Empty;
+        var isPostgreSql = provider.Contains("postgre", StringComparison.OrdinalIgnoreCase)
+            || provider.Equals("pgsql", StringComparison.OrdinalIgnoreCase);
         
         if (autoCreate)
         {
@@ -59,6 +62,8 @@ public static class DatabaseMaintenanceService
         catch (Exception ex) { Console.WriteLine($"[BOOT] EnsureOpLogColumn failed: {ex.Message}"); }
 
         // Ensure RefreshToken table exists (idempotent, added after initial DB)
+        // PostgreSQL 已由全量迁移建表，跳过 CodeFirst 避免小写列名冲突
+        if (!isPostgreSql)
         try
         {
             var sugar3 = serviceProvider.GetRequiredService<ISqlSugarClient>();
@@ -68,6 +73,7 @@ public static class DatabaseMaintenanceService
         catch (Exception ex) { Console.WriteLine($"[BOOT] EnsureRefreshTokenTable failed: {ex.Message}"); }
 
         // 定时任务相关表建表
+        if (!isPostgreSql)
         try
         {
             var sugar4 = serviceProvider.GetRequiredService<ISqlSugarClient>();
@@ -80,9 +86,10 @@ public static class DatabaseMaintenanceService
 
         // 多端通用插件业务入口：菜单组相关表的补列与建表（幂等）。
         // - 为 ginkgo_Sys_MenuGroup 补 IsDefault 列；
-        // - 为 ginkgo_Sys_MenuGroupItem 补 Module / RequireGrant 列；
+        // - 为 ginkgo_Sys_MenuGroupItem 补 Module / RequireGrant / IsUniappHome 列；
         // - 创建 ginkgo_Sys_RoleMenuGroupItem（角色—菜单组项 item 级授权）表。
         // 说明：即使 Database:AutoCreate 关闭，这里也会确保上述列与表存在，便于老库平滑升级。
+        if (!isPostgreSql)
         try
         {
             var sugar5 = serviceProvider.GetRequiredService<ISqlSugarClient>();
@@ -93,6 +100,26 @@ public static class DatabaseMaintenanceService
             Console.WriteLine("[BOOT] MenuGroup/MenuGroupItem/RoleMenuGroupItem tables ensured.");
         }
         catch (Exception ex) { Console.WriteLine($"[BOOT] EnsureMenuGroupTables failed: {ex.Message}"); }
+
+        // Ensure MenuGroupItem.IsUniappHome column exists (idempotent)
+        try
+        {
+            var sugar5b = serviceProvider.GetRequiredService<ISqlSugarClient>();
+            if (!sugar5b.DbMaintenance.IsAnyColumn("ginkgo_Sys_MenuGroupItem", "IsUniappHome"))
+            {
+                var col = new DbColumnInfo
+                {
+                    DbColumnName = "IsUniappHome",
+                    DataType = "Boolean",
+                    IsNullable = false,
+                    DefaultValue = "0",
+                    ColumnDescription = "是否设为UNIAPP框架启动首页"
+                };
+                sugar5b.DbMaintenance.AddColumn("ginkgo_Sys_MenuGroupItem", col);
+                Console.WriteLine("[BOOT] MenuGroupItem.IsUniappHome column ensured.");
+            }
+        }
+        catch (Exception ex) { Console.WriteLine($"[BOOT] EnsureMenuGroupItemIsUniappHomeColumn failed: {ex.Message}"); }
 
         // 补齐模块配置写接口的权限资源，确保老库升级后也能走统一权限链路
         try

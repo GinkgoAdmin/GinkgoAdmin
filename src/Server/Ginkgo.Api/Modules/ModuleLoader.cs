@@ -32,6 +32,11 @@ public sealed class ModuleLoader
                 return false;
             }
             var unpackDir = EnsureUnpackToAppModules(packagePath, manifest);
+            if (!ModuleDatabaseCompatibility.ShouldLoadModule(manifest.Id, _configuration, unpackDir))
+            {
+                error = "当前数据库不支持该模块（需要 PostgreSQL）";
+                return false;
+            }
             var entry = Path.Combine(unpackDir, manifest.Server.EntryAssembly.Replace('/', Path.DirectorySeparatorChar));
             if (!File.Exists(entry))
             {

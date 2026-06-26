@@ -78,7 +78,7 @@ public sealed class DictionaryCategory : AuditableEntity
     /// <summary>
     /// 扩展 JSON（多语言或映射配置等）。
     /// </summary>
-    [SugarColumn(IsNullable = true, ColumnDescription = "扩展 JSON（多语言/映射配置等）")]
+    [SugarColumn(ColumnDataType = "json", IsNullable = true, ColumnDescription = "扩展 JSON（多语言/映射配置等）")]
     public string? ExtraJson { get; set; }
 
     // ===== 领域行为 =====

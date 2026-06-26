@@ -490,3 +490,71 @@ public sealed class ClientMenuItemSpec
     /// </summary>
     public string? ParentPath { get; set; }
 }
+
+// ===== 菜单组导出 / 导入 DTO =====
+
+/// <summary>
+/// 菜单组导出包（含组元数据与扁平菜单项列表，供备份与跨环境迁移）。
+/// </summary>
+public sealed class MenuGroupExportDto
+{
+    public int FormatVersion { get; set; } = 1;
+    public DateTime ExportedAt { get; set; }
+    public MenuGroupExportGroupDto Group { get; set; } = new();
+    public List<MenuGroupExportItemDto> Items { get; set; } = new();
+}
+
+/// <summary>
+/// 导出包中的菜单组元数据（不含数据库 Id）。
+/// </summary>
+public sealed class MenuGroupExportGroupDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? Location { get; set; }
+    public string? ClientType { get; set; }
+    public bool Enabled { get; set; } = true;
+    public int MaxDepth { get; set; } = 3;
+    public string? Version { get; set; }
+}
+
+/// <summary>
+/// 导出包中的菜单项（扁平结构，通过 ItemKey / ParentItemKey 表达树形关系）。
+/// </summary>
+public sealed class MenuGroupExportItemDto
+{
+    public string ItemKey { get; set; } = string.Empty;
+    public string? ParentItemKey { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? TitleI18n { get; set; }
+    public string? Subtitle { get; set; }
+    public string? Icon { get; set; }
+    public string? Image { get; set; }
+    public string LinkType { get; set; } = "Custom";
+    public string? Url { get; set; }
+    public string Target { get; set; } = "_self";
+    public string? RefMenuCode { get; set; }
+    public string? RefMenuRoute { get; set; }
+    public string? PermissionCode { get; set; }
+    public string? CssClass { get; set; }
+    public string? Badge { get; set; }
+    public string? BadgeType { get; set; }
+    public string? ExtraData { get; set; }
+    public int Order { get; set; }
+    public bool Enabled { get; set; } = true;
+    public string Module { get; set; } = "sys";
+    public bool RequireGrant { get; set; }
+    public bool IsUniappHome { get; set; }
+}
+
+/// <summary>
+/// 菜单组导入结果。
+/// </summary>
+public sealed class MenuGroupImportResultDto
+{
+    public long GroupId { get; set; }
+    public string GroupSlug { get; set; } = string.Empty;
+    public int ItemsCreated { get; set; }
+    public int ItemsDeleted { get; set; }
+}

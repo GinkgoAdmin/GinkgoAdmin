@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    打包脚本编译模块时传入 /p:GinkgoSkipServerBinSync=true，
+    各模块 server/Directory.Build.targets 中的 AfterTargets 同步应尊重此开关，
+    避免 Ginkgo.Api 开发期 ALC 占用 server/bin/*.dll 导致 MSBuild 失败。
+  -->
+  <PropertyGroup>
+    <GinkgoSkipServerBinSync Condition="'$(GinkgoSkipServerBinSync)' == ''">false</GinkgoSkipServerBinSync>
+  </PropertyGroup>
+</Project>

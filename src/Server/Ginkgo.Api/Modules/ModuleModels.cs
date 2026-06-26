@@ -25,6 +25,22 @@ public sealed class ModuleManifest
     [JsonPropertyName("tablePrefix")] public string? TablePrefix { get; set; }
     [JsonPropertyName("server")] public ServerConfig? Server { get; set; }
     [JsonPropertyName("client")] public ClientConfig? Client { get; set; }
+    /// <summary>
+    /// 插件配置存储方式：file（默认，写入 server/config/*.json）或 database（写入 ginkgo_Sys_Settings）。
+    /// </summary>
+    [JsonPropertyName("config")] public ModuleConfigOptions? Config { get; set; }
+}
+
+/// <summary>插件配置存储选项（module.json 中的 config 段）。</summary>
+public sealed class ModuleConfigOptions
+{
+    /// <summary>存储方式：file | database，默认 file。</summary>
+    [JsonPropertyName("storage")] public string Storage { get; set; } = "file";
+    /// <summary>主配置文件名（如 aicore.json），storage=database 时用于键名前缀与 UI 元数据来源。</summary>
+    [JsonPropertyName("primaryFile")] public string? PrimaryFile { get; set; }
+
+    public bool IsDatabaseStorage =>
+        string.Equals(Storage, "database", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class ModuleFile
@@ -102,6 +118,11 @@ public sealed class EnhancedModuleInfo
     public bool HasMenus { get; set; }
     /// <summary>菜单是否已注册到 ginkgo_Sys_Menu（仅在 HasMenus=true 时有意义）</summary>
     public bool MenuRegistered { get; set; }
+
+    /// <summary>插件配置存储方式：file | database（来自 module.json config.storage）</summary>
+    public string? ConfigStorage { get; set; }
+    /// <summary>数据库存储模式下的主配置文件名（来自 module.json config.primaryFile）</summary>
+    public string? ConfigPrimaryFile { get; set; }
 }
 
 public sealed class ClientModuleTask

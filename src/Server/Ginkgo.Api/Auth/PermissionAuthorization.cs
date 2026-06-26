@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Claims;
 using Ginkgo.Domain;
 using Ginkgo.Domain.Roles;
@@ -5,6 +6,7 @@ using Ginkgo.Domain.Menus;
 using Ginkgo.Plugin.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Ginkgo.Api.Auth;
@@ -75,6 +77,62 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
             ("GET",    "/api/v1/dictionaries/categories"),
             ("GET",    "/api/v1/dictionaries/items"),
             ("GET",    "/api/v1/menus/my"),
+            ("GET",    "/api/v1/users"),
+            ("GET",    "/api/v1/dictionaries/by-codes"),
+            ("GET",    "/api/v1/menus/my/buttons"),
+
+            // 用户本人资料（UniApp 个人中心）
+            ("GET",    "/api/v1/users/me"),
+            ("PUT",    "/api/v1/users/me"),
+            ("POST",   "/api/v1/users/me/clear-personal-info"),
+            ("DELETE", "/api/v1/users/me"),
+            ("POST",   "/api/v1/users/me/password"),
+
+            // 统一客户端入口
+            ("GET",    "/api/v1/client/portal"),
+
+            // 培训移动端
+            ("GET",    "/api/training/certificates/mine"),
+
+            // 工作流移动端
+            ("POST",   "/api/workflow/instance/start"),
+            ("GET",    "/api/workflow/instance/{id}"),
+            ("GET",    "/api/workflow/instance/by-business"),
+            ("GET",    "/api/workflow/instance/latest-by-business"),
+            ("GET",    "/api/workflow/instance/{id}/business-data"),
+            ("GET",    "/api/workflow/instance/{id}/transitions"),
+            ("GET",    "/api/workflow/instance/{id}/comments"),
+            ("POST",   "/api/workflow/instance/{id}/comment"),
+            ("GET",    "/api/workflow/instance/{id}/attachments"),
+            ("POST",   "/api/workflow/instance/{id}/withdraw"),
+            ("POST",   "/api/workflow/instance/{id}/urge"),
+            ("GET",    "/api/workflow/definition/list"),
+            ("GET",    "/api/workflow/bundle/by-code/{code}"),
+
+            // 智慧社区居民端
+            ("GET",    "/api/smart-community/person/search"),
+            ("POST",   "/api/smart-community/person"),
+
+            // 租户移动端
+            ("GET",    "/api/v1/tenants/my"),
+            ("POST",   "/api/v1/tenants/switch/{id}"),
+            ("GET",    "/api/v1/tenants/dashboard/summary"),
+            ("GET",    "/api/v1/tenants/dashboard/expiring"),
+            ("GET",    "/api/v1/tenants/dashboard/trend"),
+            ("GET",    "/api/v1/tenants/dashboard/ranking"),
+            ("GET",    "/api/v1/tenants/feature-flags"),
+
+            // 活动报名移动端（需登录）
+            ("GET",    "/api/activity-reg/portal/my-registrations"),
+            ("GET",    "/api/activity-reg/portal/activities/{id}/live"),
+            ("POST",   "/api/activity-reg/registrations"),
+            ("GET",    "/api/activity-reg/registrations/{id}"),
+            ("POST",   "/api/activity-reg/registrations/{id}/cancel"),
+            ("POST",   "/api/activity-reg/registrations/{id}/pay"),
+            ("POST",   "/api/activity-reg/evaluations"),
+
+            // 钱包
+            ("GET",    "/api/wallet/currencies"),
         };
 
     // 仅登录即可访问的"路径前缀"白名单：仅保留少量业务网关类前缀。
@@ -82,6 +140,39 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
     private static readonly string[] _loginOnlyPrefixes = new[]
     {
         "/api/devscaffold/",
+        // UniApp / 移动端：登录即可，不走后台菜单 Resource 授权
+        "/api/training/mobile/",
+        "/api/crm/",
+        "/api/econforest/mobile/",
+        "/api/faceid/",
+        "/api/workflow/task/",
+        "/api/stt/",
+        "/api/wallet/my-",
+        "/api/wallet/recharge/",
+        "/api/wallet/withdraw/submit",
+        "/api/wallet/withdraw/mine",
+        "/api/wallet/withdraw/cancel/",
+        "/api/evaluate/drafts/",
+        "/api/evaluate/tasks/",
+        "/api/evaluate/subject-remarks/",
+        "/api/evaluate/records/",
+        "/api/evaluate/scale-configs/",
+        "/api/evaluate/scales/",
+        "/api/evaluate/report-templates/",
+        "/api/evaluate/content-templates/",
+        "/api/smart-community/me/",
+        "/api/smart-community/person/me",
+        "/api/smart-community/event/",
+        "/api/smart-community/wish/",
+        "/api/smart-community/activity/",
+        "/api/smart-community/civic-service/",
+        "/api/smart-community/civic-catalog/enabled",
+        "/api/smart-community/notice/",
+        "/api/smart-community/stats/",
+        "/api/smart-community/area-geo/",
+        "/api/smart-community/aibrain/",
+        "/api/uni-page/render",
+        "/api/uni-page/render-component/",
     };
 
     /// <summary>
@@ -152,8 +243,8 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
             return Task.CompletedTask;
         }
 
-        // 检查端点是否标记了 [LoginOnly] 特性 —— 插件可在自己的控制器上声明，无需修改主框架白名单
-        if (endpoint?.Metadata.GetMetadata<LoginOnlyAttribute>() != null)
+        // 检查端点是否标记了 [LoginOnly] 特性 —— 插件可在自己的控制器/Action 上声明，无需修改主框架白名单
+        if (IsLoginOnlyEndpoint(endpoint))
         {
             if (isAuthenticated)
             {
@@ -177,7 +268,7 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 .ToList();
         }) ?? new List<Menu>();
         var matchedCandidates = candidates.Where(m =>
-            string.Equals(m.Method, method, StringComparison.OrdinalIgnoreCase) &&
+            IsMethodMatch(m.Method!, method) &&
             IsResourceMatch(m.Resource!, norm)).ToList();
 
         // 未配置资源映射：默认拒绝。要求所有 API 必须在菜单中配置 Resource+Method 才能访问
@@ -222,6 +313,48 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
     }
 
     /// <summary>
+    /// 判断当前端点是否标注了 [LoginOnly]。
+    /// 除 EndpointMetadata 直查外，还从 ControllerActionDescriptor 反射类/方法级特性，
+    /// 解决 ALC 插件控制器类级 [LoginOnly] 未进入元数据、或跨程序集类型引用不一致时 GetMetadata 失效的问题。
+    /// </summary>
+    private static bool IsLoginOnlyEndpoint(Endpoint? endpoint)
+    {
+        if (endpoint == null) return false;
+
+        if (endpoint.Metadata.GetMetadata<LoginOnlyAttribute>() != null)
+            return true;
+
+        foreach (var meta in endpoint.Metadata)
+        {
+            if (IsLoginOnlyAttributeInstance(meta))
+                return true;
+        }
+
+        var cad = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();
+        if (cad == null) return false;
+
+        if (cad.MethodInfo.GetCustomAttribute<LoginOnlyAttribute>(inherit: true) != null)
+            return true;
+        if (cad.ControllerTypeInfo.GetCustomAttribute<LoginOnlyAttribute>(inherit: true) != null)
+            return true;
+
+        // 跨 ALC 时特性实例类型可能不是宿主侧 LoginOnlyAttribute，按类型名兜底
+        if (HasLoginOnlyByTypeName(cad.MethodInfo, inherit: true))
+            return true;
+        return HasLoginOnlyByTypeName(cad.ControllerTypeInfo, inherit: true);
+    }
+
+    private static bool IsLoginOnlyAttributeInstance(object meta)
+        => meta.GetType().Name == nameof(LoginOnlyAttribute)
+           && string.Equals(meta.GetType().Namespace, typeof(LoginOnlyAttribute).Namespace, StringComparison.Ordinal);
+
+    private static bool HasLoginOnlyByTypeName(MemberInfo member, bool inherit)
+        => member.GetCustomAttributes(inherit).Any(IsLoginOnlyAttributeInstance);
+
+    private static bool HasLoginOnlyByTypeName(Type type, bool inherit)
+        => type.GetCustomAttributes(inherit).Any(IsLoginOnlyAttributeInstance);
+
+    /// <summary>
     /// 检查匹配的菜单本身或其任意祖先是否在授权列表中。
     /// 这样只要用户勾选了父级菜单（如"角色管理"），其下所有 Api/Button 子节点自动拥有权限。
     /// </summary>
@@ -259,9 +392,46 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
         return "/" + string.Join('/', parts);
     }
 
+    /// <summary>
+    /// 方法匹配：菜单 Method 为 "*"/"ALL"/"ANY" 时匹配任意 HTTP 方法（简单权限/整页授权模式使用）；
+    /// 否则按原有精确（忽略大小写）匹配。
+    /// </summary>
+    private static bool IsMethodMatch(string menuMethod, string requestMethod)
+    {
+        if (string.IsNullOrWhiteSpace(menuMethod)) return false;
+        var mm = menuMethod.Trim();
+        if (mm == "*"
+            || mm.Equals("ALL", StringComparison.OrdinalIgnoreCase)
+            || mm.Equals("ANY", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return string.Equals(mm, requestMethod, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// 资源匹配。
+    /// 1) 精确模式（旧）：Resource 为具体路径时按归一化后逐字符相等匹配。
+    /// 2) 通配前缀模式（新，简单权限/整页授权）：Resource 以 "/*" 或 "/**" 结尾时，
+    ///    表示"该前缀下的所有子路径"，命中前缀自身或其任意子路径即视为匹配。
+    ///    为避免越权，禁止 "/*"、"/**"、"/api/**" 之类过短前缀形成的全站通配。
+    /// </summary>
     private static bool IsResourceMatch(string resource, string requestPath)
     {
-        var r = NormalizePath(resource);
+        if (string.IsNullOrWhiteSpace(resource)) return false;
+        var res = resource.Trim();
+
+        if (res.EndsWith("/**", StringComparison.Ordinal) || res.EndsWith("/*", StringComparison.Ordinal))
+        {
+            var rawPrefix = res.EndsWith("/**", StringComparison.Ordinal) ? res[..^3] : res[..^2];
+            if (string.IsNullOrWhiteSpace(rawPrefix)) return false;
+            var prefix = NormalizePath(rawPrefix);
+            // 前缀过短（如 "/"、"/api"）视为非法全通配，直接拒绝，防止越权放行
+            var depth = prefix.Split('/', StringSplitOptions.RemoveEmptyEntries).Length;
+            if (depth < 2) return false;
+            return string.Equals(requestPath, prefix, StringComparison.OrdinalIgnoreCase)
+                || requestPath.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase);
+        }
+
+        var r = NormalizePath(res);
         return string.Equals(r, requestPath, StringComparison.OrdinalIgnoreCase);
     }
 

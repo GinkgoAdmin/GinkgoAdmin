@@ -176,6 +176,58 @@ export interface NavigationItem {
   children?: NavigationItem[]
 }
 
+// ===== 菜单组导出 / 导入 =====
+
+export interface MenuGroupExportGroup {
+  name: string
+  slug: string
+  description?: string
+  location?: string
+  clientType?: string
+  enabled?: boolean
+  maxDepth?: number
+  version?: string
+}
+
+export interface MenuGroupExportItem {
+  itemKey: string
+  parentItemKey?: string | null
+  title: string
+  titleI18n?: string | null
+  subtitle?: string | null
+  icon?: string | null
+  image?: string | null
+  linkType: string
+  url?: string | null
+  target?: string
+  refMenuCode?: string | null
+  refMenuRoute?: string | null
+  permissionCode?: string | null
+  cssClass?: string | null
+  badge?: string | null
+  badgeType?: string | null
+  extraData?: string | null
+  order: number
+  enabled: boolean
+  module?: string
+  requireGrant?: boolean
+  isUniappHome?: boolean
+}
+
+export interface MenuGroupExportPackage {
+  formatVersion: number
+  exportedAt: string
+  group: MenuGroupExportGroup
+  items: MenuGroupExportItem[]
+}
+
+export interface MenuGroupImportResult {
+  groupId: string
+  groupSlug: string
+  itemsCreated: number
+  itemsDeleted: number
+}
+
 // ===== 菜单组管理 API =====
 
 export async function getMenuGroups(): Promise<MenuGroupListItem[]> {
@@ -199,6 +251,16 @@ export async function updateMenuGroup(id: string, input: UpdateMenuGroupInput): 
 
 export async function deleteMenuGroup(id: string): Promise<void> {
   await http.delete(`/v1/menu-groups/${id}`)
+}
+
+export async function exportMenuGroup(id: string): Promise<MenuGroupExportPackage> {
+  const resp = await http.get<any, MenuGroupExportPackage | { data?: MenuGroupExportPackage }>(`/v1/menu-groups/${id}/export`)
+  return (resp as any)?.data ?? (resp as MenuGroupExportPackage)
+}
+
+export async function importMenuGroup(id: string, pkg: MenuGroupExportPackage): Promise<MenuGroupImportResult> {
+  const resp = await http.post<any, MenuGroupImportResult | { data?: MenuGroupImportResult }>(`/v1/menu-groups/${id}/import`, pkg)
+  return (resp as any)?.data ?? (resp as MenuGroupImportResult)
 }
 
 // ===== 菜单组项管理 API =====
